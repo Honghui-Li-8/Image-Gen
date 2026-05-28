@@ -1,0 +1,19 @@
+{
+  "name": "image-gen-api",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

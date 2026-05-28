@@ -1,0 +1,6 @@
+packages:
+  - app
+  - api
+allowBuilds:
+  esbuild: true
+minimumReleaseAge: 0

@@ -1,0 +1,14 @@
+{
+  "name": "image-gen",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": ">=22.22.3"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --recursive dev",
+    "dev:app": "pnpm --filter image-gen-app dev",
+    "dev:api": "pnpm --filter image-gen-api dev"
+  }
+}
