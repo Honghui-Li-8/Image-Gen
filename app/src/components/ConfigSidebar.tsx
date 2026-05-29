@@ -1,9 +1,10 @@
 import { ConfigGroup } from "./ConfigGroup";
 import { SeedControl } from "./SeedControl";
 import { TagInput } from "./TagInput";
+import { buildInitialSelections } from "../utils/works";
 import type {
   GenerationCategory,
-  GenerationOptions,
+  ModelConfig,
   Work,
   WorkUpdater,
 } from "../types";
@@ -11,10 +12,11 @@ import type {
 type OptionsStatus = "loading" | "ready" | "failed";
 
 interface ConfigSidebarProps {
+  activeModel: ModelConfig | null;
   activeWork: Work | undefined;
   commitTag: () => void;
   customTags: string[];
-  options: GenerationOptions | null;
+  models: Record<string, ModelConfig>;
   optionsStatus: OptionsStatus;
   removeTag: (tag: string) => void;
   updateActiveWork: (updater: WorkUpdater) => void;
@@ -57,23 +59,42 @@ const distributeGroups = (
 };
 
 export const ConfigSidebar = ({
+  activeModel,
   activeWork,
   commitTag,
   customTags,
-  options,
+  models,
   optionsStatus,
   removeTag,
   updateActiveWork,
 }: ConfigSidebarProps) => {
+  const modelEntries = Object.values(models);
+
   return (
     <aside className="config-sidebar">
       <div className="config-header">
         <h2>Configuration</h2>
-        {options ? (
-          <div className="header-model">
-            <span>Model:</span>
-            <strong>{options.model.label}</strong>
-          </div>
+        {modelEntries.length > 0 ? (
+          <select
+            className="model-select"
+            value={activeWork?.selectedModel || ""}
+            onChange={(event) => {
+              const newModel = models[event.target.value];
+              if (!newModel) return;
+              updateActiveWork((work) => ({
+                ...work,
+                selectedModel: newModel.id,
+                selections: buildInitialSelections(newModel.categories),
+                selectedPreset: newModel.outputPresets[0]?.id || "",
+              }));
+            }}
+          >
+            {modelEntries.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.label}
+              </option>
+            ))}
+          </select>
         ) : null}
       </div>
 
@@ -84,11 +105,11 @@ export const ConfigSidebar = ({
           </p>
         ) : null}
 
-        {options ? (
+        {activeModel ? (
           <>
             {(() => {
               const [leftGroups, rightGroups] = distributeGroups(
-                groupCategories(options.categories),
+                groupCategories(activeModel.categories),
               );
 
               const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
@@ -151,7 +172,7 @@ export const ConfigSidebar = ({
                   updateActiveWork({ selectedPreset: event.target.value })
                 }
               >
-                {options.outputPresets.map((preset) => (
+                {activeModel.outputPresets.map((preset) => (
                   <option key={preset.id} value={preset.id}>
                     {preset.label} ({preset.width} x {preset.height})
                   </option>

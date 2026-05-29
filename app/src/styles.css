@@ -543,6 +543,18 @@ p {
   font-size: 0.72rem;
 }
 
+.model-select {
+  width: auto;
+  min-height: 26px;
+  padding: 0 24px 0 8px;
+  border-color: var(--border);
+  border-radius: 6px;
+  background: var(--panel-soft);
+  color: var(--text-value);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .generate-button {
   padding: 0 14px;
   background: var(--accent-primary);

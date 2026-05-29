@@ -31,12 +31,10 @@ export interface OutputPreset {
   height: number;
 }
 
-export interface GenerationOptions {
-  model: {
-    id: string;
-    label: string;
-    tags: string[];
-  };
+export interface ModelConfig {
+  id: string;
+  label: string;
+  tags: string[];
   promptDefaults: {
     positive: string[];
     negative: string[];
@@ -44,6 +42,15 @@ export interface GenerationOptions {
   categories: GenerationCategory[];
   additionalTagSuggestions: string[];
   outputPresets: OutputPreset[];
+}
+
+export interface GenerationOptions {
+  promptDefaults: {
+    positive: string[];
+    negative: string[];
+  };
+  models: Record<string, ModelConfig>;
+  defaultModelId: string;
 }
 
 export interface GeneratedImage {
@@ -57,6 +64,7 @@ export interface Work {
   name: string;
   status: WorkStatus;
   progress: number;
+  selectedModel: string;
   selections: Record<string, string>;
   selectedPreset: string;
   seed: string;

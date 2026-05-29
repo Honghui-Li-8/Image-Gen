@@ -58,10 +58,11 @@ const App = () => {
         />
 
         <ConfigSidebar
+          activeModel={worksState.activeModel}
           activeWork={worksState.activeWork}
           commitTag={worksState.commitTag}
           customTags={worksState.customTags}
-          options={options}
+          models={options?.models ?? {}}
           optionsStatus={optionsStatus}
           removeTag={worksState.removeTag}
           updateActiveWork={worksState.updateActiveWork}

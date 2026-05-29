@@ -13,13 +13,17 @@ export const createWork = (
   options: GenerationOptions | null,
   index = 1,
 ): Work => {
+  const modelId = options?.defaultModelId || "";
+  const model = modelId ? options?.models[modelId] : null;
+
   return {
     id: `work_${Date.now()}_${index}`,
     name: `Work ${index}`,
     status: "idle",
     progress: 0,
-    selections: buildInitialSelections(options?.categories),
-    selectedPreset: options?.outputPresets?.[0]?.id || "",
+    selectedModel: modelId,
+    selections: buildInitialSelections(model?.categories),
+    selectedPreset: model?.outputPresets?.[0]?.id || "",
     seed: "",
     additionalTags: [],
     tagDraft: "",

@@ -4,6 +4,7 @@ import { getSelectedTags, normalizeTags } from "../utils/tags";
 import type {
   GeneratedImage,
   GenerationOptions,
+  ModelConfig,
   Work,
   WorkUpdater,
 } from "../types";
@@ -14,6 +15,7 @@ type OptionsStatus = "loading" | "ready" | "failed";
 
 interface UseWorksState {
   activeImage: GeneratedImage | undefined;
+  activeModel: ModelConfig | null;
   activeWork: Work | undefined;
   activeWorkId: string;
   addWork: () => void;
@@ -45,9 +47,14 @@ export const useWorks = (
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
+  const activeModel = useMemo((): ModelConfig | null => {
+    if (!options) return null;
+    const modelId = activeWork?.selectedModel || options.defaultModelId;
+    return options.models[modelId] ?? null;
+  }, [options, activeWork?.selectedModel]);
   const selectedTags = useMemo(
-    () => getSelectedTags(options, activeWork?.selections || {}),
-    [options, activeWork?.selections],
+    () => getSelectedTags(activeModel?.categories ?? [], activeWork?.selections || {}),
+    [activeModel?.categories, activeWork?.selections],
   );
   const customTags = useMemo(
     () => normalizeTags(activeWork?.additionalTags),
@@ -208,6 +215,7 @@ export const useWorks = (
 
   return {
     activeImage,
+    activeModel,
     activeWork,
     activeWorkId,
     addWork,
