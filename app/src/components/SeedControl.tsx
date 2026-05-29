@@ -14,7 +14,7 @@ export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
         type="number"
         value={seed || ""}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Random if empty"
+        placeholder="Required"
       />
       <div className="seed-stepper" aria-label="Seed step controls">
         <button

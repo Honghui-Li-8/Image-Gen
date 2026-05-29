@@ -17,10 +17,12 @@ interface ConfigSidebarProps {
   customTags: string[];
   isDirty: boolean;
   isSaving: boolean;
+  missingFieldIds: string[];
   models: Record<string, ModelConfig>;
   onSaveWork: () => void;
   optionsStatus: OptionsStatus;
   removeTag: (tag: string) => void;
+  showGenerationValidation: boolean;
   updateActiveWork: (updater: WorkUpdater) => void;
 }
 
@@ -67,13 +69,16 @@ export const ConfigSidebar = ({
   customTags,
   isDirty,
   isSaving,
+  missingFieldIds,
   models,
   onSaveWork,
   optionsStatus,
   removeTag,
+  showGenerationValidation,
   updateActiveWork,
 }: ConfigSidebarProps) => {
   const modelEntries = Object.values(models);
+  const missingFields = new Set(missingFieldIds);
 
   return (
     <aside className="config-sidebar">
@@ -129,9 +134,21 @@ export const ConfigSidebar = ({
                 groups.map(([group, categories]) => (
                   <ConfigGroup key={group} title={group}>
                     {categories.map((category) => (
-                      <label className="field" key={category.id}>
+                      <label
+                        className={`field ${
+                          showGenerationValidation && missingFields.has(category.id)
+                            ? "field--error"
+                            : ""
+                        }`}
+                        key={category.id}
+                      >
                         <span>{category.label}</span>
                         <select
+                          className={
+                            activeWork?.selections?.[category.id]
+                              ? ""
+                              : "select-placeholder"
+                          }
                           value={activeWork?.selections?.[category.id] || ""}
                           onChange={(event) =>
                             updateActiveWork((work) => ({
@@ -178,9 +195,18 @@ export const ConfigSidebar = ({
               />
             </ConfigGroup>
 
-            <label className="field">
+            <label
+              className={`field ${
+                showGenerationValidation && missingFields.has("selectedPreset")
+                  ? "field--error"
+                  : ""
+              }`}
+            >
               <span>Output Size</span>
               <select
+                className={
+                  activeWork?.selectedPreset ? "" : "select-placeholder"
+                }
                 value={activeWork?.selectedPreset || ""}
                 onChange={(event) =>
                   updateActiveWork({ selectedPreset: event.target.value })
@@ -199,7 +225,13 @@ export const ConfigSidebar = ({
       </div>
 
       <div className="prompt-dock">
-        <label className="field seed-dock-row">
+        <label
+          className={`field seed-dock-row ${
+            showGenerationValidation && missingFields.has("seed")
+              ? "field--error"
+              : ""
+          }`}
+        >
           <span>Seed</span>
           <SeedControl
             seed={activeWork?.seed}

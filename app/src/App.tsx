@@ -42,7 +42,6 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     <main className="creator-shell">
       <TopBar
         activeWork={worksState.activeWork}
-        canGenerate={worksState.canGenerate}
         isGenerating={worksState.isGenerating}
         isLoadingWorks={worksState.isLoadingWorks}
         isSaving={worksState.isSaving}
@@ -89,10 +88,12 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           customTags={worksState.customTags}
           isDirty={worksState.isDirty}
           isSaving={worksState.isSaving}
+          missingFieldIds={worksState.missingFieldIds}
           models={options?.models ?? {}}
           onSaveWork={worksState.saveWorks}
           optionsStatus={optionsStatus}
           removeTag={worksState.removeTag}
+          showGenerationValidation={worksState.showGenerationValidation}
           updateActiveWork={worksState.updateActiveWork}
         />
       </div>

@@ -64,6 +64,8 @@ interface UseWorksState {
   isLoadingWorks: boolean;
   isSaving: boolean;
   canGenerate: boolean;
+  missingFieldIds: string[];
+  showGenerationValidation: boolean;
   moveImage: (offset: number) => void;
   removeTag: (tagToRemove: string) => void;
   saveWorks: () => void;
@@ -135,6 +137,7 @@ export const useWorks = (
   const [isLoadingWorks, setIsLoadingWorks] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showGenerationValidation, setShowGenerationValidation] = useState(false);
   const [worksError, setWorksError] = useState("");
   const generationSourceRef = useRef<EventSource | null>(null);
 
@@ -155,11 +158,21 @@ export const useWorks = (
   const activeImage = activeWork?.images?.[activeWork.activeImageIndex];
   const isGenerating =
     activeWork?.status === "queued" || activeWork?.status === "running";
+  const missingFieldIds = useMemo(() => {
+    if (!activeWork || !activeModel) return [];
+
+    const missingCategoryIds = activeModel.categories
+      .filter((category) => !activeWork.selections[category.id])
+      .map((category) => category.id);
+
+    return [
+      ...missingCategoryIds,
+      ...(activeWork.selectedPreset ? [] : ["selectedPreset"]),
+      ...(activeWork.seed.trim() ? [] : ["seed"]),
+    ];
+  }, [activeModel, activeWork]);
   const canGenerate = Boolean(
-    activeWork &&
-      activeModel &&
-      activeWork.selectedPreset &&
-      activeModel.categories.every((category) => activeWork.selections[category.id]),
+    activeWork && activeModel && missingFieldIds.length === 0,
   );
 
   const handleApiError = useCallback(
@@ -387,6 +400,7 @@ export const useWorks = (
 
     const runGeneration = async () => {
       closeGenerationStream();
+      setShowGenerationValidation(false);
       setWorksError("");
       updateWorkById(workId, { status: "queued", progress: 0 });
 
@@ -487,7 +501,10 @@ export const useWorks = (
       return;
     }
 
-    if (!canGenerate) return;
+    if (!canGenerate) {
+      setShowGenerationValidation(true);
+      return;
+    }
     startGeneration();
   }, [canGenerate, isGenerating, startGeneration]);
 
@@ -531,6 +548,8 @@ export const useWorks = (
     isLoadingWorks,
     isSaving,
     canGenerate,
+    missingFieldIds,
+    showGenerationValidation,
     moveImage,
     removeTag,
     saveWorks,

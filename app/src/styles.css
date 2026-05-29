@@ -761,6 +761,21 @@ select option {
   background: var(--control);
 }
 
+select.select-placeholder {
+  color: var(--text-hint);
+}
+
+.field--error > span {
+  color: var(--status-danger);
+}
+
+.field--error select,
+.field--error input,
+.field--error .seed-button,
+.field--error .seed-stepper {
+  border-color: var(--status-danger);
+}
+
 select,
 input {
   min-height: 30px;

@@ -3,7 +3,6 @@ import type { GenerationOptions, ServerStatus, Theme, Work } from "../types";
 
 interface TopBarProps {
   activeWork: Work | undefined;
-  canGenerate: boolean;
   isGenerating: boolean;
   isLoadingWorks: boolean;
   isSaving: boolean;
@@ -16,7 +15,6 @@ interface TopBarProps {
 
 export const TopBar = ({
   activeWork,
-  canGenerate,
   isGenerating,
   isLoadingWorks,
   isSaving,
@@ -51,7 +49,7 @@ export const TopBar = ({
           className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
           type="button"
           disabled={
-            isLoadingWorks || isSaving || !options || (!isGenerating && !canGenerate)
+            isLoadingWorks || isSaving || !options
           }
           onClick={onGenerationAction}
         >

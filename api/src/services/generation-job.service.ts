@@ -4,6 +4,7 @@ import { generationEmitter } from "../db/emitter.js";
 import { db } from "../db/index.js";
 import { generations } from "../db/schema.js";
 import type { Generation, GenerationStatus } from "../db/schema.js";
+import { logger } from "../utils/logger.js";
 
 export const GENERATION_UPDATE_EVENT = "generation:update";
 
@@ -96,6 +97,11 @@ export const createQueuedGeneration = async ({
 
 export const emitGenerationUpdate = (event: GenerationUpdateEvent): void => {
   generationEmitter.emit(GENERATION_UPDATE_EVENT, event);
+  logger.debug("generation.progress.emitted", {
+    generationId: event.generationId,
+    progress: event.progress,
+    status: event.status,
+  });
 };
 
 export const updateGenerationStatus = async ({
@@ -131,6 +137,11 @@ export const updateGenerationStatus = async ({
     imageUrl: generation.imageUrl,
     error: generation.error,
   });
+  logger.info("generation.status.updated", {
+    generationId,
+    progress,
+    status,
+  });
 
   return generation;
 };
@@ -152,6 +163,7 @@ export const runStubGeneration = async (generationId: string): Promise<void> => 
       progress: 100,
       imageUrl: null,
     });
+    logger.info("generation.stub.completed", { generationId });
   } catch (error) {
     try {
       await updateGenerationStatus({
@@ -159,6 +171,10 @@ export const runStubGeneration = async (generationId: string): Promise<void> => 
         status: "failed",
         progress: 100,
         error: error instanceof Error ? error.message : "Generation failed",
+      });
+      logger.error("generation.stub.failed", {
+        error: error instanceof Error ? error.message : "Generation failed",
+        generationId,
       });
     } catch {
       // The work may have been deleted while the stub worker was running.

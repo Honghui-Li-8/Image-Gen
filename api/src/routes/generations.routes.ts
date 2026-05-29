@@ -17,6 +17,7 @@ import type {
   GenerationRequestConfig,
   GenerationUpdateEvent,
 } from "../services/generation-job.service.js";
+import { logger } from "../utils/logger.js";
 
 const MAX_IN_FLIGHT_GENERATIONS = 3;
 
@@ -80,24 +81,47 @@ generationsRouter.post(
   "/works/:workId/generations",
   authMiddleware,
   async (req: Request, res: Response) => {
+    const startedAt = Date.now();
+    const requestedWorkId = req.params.workId as string;
+    logger.info("generation.create.requested", {
+      userId: req.userId,
+      workId: requestedWorkId,
+    });
+
     const [work] = await db
       .select()
       .from(works)
-      .where(eq(works.id, req.params.workId as string));
+      .where(eq(works.id, requestedWorkId));
 
     if (!work || work.userId !== req.userId) {
+      logger.warn("generation.create.rejected", {
+        reason: "work_not_found",
+        userId: req.userId,
+        workId: requestedWorkId,
+      });
       res.status(404).json({ error: "Not found" });
       return;
     }
 
     const config = parseGenerationConfig(req.body);
     if (!config) {
+      logger.warn("generation.create.rejected", {
+        reason: "invalid_body",
+        userId: req.userId,
+        workId: work.id,
+      });
       res.status(400).json({ error: "Invalid generation request" });
       return;
     }
 
     const inFlightCount = await countInFlightGenerations(req.userId);
     if (inFlightCount >= MAX_IN_FLIGHT_GENERATIONS) {
+      logger.warn("generation.create.rejected", {
+        inFlightCount,
+        reason: "queue_limit",
+        userId: req.userId,
+        workId: work.id,
+      });
       res.status(429).json({ error: "Too many active generations" });
       return;
     }
@@ -107,14 +131,31 @@ generationsRouter.post(
       userId: req.userId,
       config,
     });
+    logger.info("generation.created", {
+      generationId: generation.id,
+      status: generation.status,
+      userId: req.userId,
+      workId: work.id,
+    });
 
     await db
       .update(works)
       .set({ activeGenerationId: generation.id, updatedAt: new Date() })
       .where(eq(works.id, work.id));
 
+    logger.info("generation.worker.started", {
+      generationId: generation.id,
+      userId: req.userId,
+      workId: work.id,
+    });
     void runStubGeneration(generation.id);
 
+    logger.info("generation.create.accepted", {
+      durationMs: Date.now() - startedAt,
+      generationId: generation.id,
+      userId: req.userId,
+      workId: work.id,
+    });
     res.status(202).json({
       generationId: generation.id,
       status: generation.status,
@@ -125,10 +166,16 @@ generationsRouter.post(
 generationsRouter.get(
   "/generations/:generationId/status",
   async (req: Request, res: Response) => {
+    const generationId = req.params.generationId as string;
+    const startedAt = Date.now();
     const token = getRequestToken(req);
     const userId = token ? resolveTokenUserId(token) : null;
 
     if (!userId) {
+      logger.warn("generation.sse.rejected", {
+        generationId,
+        reason: "unauthorized",
+      });
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
@@ -136,9 +183,14 @@ generationsRouter.get(
     const [generation] = await db
       .select()
       .from(generations)
-      .where(eq(generations.id, req.params.generationId as string));
+      .where(eq(generations.id, generationId));
 
     if (!generation || generation.userId !== userId) {
+      logger.warn("generation.sse.rejected", {
+        generationId,
+        reason: "generation_not_found",
+        userId,
+      });
       res.status(404).json({ error: "Not found" });
       return;
     }
@@ -149,6 +201,11 @@ generationsRouter.get(
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders?.();
 
+    logger.info("generation.sse.opened", {
+      generationId: generation.id,
+      status: generation.status,
+      userId,
+    });
     writeSseEvent(res, "status", {
       generationId: generation.id,
       status: generation.status,
@@ -157,6 +214,12 @@ generationsRouter.get(
     });
 
     if (isTerminalGenerationStatus(generation.status)) {
+      logger.info("generation.sse.terminal_sent", {
+        durationMs: Date.now() - startedAt,
+        generationId: generation.id,
+        status: generation.status,
+        userId,
+      });
       res.end();
       return;
     }
@@ -169,6 +232,11 @@ generationsRouter.get(
       closed = true;
       clearInterval(pingInterval);
       generationEmitter.off(GENERATION_UPDATE_EVENT, onGenerationUpdate);
+      logger.info("generation.sse.closed", {
+        durationMs: Date.now() - startedAt,
+        generationId: generation.id,
+        userId,
+      });
     };
 
     const onGenerationUpdate = (event: GenerationUpdateEvent) => {
@@ -177,6 +245,12 @@ generationsRouter.get(
       }
 
       writeSseEvent(res, "status", event);
+      logger.debug("generation.sse.event_sent", {
+        generationId: event.generationId,
+        progress: event.progress,
+        status: event.status,
+        userId,
+      });
 
       if (isTerminalGenerationStatus(event.status)) {
         cleanup();
