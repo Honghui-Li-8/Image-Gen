@@ -1,6 +1,10 @@
 packages:
   - app
   - api
+
+catalog:
+  typescript: ^5.9.0
+
 allowBuilds:
   esbuild: true
 minimumReleaseAge: 0
