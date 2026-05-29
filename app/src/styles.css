@@ -113,6 +113,27 @@ button:disabled {
   font-weight: 800;
 }
 
+.password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.password-field input {
+  border-radius: 8px 0 0 8px;
+}
+
+.password-field button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: var(--panel-soft);
+  color: var(--text-value);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
 .creator-shell {
   display: grid;
   grid-template-rows: 64px minmax(0, 1fr);

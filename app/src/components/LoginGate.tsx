@@ -20,6 +20,7 @@ export const LoginGate = ({
   }, []);
   const [name, setName] = useState(credentialsFromUrl.name);
   const [password, setPassword] = useState(credentialsFromUrl.password);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <main className="login-shell">
@@ -46,12 +47,21 @@ export const LoginGate = ({
 
         <label className="field">
           <span>Password</span>
-          <input
-            autoComplete="current-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <div className="password-field">
+            <input
+              autoComplete="current-password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <button
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              type="button"
+              onClick={() => setShowPassword((isVisible) => !isVisible)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </label>
 
         {loginError ? <p className="error-text">{loginError}</p> : null}
