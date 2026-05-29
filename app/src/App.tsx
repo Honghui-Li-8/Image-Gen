@@ -67,7 +67,6 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           onToggleCollapse={() =>
             setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)
           }
-          onSaveWorks={worksState.saveWorks}
           onSelectWork={worksState.setActiveWorkId}
           username={session.name}
           works={worksState.works}
@@ -88,7 +87,10 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           activeWork={worksState.activeWork}
           commitTag={worksState.commitTag}
           customTags={worksState.customTags}
+          isDirty={worksState.isDirty}
+          isSaving={worksState.isSaving}
           models={options?.models ?? {}}
+          onSaveWork={worksState.saveWorks}
           optionsStatus={optionsStatus}
           removeTag={worksState.removeTag}
           updateActiveWork={worksState.updateActiveWork}

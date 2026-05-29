@@ -484,10 +484,6 @@ p {
   padding: 10px 8px;
 }
 
-.save-button--hidden {
-  display: none;
-}
-
 .gallery-stage {
   display: grid;
   grid-template-rows: minmax(0, 1fr) 96px;
@@ -666,6 +662,17 @@ p {
   color: var(--text-value);
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.config-save-button {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--accent-primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .generate-button {

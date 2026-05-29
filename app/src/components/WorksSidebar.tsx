@@ -8,7 +8,6 @@ interface WorksSidebarProps {
   isSaving: boolean;
   onLogout: () => void;
   onAddWork: () => void;
-  onSaveWorks: () => void;
   onSelectWork: (workId: string) => void;
   onToggleCollapse: () => void;
   username: string;
@@ -24,7 +23,6 @@ export const WorksSidebar = ({
   isSaving,
   onLogout,
   onAddWork,
-  onSaveWorks,
   onSelectWork,
   onToggleCollapse,
   username,
@@ -100,14 +98,6 @@ export const WorksSidebar = ({
             </button>
           </>
         )}
-        <button
-          className="save-button save-button--hidden"
-          type="button"
-          disabled={isLoading || isSaving || !isDirty}
-          onClick={onSaveWorks}
-        >
-          Save
-        </button>
       </div>
     </aside>
   );

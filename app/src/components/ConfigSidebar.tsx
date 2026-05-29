@@ -15,7 +15,10 @@ interface ConfigSidebarProps {
   activeWork: Work | undefined;
   commitTag: () => void;
   customTags: string[];
+  isDirty: boolean;
+  isSaving: boolean;
   models: Record<string, ModelConfig>;
+  onSaveWork: () => void;
   optionsStatus: OptionsStatus;
   removeTag: (tag: string) => void;
   updateActiveWork: (updater: WorkUpdater) => void;
@@ -62,7 +65,10 @@ export const ConfigSidebar = ({
   activeWork,
   commitTag,
   customTags,
+  isDirty,
+  isSaving,
   models,
+  onSaveWork,
   optionsStatus,
   removeTag,
   updateActiveWork,
@@ -73,6 +79,14 @@ export const ConfigSidebar = ({
     <aside className="config-sidebar">
       <div className="config-header">
         <h2>Configuration</h2>
+        <button
+          className="config-save-button"
+          type="button"
+          disabled={!isDirty || isSaving || !activeWork}
+          onClick={onSaveWork}
+        >
+          {isSaving ? "Saving" : "Save"}
+        </button>
         {modelEntries.length > 0 ? (
           <select
             className="model-select"
