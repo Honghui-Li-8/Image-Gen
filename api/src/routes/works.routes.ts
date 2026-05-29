@@ -1,4 +1,6 @@
 import { asc, eq } from "drizzle-orm";
+import { createId } from "@paralleldrive/cuid2";
+import { generationOptions } from "image-gen-shared";
 import type { Request, Response } from "express";
 import { Router } from "express";
 import { db } from "../db/index.js";
@@ -48,8 +50,43 @@ worksRouter.get("/works/:id", async (req: Request, res: Response) => {
   res.json(result);
 });
 
-worksRouter.post("/works", (_req: Request, res: Response) => {
-  res.status(501).json({ error: "Not implemented" });
+worksRouter.post("/works", async (req: Request, res: Response) => {
+  const body = req.body as { name?: string; duplicateFromId?: string };
+
+  // create mode
+  const defaultModel = generationOptions.models[generationOptions.defaultModelId];
+  const defaultPreset = defaultModel.outputPresets[0].id;
+
+  const existingWorks = await db
+    .select()
+    .from(works)
+    .where(eq(works.userId, req.userId));
+
+  const config: WorkConfig = {
+    selectedModel: generationOptions.defaultModelId,
+    selections: {},
+    selectedPreset: defaultPreset,
+    seed: "",
+    additionalTags: [],
+    additionalPrompt: "",
+  };
+
+  const now = new Date();
+  const id = createId();
+  const name = body.name ?? `Work ${existingWorks.length + 1}`;
+
+  await db.insert(works).values({
+    id,
+    userId: req.userId,
+    name,
+    config,
+    activeGenerationId: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  const [newWork] = await db.select().from(works).where(eq(works.id, id));
+  res.status(201).json(newWork);
 });
 
 worksRouter.patch("/works/:id", (_req: Request, res: Response) => {

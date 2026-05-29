@@ -172,3 +172,38 @@ describe("GET /works/:id", () => {
     expect(res.status).toBe(404);
   });
 });
+
+// ---------------------------------------------------------------------------
+// POST /works — create mode
+// ---------------------------------------------------------------------------
+
+describe("POST /works — create mode", () => {
+  it("returns 201 with a CUID2 id and createdAt", async () => {
+    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    expect(res.status).toBe(201);
+    expect(typeof res.body.id).toBe("string");
+    expect(res.body.id.length).toBeGreaterThan(0);
+    expect(res.body.createdAt).toBeDefined();
+  });
+
+  it("sets createdAt and updatedAt to the same value", async () => {
+    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    expect(res.body.createdAt).toBe(res.body.updatedAt);
+  });
+
+  it("defaults name to Work 1 when not provided", async () => {
+    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    expect(res.body.name).toBe("Work 1");
+  });
+
+  it("uses provided name when given", async () => {
+    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({ name: "My Work" });
+    expect(res.body.name).toBe("My Work");
+  });
+
+  it("returns config.selections = {} and correct defaultModelId", async () => {
+    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    expect(res.body.config.selections).toEqual({});
+    expect(res.body.config.selectedModel).toBe("illustrious-xl");
+  });
+});
