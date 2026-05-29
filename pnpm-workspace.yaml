@@ -7,5 +7,7 @@ catalog:
   typescript: ^5.9.0
 
 allowBuilds:
+  bcrypt: true
+  better-sqlite3: true
   esbuild: true
 minimumReleaseAge: 0
