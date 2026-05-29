@@ -140,6 +140,17 @@ describe("GET /works", () => {
     expect(res.body).toEqual([]);
   });
 
+  it("returns all works for the user when multiple exist", async () => {
+    await insertWork(aliceId, { name: "Work A" });
+    await insertWork(aliceId, { name: "Work B" });
+    const res = await request(app).get("/works").set("Authorization", `Bearer ${aliceToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    const names = res.body.map((w: { name: string }) => w.name);
+    expect(names).toContain("Work A");
+    expect(names).toContain("Work B");
+  });
+
   it("response items do not contain a generations field", async () => {
     await insertWork(aliceId);
     const res = await request(app).get("/works").set("Authorization", `Bearer ${aliceToken}`);
