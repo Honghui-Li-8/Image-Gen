@@ -157,8 +157,51 @@ worksRouter.post("/works", async (req: Request, res: Response) => {
   res.status(201).json(newWork);
 });
 
-worksRouter.patch("/works/:id", (_req: Request, res: Response) => {
-  res.status(501).json({ error: "Not implemented" });
+worksRouter.patch("/works/:id", async (req: Request, res: Response) => {
+  const [work] = await db
+    .select()
+    .from(works)
+    .where(eq(works.id, req.params.id as string));
+
+  if (!work || work.userId !== req.userId) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  const body = req.body as {
+    name?: string;
+    config?: Partial<WorkConfig>;
+    activeGenerationId?: string;
+  };
+
+  if (body.activeGenerationId !== undefined) {
+    const [gen] = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.id, body.activeGenerationId));
+
+    if (!gen) {
+      res.status(404).json({ error: "Generation not found" });
+      return;
+    }
+    if (gen.workId !== work.id) {
+      res.status(400).json({ error: "Generation does not belong to this work" });
+      return;
+    }
+  }
+
+  const mergedConfig = body.config
+    ? { ...(work.config as WorkConfig), ...body.config }
+    : (work.config as WorkConfig);
+
+  const patch: Record<string, unknown> = { config: mergedConfig, updatedAt: new Date() };
+  if (body.name !== undefined) patch.name = body.name;
+  if (body.activeGenerationId !== undefined) patch.activeGenerationId = body.activeGenerationId;
+
+  await db.update(works).set(patch).where(eq(works.id, work.id));
+
+  const [updated] = await db.select().from(works).where(eq(works.id, work.id));
+  res.json(updated);
 });
 
 worksRouter.delete("/works/:id", (_req: Request, res: Response) => {

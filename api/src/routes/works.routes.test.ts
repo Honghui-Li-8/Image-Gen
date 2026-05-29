@@ -4,6 +4,7 @@ import express from "express";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
 import { tokenStore } from "../db/token-store.js";
 import { generations, users, works } from "../db/schema.js";
 import type { WorkConfig } from "./works.routes.js";
@@ -265,13 +266,7 @@ describe("POST /works — duplicate mode", () => {
   it("remaps activeGenerationId to the copied generation id", async () => {
     const sourceId = await insertWork(aliceId);
     const genId = await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
-    await insertWork(aliceId, { activeGenerationId: genId });
-
-    // set activeGenerationId on source work directly
-    const { db: testDb } = await import("../db/index.js");
-    await (testDb as any).update(works).set({ activeGenerationId: genId }).where(
-      (await import("drizzle-orm")).eq(works.id, sourceId)
-    );
+    await db.update(works).set({ activeGenerationId: genId }).where(eq(works.id, sourceId));
 
     const res = await request(app)
       .post("/works")
@@ -285,10 +280,7 @@ describe("POST /works — duplicate mode", () => {
   it("sets activeGenerationId to null when source active generation is in-flight", async () => {
     const sourceId = await insertWork(aliceId);
     const genId = await insertGeneration(sourceId, aliceId, "running");
-    const { db: testDb } = await import("../db/index.js");
-    await (testDb as any).update(works).set({ activeGenerationId: genId }).where(
-      (await import("drizzle-orm")).eq(works.id, sourceId)
-    );
+    await db.update(works).set({ activeGenerationId: genId }).where(eq(works.id, sourceId));
 
     const res = await request(app)
       .post("/works")
@@ -314,5 +306,85 @@ describe("POST /works — duplicate mode", () => {
       .set("Authorization", `Bearer ${aliceToken}`)
       .send({ duplicateFromId: "nonexistent" });
     expect(res.status).toBe(404);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PATCH /works/:id
+// ---------------------------------------------------------------------------
+
+describe("PATCH /works/:id", () => {
+  it("updates only the provided fields and leaves others unchanged", async () => {
+    const workId = await insertWork(aliceId, { name: "Original" });
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ name: "Renamed" });
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe("Renamed");
+    expect(res.body.config).toEqual(DEFAULT_CONFIG);
+  });
+
+  it("advances updatedAt on every patch", async () => {
+    const workId = await insertWork(aliceId);
+    // Backdate updatedAt so it is clearly before the patch regardless of second precision
+    const oldDate = new Date("2000-01-01T00:00:00.000Z");
+    await db.update(works).set({ updatedAt: oldDate }).where(eq(works.id, workId));
+
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ name: "Updated" });
+
+    expect(new Date(res.body.updatedAt).getTime()).toBeGreaterThan(oldDate.getTime());
+  });
+
+  it("shallow-merges config: replaces provided keys, preserves others", async () => {
+    const workId = await insertWork(aliceId);
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ config: { selections: { bodyType: "athletic" } } });
+    expect(res.body.config.selections).toEqual({ bodyType: "athletic" });
+    expect(res.body.config.selectedModel).toBe("illustrious-xl");
+  });
+
+  it("returns 404 for an unknown id", async () => {
+    const res = await request(app)
+      .patch("/works/nonexistent")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ name: "X" });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for another user's work", async () => {
+    const workId = await insertWork(aliceId);
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ name: "X" });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 400 when activeGenerationId belongs to a different work", async () => {
+    const workId = await insertWork(aliceId);
+    const otherWorkId = await insertWork(aliceId);
+    const genId = await insertGeneration(otherWorkId, aliceId, "completed");
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ activeGenerationId: genId });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Generation does not belong to this work");
+  });
+
+  it("returns 404 when activeGenerationId does not exist", async () => {
+    const workId = await insertWork(aliceId);
+    const res = await request(app)
+      .patch(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ activeGenerationId: "nonexistent" });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Generation not found");
   });
 });
