@@ -27,7 +27,13 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     onUnauthorized,
   );
   const { theme, toggleTheme } = useTheme();
-  const worksState = useWorks(options, optionsStatus);
+  const worksState = useWorks(
+    API_URL,
+    session.token,
+    options,
+    optionsStatus,
+    onUnauthorized,
+  );
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
   const serverStatus = worksState.isGenerating ? "working" : health.status;

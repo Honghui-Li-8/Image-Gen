@@ -1,17 +1,40 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createWork } from "../utils/works";
+import { ApiError, apiFetch } from "../utils/api";
 import { getSelectedTags, normalizeTags } from "../utils/tags";
 import type {
   GeneratedImage,
   GenerationOptions,
   ModelConfig,
   Work,
+  WorkStatus,
   WorkUpdater,
 } from "../types";
 
-const WORKS_STORAGE_KEY = "image-gen-works";
-
 type OptionsStatus = "loading" | "ready" | "failed";
+
+interface BackendWorkConfig {
+  selectedModel: string;
+  selections: Record<string, string>;
+  selectedPreset: string;
+  seed: string;
+  additionalTags: string[];
+  additionalPrompt: string;
+}
+
+interface BackendGeneration {
+  id: string;
+  status: Exclude<WorkStatus, "idle">;
+  imageUrl: string | null;
+}
+
+interface BackendWork {
+  id: string;
+  name: string;
+  config: BackendWorkConfig;
+  activeGenerationId: string | null;
+  updatedAt: string;
+  generations?: BackendGeneration[];
+}
 
 interface UseWorksState {
   activeImage: GeneratedImage | undefined;
@@ -25,6 +48,8 @@ interface UseWorksState {
   handleGenerationAction: () => void;
   isDirty: boolean;
   isGenerating: boolean;
+  isLoadingWorks: boolean;
+  isSaving: boolean;
   moveImage: (offset: number) => void;
   removeTag: (tagToRemove: string) => void;
   saveWorks: () => void;
@@ -34,17 +59,69 @@ interface UseWorksState {
   showCancelModal: boolean;
   updateActiveWork: (updater: WorkUpdater) => void;
   works: Work[];
+  worksError: string;
 }
 
+const generationToImage = (generation: BackendGeneration): GeneratedImage | null => {
+  if (!generation.imageUrl) return null;
+
+  return {
+    id: generation.id,
+    url: generation.imageUrl,
+    alt: "Generated anime character",
+  };
+};
+
+const mapBackendWork = (backendWork: BackendWork): Work => {
+  const generations = backendWork.generations ?? [];
+  const activeGeneration = generations.find(
+    (generation) => generation.id === backendWork.activeGenerationId,
+  );
+  const images = generations
+    .map(generationToImage)
+    .filter((image): image is GeneratedImage => image !== null);
+
+  return {
+    id: backendWork.id,
+    name: backendWork.name,
+    status: activeGeneration?.status ?? "idle",
+    progress: activeGeneration?.status === "completed" ? 100 : 0,
+    selectedModel: backendWork.config.selectedModel,
+    selections: backendWork.config.selections,
+    selectedPreset: backendWork.config.selectedPreset,
+    seed: backendWork.config.seed,
+    additionalTags: backendWork.config.additionalTags,
+    tagDraft: "",
+    additionalPrompt: backendWork.config.additionalPrompt,
+    images,
+    activeImageIndex: Math.max(0, images.length - 1),
+    savedAt: backendWork.updatedAt,
+  };
+};
+
+const buildWorkConfig = (work: Work): BackendWorkConfig => ({
+  selectedModel: work.selectedModel,
+  selections: work.selections,
+  selectedPreset: work.selectedPreset,
+  seed: work.seed,
+  additionalTags: normalizeTags(work.additionalTags),
+  additionalPrompt: work.additionalPrompt,
+});
+
 export const useWorks = (
+  apiUrl: string,
+  token: string,
   options: GenerationOptions | null,
   optionsStatus: OptionsStatus,
+  onUnauthorized: () => void,
 ): UseWorksState => {
   const [works, setWorks] = useState<Work[]>([]);
   const [activeWorkId, setActiveWorkId] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [isLoadingWorks, setIsLoadingWorks] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const [worksError, setWorksError] = useState("");
 
   const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
   const activeModel = useMemo((): ModelConfig | null => {
@@ -64,19 +141,82 @@ export const useWorks = (
   const isGenerating =
     activeWork?.status === "queued" || activeWork?.status === "running";
 
+  const handleApiError = useCallback(
+    (error: unknown, fallbackMessage: string) => {
+      if (error instanceof ApiError && error.status === 401) {
+        onUnauthorized();
+        return;
+      }
+
+      setWorksError(error instanceof Error ? error.message : fallbackMessage);
+    },
+    [onUnauthorized],
+  );
+
+  const loadWorkDetails = useCallback(
+    async (workList: BackendWork[]) => {
+      const detailedWorks = await Promise.all(
+        workList.map(async (work) => {
+          const response = await apiFetch(`${apiUrl}/works/${work.id}`, { token });
+          return (await response.json()) as BackendWork;
+        }),
+      );
+
+      return detailedWorks.map(mapBackendWork);
+    },
+    [apiUrl, token],
+  );
+
   useEffect(() => {
-    if (hasInitialized || optionsStatus === "loading") return;
+    if (optionsStatus === "loading") return undefined;
 
-    const savedWorks = JSON.parse(
-      window.localStorage.getItem(WORKS_STORAGE_KEY) || "[]",
-    ) as Work[];
-    const initialWorks =
-      savedWorks.length > 0 ? savedWorks : [createWork(options)];
+    let ignore = false;
 
-    setWorks(initialWorks);
-    setActiveWorkId(initialWorks[0]?.id || "");
-    setHasInitialized(true);
-  }, [hasInitialized, options, optionsStatus]);
+    const loadWorks = async () => {
+      setIsLoadingWorks(true);
+      setWorksError("");
+
+      try {
+        const response = await apiFetch(`${apiUrl}/works`, { token });
+        const backendWorks = (await response.json()) as BackendWork[];
+
+        const sourceWorks =
+          backendWorks.length > 0
+            ? backendWorks
+            : [
+                (await (
+                  await apiFetch(`${apiUrl}/works`, {
+                    method: "POST",
+                    body: JSON.stringify({}),
+                    token,
+                  })
+                ).json()) as BackendWork,
+              ];
+
+        const mappedWorks = await loadWorkDetails(sourceWorks);
+
+        if (!ignore) {
+          setWorks(mappedWorks);
+          setActiveWorkId(mappedWorks[0]?.id || "");
+          setIsDirty(false);
+        }
+      } catch (error) {
+        if (!ignore) {
+          handleApiError(error, "Could not load works");
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingWorks(false);
+        }
+      }
+    };
+
+    void loadWorks();
+
+    return () => {
+      ignore = true;
+    };
+  }, [apiUrl, handleApiError, loadWorkDetails, optionsStatus, token]);
 
   const updateActiveWork = useCallback(
     (updater: WorkUpdater) => {
@@ -94,22 +234,70 @@ export const useWorks = (
   );
 
   const saveWorks = useCallback(() => {
-    const savedAt = new Date().toISOString();
-    const nextWorks = works.map((work) =>
-      work.id === activeWork?.id ? { ...work, savedAt } : work,
-    );
+    if (!activeWork || isSaving) return;
 
-    window.localStorage.setItem(WORKS_STORAGE_KEY, JSON.stringify(nextWorks));
-    setWorks(nextWorks);
-    setIsDirty(false);
-  }, [activeWork?.id, works]);
+    const saveActiveWork = async () => {
+      setIsSaving(true);
+      setWorksError("");
+
+      try {
+        const response = await apiFetch(`${apiUrl}/works/${activeWork.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: activeWork.name,
+            config: buildWorkConfig(activeWork),
+          }),
+          token,
+        });
+        const savedWork = mapBackendWork((await response.json()) as BackendWork);
+
+        setWorks((currentWorks) =>
+          currentWorks.map((work) =>
+            work.id === savedWork.id
+              ? {
+                  ...savedWork,
+                  status: work.status,
+                  progress: work.progress,
+                  images: work.images,
+                  activeImageIndex: work.activeImageIndex,
+                }
+              : work,
+          ),
+        );
+        setIsDirty(false);
+      } catch (error) {
+        handleApiError(error, "Could not save work");
+      } finally {
+        setIsSaving(false);
+      }
+    };
+
+    void saveActiveWork();
+  }, [activeWork, apiUrl, handleApiError, isSaving, token]);
 
   const addWork = useCallback(() => {
-    const nextWork = createWork(options, works.length + 1);
-    setWorks((currentWorks) => [...currentWorks, nextWork]);
-    setActiveWorkId(nextWork.id);
-    setIsDirty(true);
-  }, [options, works.length]);
+    const createBackendWork = async () => {
+      setWorksError("");
+
+      try {
+        const response = await apiFetch(`${apiUrl}/works`, {
+          method: "POST",
+          body: JSON.stringify({}),
+          token,
+        });
+        const backendWork = (await response.json()) as BackendWork;
+        const [nextWork] = await loadWorkDetails([backendWork]);
+
+        setWorks((currentWorks) => [...currentWorks, nextWork]);
+        setActiveWorkId(nextWork.id);
+        setIsDirty(false);
+      } catch (error) {
+        handleApiError(error, "Could not create work");
+      }
+    };
+
+    void createBackendWork();
+  }, [apiUrl, handleApiError, loadWorkDetails, token]);
 
   const moveImage = useCallback(
     (offset: number) => {
@@ -157,23 +345,11 @@ export const useWorks = (
     [updateActiveWork],
   );
 
-  const startGeneration = useCallback(() => {
-    if (!activeWork || !options) return;
-
-    updateActiveWork({
-      status: "queued",
-      progress: 8,
-    });
-  }, [activeWork, options, updateActiveWork]);
-
   const handleGenerationAction = useCallback(() => {
     if (isGenerating) {
       setShowCancelModal(true);
-      return;
     }
-
-    startGeneration();
-  }, [isGenerating, startGeneration]);
+  }, [isGenerating]);
 
   const confirmCancelGeneration = useCallback(() => {
     updateActiveWork({
@@ -182,24 +358,6 @@ export const useWorks = (
     });
     setShowCancelModal(false);
   }, [updateActiveWork]);
-
-  useEffect(() => {
-    if (!isGenerating) return undefined;
-
-    const timer = window.setInterval(() => {
-      updateActiveWork((work) => {
-        if (work.status !== "queued" && work.status !== "running") return work;
-
-        return {
-          ...work,
-          status: "running",
-          progress: Math.min(94, work.progress + 4),
-        };
-      });
-    }, 1200);
-
-    return () => window.clearInterval(timer);
-  }, [isGenerating, activeWork?.id, updateActiveWork]);
 
   useEffect(() => {
     const handleSaveShortcut = (event: KeyboardEvent) => {
@@ -225,6 +383,8 @@ export const useWorks = (
     handleGenerationAction,
     isDirty,
     isGenerating,
+    isLoadingWorks,
+    isSaving,
     moveImage,
     removeTag,
     saveWorks,
@@ -234,5 +394,6 @@ export const useWorks = (
     showCancelModal,
     updateActiveWork,
     works,
+    worksError,
   };
 };
