@@ -128,6 +128,8 @@ export const ConfigSidebar = ({
               );
             })()}
 
+            <hr className="options-divider" />
+
             <ConfigGroup
               className="tag-group tag-editor--options"
               title={`Additional Tags [ ${customTags.length} ]`}

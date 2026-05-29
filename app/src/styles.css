@@ -740,6 +740,12 @@ button:focus-visible {
   overflow: visible;
 }
 
+.options-divider {
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
 .tag-editor--options {
   width: 100%;
 }
