@@ -1,6 +1,7 @@
 packages:
   - app
   - api
+  - shared
 
 catalog:
   typescript: ^5.9.0

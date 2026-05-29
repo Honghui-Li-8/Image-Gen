@@ -18,7 +18,8 @@
     "@vitejs/plugin-react": "^6.0.2",
     "vite": "^8.0.14",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "image-gen-shared": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

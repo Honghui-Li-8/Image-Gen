@@ -25,6 +25,9 @@ importers:
       express:
         specifier: ^5.2.1
         version: 5.2.1
+      image-gen-shared:
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@types/cors':
         specifier: ^2.8.17
@@ -47,6 +50,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.2
         version: 6.0.2(vite@8.0.14(@types/node@22.19.19)(esbuild@0.28.0)(tsx@4.22.3))
+      image-gen-shared:
+        specifier: workspace:*
+        version: link:../shared
       react:
         specifier: ^19.2.6
         version: 19.2.6
@@ -84,6 +90,12 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.5.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  shared:
+    devDependencies:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
