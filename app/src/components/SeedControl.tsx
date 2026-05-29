@@ -1,0 +1,53 @@
+import { generateSeed, stepSeed } from "../utils/seeds";
+
+interface SeedControlProps {
+  seed: string | undefined;
+  onChange: (seed: string) => void;
+}
+
+export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
+  return (
+    <div className="seed-control">
+      <input
+        inputMode="numeric"
+        min="0"
+        type="number"
+        value={seed || ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Random if empty"
+      />
+      <div className="seed-stepper" aria-label="Seed step controls">
+        <button
+          aria-label="Increase seed by 1"
+          type="button"
+          onClick={() => onChange(stepSeed(seed, 1))}
+        >
+          <svg aria-hidden="true" viewBox="0 0 12 12">
+            <path d="M6 3 3.25 6h5.5L6 3Z" />
+          </svg>
+        </button>
+        <button
+          aria-label="Decrease seed by 1"
+          type="button"
+          onClick={() => onChange(stepSeed(seed, -1))}
+        >
+          <svg aria-hidden="true" viewBox="0 0 12 12">
+            <path d="M6 9 3.25 6h5.5L6 9Z" />
+          </svg>
+        </button>
+      </div>
+      <button
+        aria-label="Generate random seed"
+        className="seed-button"
+        type="button"
+        onClick={() => onChange(generateSeed())}
+      >
+        <svg aria-hidden="true" viewBox="0 -4 32 32">
+          <path d="m24.983 8.539v-2.485h-4.902l-3.672 5.945-2.099 3.414-3.24 5.256c-.326.51-.889.844-1.53.845h-9.54v-3.568h8.538l3.673-5.946 2.099-3.414 3.24-5.256c.325-.509.886-.843 1.525-.845h5.904v-2.485l7.417 4.27-7.417 4.27z" />
+          <path d="m12.902 6.316-.63 1.022-1.468 2.39-2.265-3.675h-8.538v-3.568h9.54c.641.001 1.204.335 1.526.838l.004.007 1.836 2.985z" />
+          <path d="m24.983 24v-2.485h-5.904c-.639-.002-1.201-.336-1.521-.838l-.004-.007-1.836-2.985.63-1.022 1.468-2.39 2.264 3.675h4.902v-2.485l7.417 4.27-7.417 4.27z" />
+        </svg>
+      </button>
+    </div>
+  );
+};

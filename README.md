@@ -47,6 +47,7 @@ By default:
 - React app: `http://localhost:5173`
 - API: `http://localhost:3000`
 - API health check: `http://localhost:3000/health`
+- Generation options: `http://localhost:3000/generation-options`
 
 The React app reads the API base URL from `VITE_API_URL`. If it is not set, it defaults to `http://localhost:3000`.
 
