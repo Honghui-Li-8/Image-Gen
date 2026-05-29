@@ -207,3 +207,112 @@ describe("POST /works — create mode", () => {
     expect(res.body.config.selectedModel).toBe("illustrious-xl");
   });
 });
+
+// ---------------------------------------------------------------------------
+// POST /works — duplicate mode
+// ---------------------------------------------------------------------------
+
+describe("POST /works — duplicate mode", () => {
+  it("returns a new work with a different id but identical config", async () => {
+    const sourceId = await insertWork(aliceId, { name: "Original" });
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+    expect(res.status).toBe(201);
+    expect(res.body.id).not.toBe(sourceId);
+    expect(res.body.config).toEqual(DEFAULT_CONFIG);
+  });
+
+  it("defaults name to Copy of [source name]", async () => {
+    const sourceId = await insertWork(aliceId, { name: "Original" });
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+    expect(res.body.name).toBe("Copy of Original");
+  });
+
+  it("copies terminal generations with new ids and same imageUrls", async () => {
+    const sourceId = await insertWork(aliceId);
+    await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+    await insertGeneration(sourceId, aliceId, "failed");
+
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+
+    expect(res.body.generations).toHaveLength(2);
+    expect(res.body.generations[0].imageUrl).toBe("https://example.com/img.png");
+    expect(res.body.generations.every((g: { workId: string }) => g.workId === res.body.id)).toBe(true);
+  });
+
+  it("skips queued and running generations", async () => {
+    const sourceId = await insertWork(aliceId);
+    await insertGeneration(sourceId, aliceId, "queued");
+    await insertGeneration(sourceId, aliceId, "running");
+    await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+
+    expect(res.body.generations).toHaveLength(1);
+  });
+
+  it("remaps activeGenerationId to the copied generation id", async () => {
+    const sourceId = await insertWork(aliceId);
+    const genId = await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+    await insertWork(aliceId, { activeGenerationId: genId });
+
+    // set activeGenerationId on source work directly
+    const { db: testDb } = await import("../db/index.js");
+    await (testDb as any).update(works).set({ activeGenerationId: genId }).where(
+      (await import("drizzle-orm")).eq(works.id, sourceId)
+    );
+
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+
+    expect(res.body.activeGenerationId).not.toBe(genId);
+    expect(res.body.activeGenerationId).toBe(res.body.generations[0].id);
+  });
+
+  it("sets activeGenerationId to null when source active generation is in-flight", async () => {
+    const sourceId = await insertWork(aliceId);
+    const genId = await insertGeneration(sourceId, aliceId, "running");
+    const { db: testDb } = await import("../db/index.js");
+    await (testDb as any).update(works).set({ activeGenerationId: genId }).where(
+      (await import("drizzle-orm")).eq(works.id, sourceId)
+    );
+
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: sourceId });
+
+    expect(res.body.activeGenerationId).toBeNull();
+    expect(res.body.generations).toHaveLength(0);
+  });
+
+  it("returns 404 when duplicateFromId belongs to a different user", async () => {
+    const sourceId = await insertWork(aliceId);
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${bobToken}`)
+      .send({ duplicateFromId: sourceId });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 when duplicateFromId does not exist", async () => {
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ duplicateFromId: "nonexistent" });
+    expect(res.status).toBe(404);
+  });
+});

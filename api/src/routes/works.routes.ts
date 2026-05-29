@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { generationOptions } from "image-gen-shared";
 import type { Request, Response } from "express";
@@ -52,6 +52,74 @@ worksRouter.get("/works/:id", async (req: Request, res: Response) => {
 
 worksRouter.post("/works", async (req: Request, res: Response) => {
   const body = req.body as { name?: string; duplicateFromId?: string };
+
+  // duplicate mode
+  if (body.duplicateFromId) {
+    const [source] = await db
+      .select()
+      .from(works)
+      .where(eq(works.id, body.duplicateFromId));
+
+    if (!source || source.userId !== req.userId) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const terminalGenerations = await db
+      .select()
+      .from(generations)
+      .where(
+        and(
+          eq(generations.workId, source.id),
+          inArray(generations.status, ["completed", "failed"])
+        )
+      );
+
+    const idMap = new Map<string, string>();
+    for (const g of terminalGenerations) {
+      idMap.set(g.id, createId());
+    }
+
+    const now = new Date();
+    const newWorkId = createId();
+    const newActiveGenerationId = source.activeGenerationId
+      ? (idMap.get(source.activeGenerationId) ?? null)
+      : null;
+
+    await db.insert(works).values({
+      id: newWorkId,
+      userId: req.userId,
+      name: body.name ?? `Copy of ${source.name}`,
+      config: source.config,
+      activeGenerationId: newActiveGenerationId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const copiedGenerations = [];
+    for (const g of terminalGenerations) {
+      const newGen = {
+        id: idMap.get(g.id)!,
+        workId: newWorkId,
+        userId: req.userId,
+        status: g.status,
+        promptId: null,
+        config: g.config,
+        workflowSnapshot: g.workflowSnapshot,
+        imageUrl: g.imageUrl,
+        error: g.error,
+        scheduledAt: g.scheduledAt,
+        createdAt: g.createdAt,
+        completedAt: g.completedAt,
+      };
+      await db.insert(generations).values(newGen);
+      copiedGenerations.push(newGen);
+    }
+
+    const [newWork] = await db.select().from(works).where(eq(works.id, newWorkId));
+    res.status(201).json({ ...newWork, generations: copiedGenerations });
+    return;
+  }
 
   // create mode
   const defaultModel = generationOptions.models[generationOptions.defaultModelId];
