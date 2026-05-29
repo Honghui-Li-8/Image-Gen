@@ -29,6 +29,33 @@ const groupCategories = (
   }, {} as Record<string, GenerationCategory[]>);
 };
 
+// Sort groups by size descending, greedy-assign to the shorter column,
+// then restore original insertion order within each column.
+const distributeGroups = (
+  groups: Record<string, GenerationCategory[]>,
+): [Array<[string, GenerationCategory[]]>, Array<[string, GenerationCategory[]]>] => {
+  const indexed = Object.entries(groups).map((entry, idx) => ({
+    entry,
+    idx,
+    weight: entry[1].length,
+  }));
+
+  const byWeight = [...indexed].sort((a, b) => b.weight - a.weight);
+  const cols: [typeof indexed, typeof indexed] = [[], []];
+  const weights = [0, 0];
+
+  for (const item of byWeight) {
+    const col = weights[0] <= weights[1] ? 0 : 1;
+    cols[col].push(item);
+    weights[col] += item.weight;
+  }
+
+  cols[0].sort((a, b) => a.idx - b.idx);
+  cols[1].sort((a, b) => a.idx - b.idx);
+
+  return [cols[0].map((i) => i.entry), cols[1].map((i) => i.entry)];
+};
+
 export const ConfigSidebar = ({
   activeWork,
   commitTag,
@@ -59,35 +86,47 @@ export const ConfigSidebar = ({
 
         {options ? (
           <>
-            {Object.entries(groupCategories(options.categories)).map(
-              ([group, categories]) => (
-                <ConfigGroup key={group} title={group}>
-                  {categories.map((category) => (
-                    <label className="field" key={category.id}>
-                      <span>{category.label}</span>
-                      <select
-                        value={activeWork?.selections?.[category.id] || ""}
-                        onChange={(event) =>
-                          updateActiveWork((work) => ({
-                            ...work,
-                            selections: {
-                              ...work.selections,
-                              [category.id]: event.target.value,
-                            },
-                          }))
-                        }
-                      >
-                        {category.options.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ))}
-                </ConfigGroup>
-              ),
-            )}
+            {(() => {
+              const [leftGroups, rightGroups] = distributeGroups(
+                groupCategories(options.categories),
+              );
+
+              const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
+                groups.map(([group, categories]) => (
+                  <ConfigGroup key={group} title={group}>
+                    {categories.map((category) => (
+                      <label className="field" key={category.id}>
+                        <span>{category.label}</span>
+                        <select
+                          value={activeWork?.selections?.[category.id] || ""}
+                          onChange={(event) =>
+                            updateActiveWork((work) => ({
+                              ...work,
+                              selections: {
+                                ...work.selections,
+                                [category.id]: event.target.value,
+                              },
+                            }))
+                          }
+                        >
+                          {category.options.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </ConfigGroup>
+                ));
+
+              return (
+                <div className="options-columns">
+                  <div className="options-column">{renderGroups(leftGroups)}</div>
+                  <div className="options-column">{renderGroups(rightGroups)}</div>
+                </div>
+              );
+            })()}
 
             <ConfigGroup
               className="tag-group tag-editor--options"

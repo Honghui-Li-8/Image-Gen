@@ -555,14 +555,25 @@ p {
 }
 
 .options-scroll {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
   min-height: 0;
   overflow: auto;
   padding: 18px 16px;
+}
+
+.options-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.options-column {
+  display: grid;
+  gap: 18px;
+  align-content: start;
 }
 
 .control-group {
@@ -592,7 +603,6 @@ p {
 }
 
 .options-scroll > .field {
-  grid-column: 1 / -1;
   grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
@@ -731,7 +741,7 @@ button:focus-visible {
 }
 
 .tag-editor--options {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .tag-group {
