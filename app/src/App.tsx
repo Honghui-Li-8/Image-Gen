@@ -2,16 +2,18 @@ import { useState } from "react";
 import { ConfigSidebar } from "./components/ConfigSidebar";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { GalleryPanel } from "./components/GalleryPanel";
+import { LoginGate } from "./components/LoginGate";
 import { TopBar } from "./components/TopBar";
 import { WorksSidebar } from "./components/WorksSidebar";
 import { useApiHealth } from "./hooks/useApiHealth";
+import { useAuth } from "./hooks/useAuth";
 import { useGenerationOptions } from "./hooks/useGenerationOptions";
 import { useTheme } from "./hooks/useTheme";
 import { useWorks } from "./hooks/useWorks";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-const App = () => {
+const Dashboard = () => {
   const health = useApiHealth(API_URL);
   const { options, optionsStatus } = useGenerationOptions(API_URL);
   const { theme, toggleTheme } = useTheme();
@@ -77,6 +79,26 @@ const App = () => {
       ) : null}
     </main>
   );
+};
+
+const App = () => {
+  const auth = useAuth(API_URL);
+
+  if (!auth.isAuthReady) {
+    return <main className="login-shell" />;
+  }
+
+  if (!auth.session) {
+    return (
+      <LoginGate
+        isLoggingIn={auth.isLoggingIn}
+        loginError={auth.loginError}
+        onLogin={auth.login}
+      />
+    );
+  }
+
+  return <Dashboard />;
 };
 
 export default App;

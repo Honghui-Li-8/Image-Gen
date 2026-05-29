@@ -1,0 +1,58 @@
+import { useState } from "react";
+
+interface LoginGateProps {
+  isLoggingIn: boolean;
+  loginError: string;
+  onLogin: (input: { name: string; password: string }) => Promise<void>;
+}
+
+export const LoginGate = ({
+  isLoggingIn,
+  loginError,
+  onLogin,
+}: LoginGateProps) => {
+  const [name, setName] = useState("demo");
+  const [password, setPassword] = useState("demo");
+
+  return (
+    <main className="login-shell">
+      <form
+        className="login-panel"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onLogin({ name, password });
+        }}
+      >
+        <div className="login-heading">
+          <span className="product-name">Image Gen</span>
+          <h1>Creator Login</h1>
+        </div>
+
+        <label className="field">
+          <span>Name</span>
+          <input
+            autoComplete="username"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </label>
+
+        <label className="field">
+          <span>Password</span>
+          <input
+            autoComplete="current-password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </label>
+
+        {loginError ? <p className="error-text">{loginError}</p> : null}
+
+        <button className="login-button" type="submit" disabled={isLoggingIn}>
+          {isLoggingIn ? "Signing in" : "Sign in"}
+        </button>
+      </form>
+    </main>
+  );
+};
