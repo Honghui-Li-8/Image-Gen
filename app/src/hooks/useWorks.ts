@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, apiFetch } from "../utils/api";
 import { getSelectedTags, normalizeTags } from "../utils/tags";
 import type {
@@ -25,6 +25,19 @@ interface BackendGeneration {
   id: string;
   status: Exclude<WorkStatus, "idle">;
   imageUrl: string | null;
+}
+
+interface GenerationCreateResponse {
+  generationId: string;
+  status: Exclude<WorkStatus, "idle">;
+}
+
+interface GenerationStatusEvent {
+  generationId: string;
+  status: Exclude<WorkStatus, "idle">;
+  progress?: number;
+  imageUrl?: string | null;
+  error?: string | null;
 }
 
 interface BackendWork {
@@ -123,6 +136,7 @@ export const useWorks = (
   const [isSaving, setIsSaving] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [worksError, setWorksError] = useState("");
+  const generationSourceRef = useRef<EventSource | null>(null);
 
   const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
   const activeModel = useMemo((): ModelConfig | null => {
@@ -240,6 +254,14 @@ export const useWorks = (
     [activeWork?.id],
   );
 
+  const updateWorkById = useCallback((workId: string, patch: Partial<Work>) => {
+    setWorks((currentWorks) =>
+      currentWorks.map((work) =>
+        work.id === workId ? { ...work, ...patch } : work,
+      ),
+    );
+  }, []);
+
   const saveWorks = useCallback(() => {
     if (!activeWork || isSaving) return;
 
@@ -352,6 +374,113 @@ export const useWorks = (
     [updateActiveWork],
   );
 
+  const closeGenerationStream = useCallback(() => {
+    generationSourceRef.current?.close();
+    generationSourceRef.current = null;
+  }, []);
+
+  const startGeneration = useCallback(() => {
+    if (!activeWork || !canGenerate) return;
+
+    const workId = activeWork.id;
+    const generationConfig = buildWorkConfig(activeWork);
+
+    const runGeneration = async () => {
+      closeGenerationStream();
+      setWorksError("");
+      updateWorkById(workId, { status: "queued", progress: 0 });
+
+      try {
+        const response = await apiFetch(`${apiUrl}/works/${workId}/generations`, {
+          method: "POST",
+          body: JSON.stringify({
+            modelId: generationConfig.selectedModel,
+            selections: generationConfig.selections,
+            selectedPreset: generationConfig.selectedPreset,
+            seed: generationConfig.seed,
+            additionalTags: generationConfig.additionalTags,
+            additionalPrompt: generationConfig.additionalPrompt,
+          }),
+          token,
+        });
+        const result = (await response.json()) as GenerationCreateResponse;
+
+        updateWorkById(workId, { status: result.status, progress: 0 });
+
+        const source = new EventSource(
+          `${apiUrl}/generations/${result.generationId}/status?token=${encodeURIComponent(token)}`,
+        );
+        generationSourceRef.current = source;
+
+        source.addEventListener("status", (event) => {
+          const payload = JSON.parse(event.data) as GenerationStatusEvent;
+          const nextProgress =
+            payload.progress ??
+            (payload.status === "completed" || payload.status === "failed" ? 100 : 0);
+
+          setWorks((currentWorks) =>
+            currentWorks.map((work) => {
+              if (work.id !== workId) return work;
+
+              const nextImages =
+                payload.imageUrl &&
+                !work.images.some((image) => image.id === payload.generationId)
+                  ? [
+                      ...work.images,
+                      {
+                        id: payload.generationId,
+                        url: payload.imageUrl,
+                        alt: "Generated anime character",
+                      },
+                    ]
+                  : work.images;
+
+              return {
+                ...work,
+                status: payload.status,
+                progress: nextProgress,
+                images: nextImages,
+                activeImageIndex:
+                  nextImages.length > work.images.length
+                    ? nextImages.length - 1
+                    : work.activeImageIndex,
+              };
+            }),
+          );
+
+          if (payload.status === "completed" || payload.status === "failed") {
+            source.close();
+            if (generationSourceRef.current === source) {
+              generationSourceRef.current = null;
+            }
+          }
+        });
+
+        source.onerror = () => {
+          source.close();
+          if (generationSourceRef.current === source) {
+            generationSourceRef.current = null;
+          }
+          updateWorkById(workId, { status: "failed", progress: 100 });
+          setWorksError("Generation status stream disconnected");
+        };
+      } catch (error) {
+        updateWorkById(workId, { status: "failed", progress: 100 });
+        handleApiError(error, "Could not start generation");
+      }
+    };
+
+    void runGeneration();
+  }, [
+    activeWork,
+    apiUrl,
+    canGenerate,
+    closeGenerationStream,
+    handleApiError,
+    token,
+    updateWorkById,
+  ]);
+
   const handleGenerationAction = useCallback(() => {
     if (isGenerating) {
       setShowCancelModal(true);
@@ -359,15 +488,21 @@ export const useWorks = (
     }
 
     if (!canGenerate) return;
-  }, [canGenerate, isGenerating]);
+    startGeneration();
+  }, [canGenerate, isGenerating, startGeneration]);
 
   const confirmCancelGeneration = useCallback(() => {
+    closeGenerationStream();
     updateActiveWork({
       status: "idle",
       progress: 0,
     });
     setShowCancelModal(false);
-  }, [updateActiveWork]);
+  }, [closeGenerationStream, updateActiveWork]);
+
+  useEffect(() => {
+    return () => closeGenerationStream();
+  }, [closeGenerationStream]);
 
   useEffect(() => {
     const handleSaveShortcut = (event: KeyboardEvent) => {
