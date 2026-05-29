@@ -10,12 +10,22 @@ import { useAuth } from "./hooks/useAuth";
 import { useGenerationOptions } from "./hooks/useGenerationOptions";
 import { useTheme } from "./hooks/useTheme";
 import { useWorks } from "./hooks/useWorks";
+import type { AuthSession } from "./hooks/useAuth";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-const Dashboard = () => {
+interface DashboardProps {
+  onUnauthorized: () => void;
+  session: AuthSession;
+}
+
+const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   const health = useApiHealth(API_URL);
-  const { options, optionsStatus } = useGenerationOptions(API_URL);
+  const { options, optionsStatus } = useGenerationOptions(
+    API_URL,
+    session.token,
+    onUnauthorized,
+  );
   const { theme, toggleTheme } = useTheme();
   const worksState = useWorks(options, optionsStatus);
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
@@ -98,7 +108,7 @@ const App = () => {
     );
   }
 
-  return <Dashboard />;
+  return <Dashboard onUnauthorized={auth.clearAuth} session={auth.session} />;
 };
 
 export default App;
