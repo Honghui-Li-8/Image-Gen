@@ -212,3 +212,84 @@ describe("POST /works/:workId/generations", () => {
     expect(res.body.error).toBe("Too many active generations");
   });
 });
+
+describe("GET /generations/:generationId/status", () => {
+  it("rejects missing auth before opening the stream", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+
+    const res = await request(app).get(`/generations/${generationId}/status`);
+
+    expect(res.status).toBe(401);
+    expect(res.headers["content-type"]).toContain("application/json");
+  });
+
+  it("accepts query-token auth for terminal generations", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+
+    const res = await request(app).get(
+      `/generations/${generationId}/status?token=${ALICE_TOKEN}`
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/event-stream");
+    expect(res.text).toContain("event: status");
+    expect(res.text).toContain('"status":"completed"');
+  });
+
+  it("accepts bearer auth for terminal generations", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "failed");
+
+    const res = await request(app)
+      .get(`/generations/${generationId}/status`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('"status":"failed"');
+  });
+
+  it("rejects another user's generation", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+
+    const res = await request(app).get(
+      `/generations/${generationId}/status?token=${BOB_TOKEN}`
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  it("streams running generation updates and closes on completion", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "queued");
+
+    const stream = request(app).get(
+      `/generations/${generationId}/status?token=${ALICE_TOKEN}`
+    );
+    const response = stream.then((res) => res);
+
+    setTimeout(() => {
+      generationEmitter.emit(GENERATION_UPDATE_EVENT, {
+        generationId,
+        status: "running",
+        progress: 50,
+      });
+      generationEmitter.emit(GENERATION_UPDATE_EVENT, {
+        generationId,
+        status: "completed",
+        progress: 100,
+        imageUrl: null,
+      });
+    }, 10);
+
+    const res = await response;
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('"status":"queued"');
+    expect(res.text).toContain('"status":"running"');
+    expect(res.text).toContain('"progress":50');
+    expect(res.text).toContain('"status":"completed"');
+  });
+});
