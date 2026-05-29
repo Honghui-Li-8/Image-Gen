@@ -44,6 +44,8 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
         activeWork={worksState.activeWork}
         canGenerate={worksState.canGenerate}
         isGenerating={worksState.isGenerating}
+        isLoadingWorks={worksState.isLoadingWorks}
+        isSaving={worksState.isSaving}
         onGenerationAction={worksState.handleGenerationAction}
         onThemeToggle={toggleTheme}
         options={options}
@@ -58,6 +60,8 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           activeWork={worksState.activeWork}
           isCollapsed={leftSidebarCollapsed}
           isDirty={worksState.isDirty}
+          isLoading={worksState.isLoadingWorks}
+          isSaving={worksState.isSaving}
           onAddWork={worksState.addWork}
           onToggleCollapse={() =>
             setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)
@@ -65,6 +69,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           onSaveWorks={worksState.saveWorks}
           onSelectWork={worksState.setActiveWorkId}
           works={worksState.works}
+          worksError={worksState.worksError}
         />
 
         <GalleryPanel

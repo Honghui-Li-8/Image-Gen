@@ -4,22 +4,28 @@ interface WorksSidebarProps {
   activeWork: Work | undefined;
   isCollapsed: boolean;
   isDirty: boolean;
+  isLoading: boolean;
+  isSaving: boolean;
   onAddWork: () => void;
   onSaveWorks: () => void;
   onSelectWork: (workId: string) => void;
   onToggleCollapse: () => void;
   works: Work[];
+  worksError: string;
 }
 
 export const WorksSidebar = ({
   activeWork,
   isCollapsed,
   isDirty,
+  isLoading,
+  isSaving,
   onAddWork,
   onSaveWorks,
   onSelectWork,
   onToggleCollapse,
   works,
+  worksError,
 }: WorksSidebarProps) => {
   return (
     <aside className={`works-sidebar ${isCollapsed ? "works-sidebar--collapsed" : ""}`}>
@@ -27,7 +33,7 @@ export const WorksSidebar = ({
         {isCollapsed ? null : <h2>Works</h2>}
         <div className="sidebar-actions">
           {isCollapsed ? null : (
-            <button type="button" onClick={onAddWork}>
+            <button type="button" disabled={isLoading} onClick={onAddWork}>
               New
             </button>
           )}
@@ -43,6 +49,12 @@ export const WorksSidebar = ({
       </div>
 
       <div className="work-list">
+        {isLoading && !works.length ? (
+          <div className="work-list-message">Loading works</div>
+        ) : null}
+        {worksError && !isCollapsed ? (
+          <div className="work-list-error">{worksError}</div>
+        ) : null}
         {works.map((work) => (
           <button
             className={`work-item ${work.id === activeWork?.id ? "work-item--active" : ""}`}
@@ -63,8 +75,13 @@ export const WorksSidebar = ({
         ))}
       </div>
 
-      <button className="save-button" type="button" onClick={onSaveWorks}>
-        {isDirty ? "Save Changes" : "Saved"}
+      <button
+        className="save-button"
+        type="button"
+        disabled={isLoading || isSaving || !isDirty}
+        onClick={onSaveWorks}
+      >
+        {isSaving ? "Saving" : isDirty ? "Save Changes" : "Saved"}
       </button>
     </aside>
   );

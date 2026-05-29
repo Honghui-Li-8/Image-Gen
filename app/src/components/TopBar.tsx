@@ -5,6 +5,8 @@ interface TopBarProps {
   activeWork: Work | undefined;
   canGenerate: boolean;
   isGenerating: boolean;
+  isLoadingWorks: boolean;
+  isSaving: boolean;
   onGenerationAction: () => void;
   onThemeToggle: () => void;
   options: GenerationOptions | null;
@@ -16,6 +18,8 @@ export const TopBar = ({
   activeWork,
   canGenerate,
   isGenerating,
+  isLoadingWorks,
+  isSaving,
   onGenerationAction,
   onThemeToggle,
   options,
@@ -46,7 +50,9 @@ export const TopBar = ({
         <button
           className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
           type="button"
-          disabled={!options || (!isGenerating && !canGenerate)}
+          disabled={
+            isLoadingWorks || isSaving || !options || (!isGenerating && !canGenerate)
+          }
           onClick={onGenerationAction}
         >
           {isGenerating ? "Cancel" : "Generate"}
