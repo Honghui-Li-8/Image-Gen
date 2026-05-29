@@ -1,7 +1,6 @@
 import { ConfigGroup } from "./ConfigGroup";
 import { SeedControl } from "./SeedControl";
 import { TagInput } from "./TagInput";
-import { buildInitialSelections } from "../utils/works";
 import type {
   GenerationCategory,
   ModelConfig,
@@ -84,7 +83,7 @@ export const ConfigSidebar = ({
               updateActiveWork((work) => ({
                 ...work,
                 selectedModel: newModel.id,
-                selections: buildInitialSelections(newModel.categories),
+                selections: {},
                 selectedPreset: newModel.outputPresets[0]?.id || "",
               }));
             }}
@@ -130,6 +129,7 @@ export const ConfigSidebar = ({
                             }))
                           }
                         >
+                          <option value="">Select {category.label}</option>
                           {category.options.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
@@ -172,6 +172,7 @@ export const ConfigSidebar = ({
                   updateActiveWork({ selectedPreset: event.target.value })
                 }
               >
+                <option value="">Select output size</option>
                 {activeModel.outputPresets.map((preset) => (
                   <option key={preset.id} value={preset.id}>
                     {preset.label} ({preset.width} x {preset.height})

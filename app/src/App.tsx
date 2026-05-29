@@ -42,6 +42,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     <main className="creator-shell">
       <TopBar
         activeWork={worksState.activeWork}
+        canGenerate={worksState.canGenerate}
         isGenerating={worksState.isGenerating}
         onGenerationAction={worksState.handleGenerationAction}
         onThemeToggle={toggleTheme}

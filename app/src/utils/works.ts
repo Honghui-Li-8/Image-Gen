@@ -1,12 +1,9 @@
 import type { GenerationCategory, GenerationOptions, Work } from "../types";
 
 export const buildInitialSelections = (
-  categories: GenerationCategory[] = [],
+  _categories: GenerationCategory[] = [],
 ): Record<string, string> => {
-  return categories.reduce((selections, category) => {
-    selections[category.id] = category.options[0]?.value || "";
-    return selections;
-  }, {} as Record<string, string>);
+  return {};
 };
 
 export const createWork = (

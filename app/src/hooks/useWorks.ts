@@ -50,6 +50,7 @@ interface UseWorksState {
   isGenerating: boolean;
   isLoadingWorks: boolean;
   isSaving: boolean;
+  canGenerate: boolean;
   moveImage: (offset: number) => void;
   removeTag: (tagToRemove: string) => void;
   saveWorks: () => void;
@@ -140,6 +141,12 @@ export const useWorks = (
   const activeImage = activeWork?.images?.[activeWork.activeImageIndex];
   const isGenerating =
     activeWork?.status === "queued" || activeWork?.status === "running";
+  const canGenerate = Boolean(
+    activeWork &&
+      activeModel &&
+      activeWork.selectedPreset &&
+      activeModel.categories.every((category) => activeWork.selections[category.id]),
+  );
 
   const handleApiError = useCallback(
     (error: unknown, fallbackMessage: string) => {
@@ -348,8 +355,11 @@ export const useWorks = (
   const handleGenerationAction = useCallback(() => {
     if (isGenerating) {
       setShowCancelModal(true);
+      return;
     }
-  }, [isGenerating]);
+
+    if (!canGenerate) return;
+  }, [canGenerate, isGenerating]);
 
   const confirmCancelGeneration = useCallback(() => {
     updateActiveWork({
@@ -385,6 +395,7 @@ export const useWorks = (
     isGenerating,
     isLoadingWorks,
     isSaving,
+    canGenerate,
     moveImage,
     removeTag,
     saveWorks,
