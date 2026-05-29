@@ -6,10 +6,12 @@ interface WorksSidebarProps {
   isDirty: boolean;
   isLoading: boolean;
   isSaving: boolean;
+  onLogout: () => void;
   onAddWork: () => void;
   onSaveWorks: () => void;
   onSelectWork: (workId: string) => void;
   onToggleCollapse: () => void;
+  username: string;
   works: Work[];
   worksError: string;
 }
@@ -20,10 +22,12 @@ export const WorksSidebar = ({
   isDirty,
   isLoading,
   isSaving,
+  onLogout,
   onAddWork,
   onSaveWorks,
   onSelectWork,
   onToggleCollapse,
+  username,
   works,
   worksError,
 }: WorksSidebarProps) => {
@@ -75,14 +79,36 @@ export const WorksSidebar = ({
         ))}
       </div>
 
-      <button
-        className="save-button"
-        type="button"
-        disabled={isLoading || isSaving || !isDirty}
-        onClick={onSaveWorks}
-      >
-        {isSaving ? "Saving" : isDirty ? "Save Changes" : "Saved"}
-      </button>
+      <div className="sidebar-account">
+        {isCollapsed ? (
+          <button
+            aria-label={`Logout ${username}`}
+            className="logout-button logout-button--collapsed"
+            type="button"
+            onClick={onLogout}
+          >
+            {username.slice(0, 1).toUpperCase()}
+          </button>
+        ) : (
+          <>
+            <div className="account-copy">
+              <span>{username}</span>
+              <small>{isSaving ? "Saving" : isDirty ? "Unsaved" : "Synced"}</small>
+            </div>
+            <button className="logout-button" type="button" onClick={onLogout}>
+              Logout
+            </button>
+          </>
+        )}
+        <button
+          className="save-button save-button--hidden"
+          type="button"
+          disabled={isLoading || isSaving || !isDirty}
+          onClick={onSaveWorks}
+        >
+          Save
+        </button>
+      </div>
     </aside>
   );
 };

@@ -431,24 +431,61 @@ p {
   color: var(--text-strong);
 }
 
-.save-button {
-  margin: 12px;
-  background: var(--accent-primary);
-  color: #ffffff;
+.sidebar-account {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid var(--border);
 }
 
-.works-sidebar--collapsed .save-button {
+.account-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.account-copy span {
+  overflow: hidden;
+  color: var(--text-heading);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-copy small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.logout-button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.logout-button--collapsed {
+  display: grid;
   width: 44px;
   min-height: 44px;
-  margin: 10px 8px;
-  overflow: hidden;
   padding: 0;
-  font-size: 0;
+  place-items: center;
 }
 
-.works-sidebar--collapsed .save-button::before {
-  content: "S";
-  font-size: 0.9rem;
+.works-sidebar--collapsed .sidebar-account {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 10px 8px;
+}
+
+.save-button--hidden {
+  display: none;
 }
 
 .gallery-stage {

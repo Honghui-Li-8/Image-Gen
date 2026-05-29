@@ -63,11 +63,13 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           isLoading={worksState.isLoadingWorks}
           isSaving={worksState.isSaving}
           onAddWork={worksState.addWork}
+          onLogout={onUnauthorized}
           onToggleCollapse={() =>
             setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)
           }
           onSaveWorks={worksState.saveWorks}
           onSelectWork={worksState.setActiveWorkId}
+          username={session.name}
           works={worksState.works}
           worksError={worksState.worksError}
         />
