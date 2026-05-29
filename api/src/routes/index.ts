@@ -3,6 +3,7 @@ import { authMiddleware } from "../middleware/auth.js";
 import { authRouter } from "./auth.routes.js";
 import { generationRouter } from "./generation.routes.js";
 import { healthRouter } from "./health.routes.js";
+import { worksRouter } from "./works.routes.js";
 
 export const router = Router();
 
@@ -13,3 +14,4 @@ router.use(authRouter);
 // protected — all routes registered after this require a valid Bearer token
 router.use(authMiddleware);
 router.use(generationRouter);
+router.use(worksRouter);
