@@ -62,6 +62,23 @@ const distributeGroups = (
   return [cols[0].map((i) => i.entry), cols[1].map((i) => i.entry)];
 };
 
+const pickRandom = <T,>(items: T[]): T | undefined => {
+  return items[Math.floor(Math.random() * items.length)];
+};
+
+const randomizeCategorySelections = (model: ModelConfig) => {
+  return model.categories.reduce(
+    (nextSelections, category) => {
+      const option = pickRandom(category.options);
+      if (option) {
+        nextSelections[category.id] = option.value;
+      }
+      return nextSelections;
+    },
+    {} as Record<string, string>,
+  );
+};
+
 export const ConfigSidebar = ({
   activeModel,
   activeWork,
@@ -83,37 +100,61 @@ export const ConfigSidebar = ({
   return (
     <aside className="config-sidebar">
       <div className="config-header">
-        <h2>Configuration</h2>
-        <button
-          className="config-save-button"
-          type="button"
-          disabled={!isDirty || isSaving || !activeWork}
-          onClick={onSaveWork}
-        >
-          {isSaving ? "Saving" : "Save"}
-        </button>
-        {modelEntries.length > 0 ? (
-          <select
-            className="model-select"
-            value={activeWork?.selectedModel || ""}
-            onChange={(event) => {
-              const newModel = models[event.target.value];
-              if (!newModel) return;
+        <div className="config-header-main">
+          <h2>Configuration</h2>
+          {modelEntries.length > 0 ? (
+            <select
+              className="model-select"
+              value={activeWork?.selectedModel || ""}
+              onChange={(event) => {
+                const newModel = models[event.target.value];
+                if (!newModel) return;
+                updateActiveWork((work) => ({
+                  ...work,
+                  selectedModel: newModel.id,
+                  selections: {},
+                  selectedPreset: newModel.outputPresets[0]?.id || "",
+                }));
+              }}
+            >
+              {modelEntries.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </div>
+        <div className="config-header-actions">
+          <button
+            className="config-random-button"
+            aria-label="Randomize configuration"
+            type="button"
+            disabled={!activeWork || !activeModel}
+            onClick={() => {
+              if (!activeModel) return;
+              const selections = randomizeCategorySelections(activeModel);
               updateActiveWork((work) => ({
                 ...work,
-                selectedModel: newModel.id,
-                selections: {},
-                selectedPreset: newModel.outputPresets[0]?.id || "",
+                selections,
               }));
             }}
           >
-            {modelEntries.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.label}
-              </option>
-            ))}
-          </select>
-        ) : null}
+            <svg aria-hidden="true" viewBox="0 -4 32 32">
+              <path d="m24.983 8.539v-2.485h-4.902l-3.672 5.945-2.099 3.414-3.24 5.256c-.326.51-.889.844-1.53.845h-9.54v-3.568h8.538l3.673-5.946 2.099-3.414 3.24-5.256c.325-.509.886-.843 1.525-.845h5.904v-2.485l7.417 4.27-7.417 4.27z" />
+              <path d="m12.902 6.316-.63 1.022-1.468 2.39-2.265-3.675h-8.538v-3.568h9.54c.641.001 1.204.335 1.526.838l.004.007 1.836 2.985z" />
+              <path d="m24.983 24v-2.485h-5.904c-.639-.002-1.201-.336-1.521-.838l-.004-.007-1.836-2.985.63-1.022 1.468-2.39 2.264 3.675h4.902v-2.485l7.417 4.27-7.417 4.27z" />
+            </svg>
+          </button>
+          <button
+            className="config-save-button"
+            type="button"
+            disabled={!isDirty || isSaving || !activeWork}
+            onClick={onSaveWork}
+          >
+            {isSaving ? "Saving" : "Save"}
+          </button>
+        </div>
       </div>
 
       <div className="options-scroll">

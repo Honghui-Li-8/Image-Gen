@@ -297,6 +297,29 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
+.config-header {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.config-header-main,
+.config-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.config-header-main {
+  display: grid;
+  grid-template-columns: auto minmax(150px, 190px);
+  justify-content: space-between;
+}
+
+.config-header-actions {
+  justify-content: flex-end;
+}
+
 .sidebar-actions {
   display: flex;
   gap: 8px;
@@ -653,7 +676,7 @@ p {
 }
 
 .model-select {
-  width: auto;
+  width: 100%;
   min-height: 26px;
   padding: 0 24px 0 8px;
   border-color: var(--border);
@@ -673,6 +696,26 @@ p {
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.config-random-button {
+  display: grid;
+  width: 34px;
+  min-height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--control);
+  color: var(--text-value);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.config-random-button svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
 .generate-button {
