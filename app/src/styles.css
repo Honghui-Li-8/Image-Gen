@@ -4,44 +4,44 @@
     sans-serif;
   color: var(--text);
   background: var(--page);
-  --page: #eef1f5;
+  --page: #e9edf3;
   --panel: #ffffff;
-  --panel-soft: #f7f9fc;
-  --panel-raised: #fbfcfe;
+  --panel-soft: #f3f6fa;
+  --panel-raised: #f8fafc;
   --control: #ffffff;
-  --border: #d7dde6;
-  --border-strong: #c8d3df;
-  --text: #1f2933;
-  --text-strong: #111827;
-  --text-muted: #64748b;
-  --text-heading: #101828;
-  --text-label: #334155;
-  --text-value: #0f172a;
-  --text-hint: #64748b;
-  --accent-primary: #2563eb;
-  --accent-primary-soft: #edf4ff;
+  --border: #cfd8e6;
+  --border-strong: #aebbd0;
+  --text: #182230;
+  --text-strong: #0b1220;
+  --text-muted: #52637a;
+  --text-heading: #080f1d;
+  --text-label: #26364d;
+  --text-value: #0b1220;
+  --text-hint: #68788f;
+  --accent-primary: #1d5ee8;
+  --accent-primary-soft: #e7f0ff;
   --status-warning: #f59e0b;
   --status-success: #16a34a;
   --status-danger: #dc2626;
 }
 
 :root[data-theme="dark"] {
-  --page: #0e1117;
-  --panel: #151a23;
-  --panel-soft: #1a2130;
-  --panel-raised: #111722;
-  --control: #0f1520;
-  --border: #2a3444;
-  --border-strong: #3a4658;
-  --text: #d9e2ef;
+  --page: #0b0f16;
+  --panel: #131922;
+  --panel-soft: #172131;
+  --panel-raised: #0f151f;
+  --control: #0c121d;
+  --border: #283448;
+  --border-strong: #40506a;
+  --text: #d8e3f2;
   --text-strong: #f8fafc;
-  --text-muted: #91a0b5;
+  --text-muted: #9badc6;
   --text-heading: #ffffff;
-  --text-label: #a9b8ce;
+  --text-label: #bed0e8;
   --text-value: #eaf1fb;
-  --text-hint: #7f8ea3;
-  --accent-primary: #6ea8ff;
-  --accent-primary-soft: #182943;
+  --text-hint: #8191aa;
+  --accent-primary: #6aa4ff;
+  --accent-primary-soft: #172b49;
   --status-warning: #fbbf24;
   --status-success: #22c55e;
   --status-danger: #f87171;
@@ -252,11 +252,13 @@ p {
 h2 {
   color: var(--text-heading);
   font-size: 1rem;
+  font-weight: 800;
 }
 
 h3 {
   color: var(--text-label);
   font-size: 0.86rem;
+  font-weight: 800;
 }
 
 p {
@@ -331,6 +333,7 @@ p {
 }
 
 .work-item span {
+  color: var(--text-heading);
   font-weight: 800;
 }
 
@@ -348,10 +351,14 @@ p {
   background: var(--accent-primary-soft);
 }
 
+.work-item--active span {
+  color: var(--text-strong);
+}
+
 .save-button {
   margin: 12px;
-  background: var(--text-strong);
-  color: var(--panel);
+  background: var(--accent-primary);
+  color: #ffffff;
 }
 
 .works-sidebar--collapsed .save-button {
@@ -432,6 +439,7 @@ p {
 }
 
 .empty-gallery h2 {
+  color: var(--text-heading);
   font-size: 1.2rem;
 }
 
@@ -565,6 +573,7 @@ p {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 72%, var(--page));
 }
 
 .control-group legend {
@@ -597,6 +606,12 @@ input {
   border-radius: 8px;
   background: var(--control);
   color: var(--text-value);
+}
+
+select:hover,
+textarea:hover,
+input:hover {
+  border-color: var(--border-strong);
 }
 
 select option {
