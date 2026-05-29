@@ -204,6 +204,17 @@ worksRouter.patch("/works/:id", async (req: Request, res: Response) => {
   res.json(updated);
 });
 
-worksRouter.delete("/works/:id", (_req: Request, res: Response) => {
-  res.status(501).json({ error: "Not implemented" });
+worksRouter.delete("/works/:id", async (req: Request, res: Response) => {
+  const [work] = await db
+    .select()
+    .from(works)
+    .where(eq(works.id, req.params.id as string));
+
+  if (!work || work.userId !== req.userId) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  await db.delete(works).where(eq(works.id, work.id));
+  res.status(204).send();
 });

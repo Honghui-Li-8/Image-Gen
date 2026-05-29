@@ -388,3 +388,71 @@ describe("PATCH /works/:id", () => {
     expect(res.body.error).toBe("Generation not found");
   });
 });
+
+// ---------------------------------------------------------------------------
+// DELETE /works/:id
+// ---------------------------------------------------------------------------
+
+describe("DELETE /works/:id", () => {
+  it("returns 204 with no body", async () => {
+    const workId = await insertWork(aliceId);
+    const res = await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${aliceToken}`);
+    expect(res.status).toBe(204);
+    expect(res.body).toEqual({});
+  });
+
+  it("removes the work and its generations via cascade", async () => {
+    const workId = await insertWork(aliceId);
+    await insertGeneration(workId, aliceId, "completed");
+    await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${aliceToken}`);
+
+    const remainingWorks = await db.select().from(works).where(eq(works.id, workId));
+    const remainingGens = await db.select().from(generations).where(eq(generations.workId, workId));
+    expect(remainingWorks).toHaveLength(0);
+    expect(remainingGens).toHaveLength(0);
+  });
+
+  it("subsequent GET /works does not include the deleted work", async () => {
+    const workId = await insertWork(aliceId);
+    await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${aliceToken}`);
+    const res = await request(app).get("/works").set("Authorization", `Bearer ${aliceToken}`);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns 404 for an unknown id", async () => {
+    const res = await request(app).delete("/works/nonexistent").set("Authorization", `Bearer ${aliceToken}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 for another user's work", async () => {
+    const workId = await insertWork(aliceId);
+    const res = await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${bobToken}`);
+    expect(res.status).toBe(404);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Auth — 401 on all route variants
+// ---------------------------------------------------------------------------
+
+describe("Auth — 401 when Authorization header is absent", () => {
+  it("GET /works", async () => {
+    expect((await request(app).get("/works")).status).toBe(401);
+  });
+
+  it("GET /works/:id", async () => {
+    expect((await request(app).get("/works/any")).status).toBe(401);
+  });
+
+  it("POST /works", async () => {
+    expect((await request(app).post("/works").send({})).status).toBe(401);
+  });
+
+  it("PATCH /works/:id", async () => {
+    expect((await request(app).patch("/works/any").send({})).status).toBe(401);
+  });
+
+  it("DELETE /works/:id", async () => {
+    expect((await request(app).delete("/works/any")).status).toBe(401);
+  });
+});
