@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface LoginGateProps {
   isLoggingIn: boolean;
@@ -11,8 +11,15 @@ export const LoginGate = ({
   loginError,
   onLogin,
 }: LoginGateProps) => {
-  const [name, setName] = useState("demo");
-  const [password, setPassword] = useState("demo");
+  const credentialsFromUrl = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      name: params.get("name") || params.get("username") || "user0",
+      password: params.get("password") || params.get("pwd") || "",
+    };
+  }, []);
+  const [name, setName] = useState(credentialsFromUrl.name);
+  const [password, setPassword] = useState(credentialsFromUrl.password);
 
   return (
     <main className="login-shell">
