@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { Work } from "../types";
 
 interface WorksSidebarProps {
@@ -8,6 +9,9 @@ interface WorksSidebarProps {
   isSaving: boolean;
   onLogout: () => void;
   onAddWork: () => void;
+  onDeleteWork: (workId: string) => void;
+  onDuplicateWork: (workId: string) => void;
+  onRenameWork: (workId: string, name: string) => void;
   onSelectWork: (workId: string) => void;
   onToggleCollapse: () => void;
   username: string;
@@ -23,12 +27,51 @@ export const WorksSidebar = ({
   isSaving,
   onLogout,
   onAddWork,
+  onDeleteWork,
+  onDuplicateWork,
+  onRenameWork,
   onSelectWork,
   onToggleCollapse,
   username,
   works,
   worksError,
 }: WorksSidebarProps) => {
+  const [openMenuWorkId, setOpenMenuWorkId] = useState<string | null>(null);
+  const [renameWork, setRenameWork] = useState<Work | null>(null);
+  const [deleteWork, setDeleteWork] = useState<Work | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const closeMenu = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setOpenMenuWorkId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, []);
+
+  const beginRename = (work: Work) => {
+    setOpenMenuWorkId(null);
+    setRenameWork(work);
+    setRenameDraft(work.name);
+  };
+
+  const confirmRename = () => {
+    if (!renameWork) return;
+    onRenameWork(renameWork.id, renameDraft);
+    setRenameWork(null);
+    setRenameDraft("");
+  };
+
+  const confirmDelete = () => {
+    if (!deleteWork) return;
+    onDeleteWork(deleteWork.id);
+    setDeleteWork(null);
+  };
+
   return (
     <aside className={`works-sidebar ${isCollapsed ? "works-sidebar--collapsed" : ""}`}>
       <div className="sidebar-header">
@@ -58,22 +101,69 @@ export const WorksSidebar = ({
           <div className="work-list-error">{worksError}</div>
         ) : null}
         {works.map((work) => (
-          <button
-            className={`work-item ${work.id === activeWork?.id ? "work-item--active" : ""}`}
+          <div
+            className={`work-item-shell ${work.id === activeWork?.id ? "work-item-shell--active" : ""}`}
             key={work.id}
-            type="button"
-            onClick={() => onSelectWork(work.id)}
-            title={work.name}
           >
-            {isCollapsed ? (
-              <span>{work.name.slice(0, 1)}</span>
-            ) : (
-              <>
-                <span>{work.name}</span>
-                <small>{work.images.length} images</small>
-              </>
-            )}
-          </button>
+            <button
+              className="work-item"
+              type="button"
+              onClick={() => onSelectWork(work.id)}
+              title={work.name}
+            >
+              {isCollapsed ? (
+                <span>{work.name.slice(0, 1)}</span>
+              ) : (
+                <>
+                  <span>{work.name}</span>
+                  <small>{work.images.length} images</small>
+                </>
+              )}
+            </button>
+            {!isCollapsed ? (
+              <div className="work-item-menu-wrap" ref={openMenuWorkId === work.id ? menuRef : null}>
+                <button
+                  aria-label={`Open actions for ${work.name}`}
+                  className="work-item-menu-button"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setOpenMenuWorkId((current) => current === work.id ? null : work.id);
+                  }}
+                >
+                  ...
+                </button>
+                {openMenuWorkId === work.id ? (
+                  <div className="work-item-menu" role="menu">
+                    <button type="button" role="menuitem" onClick={() => beginRename(work)}>
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpenMenuWorkId(null);
+                        onDuplicateWork(work.id);
+                      }}
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      className="work-item-menu-danger"
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpenMenuWorkId(null);
+                        setDeleteWork(work);
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         ))}
       </div>
 
@@ -99,6 +189,52 @@ export const WorksSidebar = ({
           </>
         )}
       </div>
+
+      {renameWork ? (
+        <div className="modal-overlay" onClick={() => setRenameWork(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <p>Rename work</p>
+            <input
+              className="modal-input"
+              autoFocus
+              value={renameDraft}
+              onChange={(event) => setRenameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") confirmRename();
+                if (event.key === "Escape") setRenameWork(null);
+              }}
+            />
+            <div className="modal-actions">
+              <button className="modal-button" type="button" onClick={() => setRenameWork(null)}>
+                Cancel
+              </button>
+              <button className="modal-button" type="button" onClick={confirmRename}>
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteWork ? (
+        <div className="modal-overlay" onClick={() => setDeleteWork(null)}>
+          <div className="modal" onClick={(event) => event.stopPropagation()}>
+            <p>Delete "{deleteWork.name}"? This cannot be undone.</p>
+            <div className="modal-actions">
+              <button
+                className="modal-button modal-button--danger"
+                type="button"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
+              <button className="modal-button" type="button" onClick={() => setDeleteWork(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 };

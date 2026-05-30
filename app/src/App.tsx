@@ -62,7 +62,10 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           isLoading={worksState.isLoadingWorks}
           isSaving={worksState.isSaving}
           onAddWork={worksState.addWork}
+          onDeleteWork={worksState.deleteWork}
+          onDuplicateWork={worksState.duplicateWork}
           onLogout={onUnauthorized}
+          onRenameWork={worksState.renameWork}
           onToggleCollapse={() =>
             setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)
           }

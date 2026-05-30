@@ -79,6 +79,9 @@ interface UseWorksState {
   missingFieldIds: string[];
   moveImage: (offset: number) => void;
   removeTag: (tagToRemove: string) => void;
+  deleteWork: (workId: string) => void;
+  duplicateWork: (workId: string) => void;
+  renameWork: (workId: string, name: string) => void;
   restoreViewing: () => void;
   saveWorks: () => void;
   selectDraft: () => void;
@@ -386,6 +389,111 @@ export const useWorks = (
     void createBackendWork();
   }, [apiUrl, handleApiError, loadWorkDetails, token]);
 
+  const renameWork = useCallback(
+    (workId: string, name: string) => {
+      const nextName = name.trim();
+      const work = works.find((item) => item.id === workId);
+      if (!work || !nextName || work.name === nextName) return;
+
+      const doRename = async () => {
+        setWorksError("");
+
+        try {
+          const response = await apiFetch(`${apiUrl}/works/${workId}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              name: nextName,
+              config: buildWorkConfig(work),
+            }),
+            token,
+          });
+          const savedWork = mapBackendWork((await response.json()) as BackendWork);
+
+          setWorks((currentWorks) =>
+            currentWorks.map((currentWork) =>
+              currentWork.id === workId
+                ? {
+                    ...currentWork,
+                    name: savedWork.name,
+                    savedAt: savedWork.savedAt,
+                  }
+                : currentWork,
+            ),
+          );
+        } catch (error) {
+          handleApiError(error, "Could not rename work");
+        }
+      };
+
+      void doRename();
+    },
+    [apiUrl, handleApiError, token, works],
+  );
+
+  const duplicateWork = useCallback(
+    (workId: string) => {
+      const source = works.find((work) => work.id === workId);
+      if (!source) return;
+
+      const doDuplicate = async () => {
+        setWorksError("");
+
+        try {
+          const response = await apiFetch(`${apiUrl}/works`, {
+            method: "POST",
+            body: JSON.stringify({
+              duplicateFromId: workId,
+              name: `${source.name} (copy)`,
+            }),
+            token,
+          });
+          const backendWork = (await response.json()) as BackendWork;
+          const [nextWork] = await loadWorkDetails([backendWork]);
+
+          setWorks((currentWorks) => [...currentWorks, nextWork]);
+          setActiveWorkId(nextWork.id);
+          setIsDirty(false);
+        } catch (error) {
+          handleApiError(error, "Could not duplicate work");
+        }
+      };
+
+      void doDuplicate();
+    },
+    [apiUrl, handleApiError, loadWorkDetails, token, works],
+  );
+
+  const deleteWork = useCallback(
+    (workId: string) => {
+      const nextActiveWorkId =
+        activeWorkId === workId
+          ? (works.find((work) => work.id !== workId)?.id ?? "")
+          : activeWorkId;
+
+      const doDelete = async () => {
+        setWorksError("");
+
+        try {
+          await apiFetch(`${apiUrl}/works/${workId}`, {
+            method: "DELETE",
+            token,
+          });
+
+          setWorks((currentWorks) => currentWorks.filter((work) => work.id !== workId));
+          setActiveWorkId(nextActiveWorkId);
+          if (activeWorkId === workId) {
+            setIsDirty(false);
+          }
+        } catch (error) {
+          handleApiError(error, "Could not delete work");
+        }
+      };
+
+      void doDelete();
+    },
+    [activeWorkId, apiUrl, handleApiError, token, works],
+  );
+
   const selectImage = useCallback(
     (index: number) => {
       updateActiveWork((work) => {
@@ -668,7 +776,9 @@ export const useWorks = (
     commitTag,
     confirmCancelGeneration,
     customTags,
+    deleteWork,
     deleteImage,
+    duplicateWork,
     handleGenerationAction,
     isDirty,
     isGenerating,
@@ -678,6 +788,7 @@ export const useWorks = (
     missingFieldIds,
     moveImage,
     removeTag,
+    renameWork,
     restoreViewing,
     saveWorks,
     selectDraft,

@@ -396,14 +396,22 @@ p {
   padding: 10px 8px;
 }
 
+.work-item-shell {
+  position: relative;
+  display: grid;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
 .work-item {
   display: grid;
   gap: 4px;
   width: 100%;
   padding: 12px;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: 8px;
-  background: var(--panel-soft);
+  background: transparent;
   color: var(--text);
   text-align: left;
 }
@@ -416,6 +424,11 @@ p {
   padding: 0;
   border-radius: 8px;
   text-align: center;
+}
+
+.works-sidebar--collapsed .work-item-shell {
+  width: 44px;
+  height: 44px;
 }
 
 .work-item span {
@@ -447,13 +460,78 @@ p {
   color: var(--status-danger);
 }
 
-.work-item--active {
+.work-item-shell--active {
   border-color: var(--accent-primary);
   background: var(--accent-primary-soft);
 }
 
-.work-item--active span {
+.work-item-shell--active span {
   color: var(--text-strong);
+}
+
+.work-item-menu-wrap {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+
+.work-item-menu-button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--control);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+  opacity: 0;
+}
+
+.work-item-shell:hover .work-item-menu-button,
+.work-item-shell:focus-within .work-item-menu-button {
+  opacity: 1;
+}
+
+.work-item-menu {
+  position: absolute;
+  right: 0;
+  top: 32px;
+  z-index: 30;
+  display: grid;
+  min-width: 128px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 24%);
+}
+
+.work-item-menu button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.work-item-menu button:hover {
+  background: var(--control);
+}
+
+.work-item-menu .work-item-menu-danger {
+  color: var(--status-danger);
+}
+
+.work-item-menu .work-item-menu-danger:hover {
+  background: var(--status-danger);
+  color: #ffffff;
 }
 
 .sidebar-account {
@@ -1194,6 +1272,17 @@ button:focus-visible {
   margin: 0 0 18px;
   color: var(--text);
   font-size: 0.88rem;
+}
+
+.modal-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--control);
+  color: var(--text);
+  font: inherit;
 }
 
 .modal-actions {
