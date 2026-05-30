@@ -21,6 +21,7 @@ interface ConfigSidebarProps {
   missingFieldIds: string[];
   models: Record<string, ModelConfig>;
   onRestoreViewing: () => void;
+  onRetryOptions: () => void;
   onSaveWork: () => void;
   optionsStatus: OptionsStatus;
   removeTag: (tag: string) => void;
@@ -169,6 +170,7 @@ export const ConfigSidebar = ({
   missingFieldIds,
   models,
   onRestoreViewing,
+  onRetryOptions,
   onSaveWork,
   optionsStatus,
   removeTag,
@@ -267,9 +269,12 @@ export const ConfigSidebar = ({
       <div className="options-scroll">
 
         {optionsStatus === "failed" ? (
-          <p className="error-text">
-            Could not load generation options from the API.
-          </p>
+          <div className="options-error">
+            <p className="error-text">Could not load generation options from the API.</p>
+            <button type="button" className="options-retry-button" onClick={onRetryOptions}>
+              Retry
+            </button>
+          </div>
         ) : null}
 
         {activeModel ? (

@@ -7,8 +7,8 @@ export const useGenerationOptions = (
   apiUrl: string,
   token: string | null,
   onUnauthorized: () => void,
-): { options: GenerationOptions | null; optionsStatus: OptionsStatus } => {
-  const { data, status, error } = useQuery({
+): { options: GenerationOptions | null; optionsStatus: OptionsStatus; refetchOptions: () => void } => {
+  const { data, status, error, refetch } = useQuery({
     queryKey: ["generation-options", apiUrl],
     queryFn: async () => {
       const response = await apiFetch(`${apiUrl}/generation-options`, { token: token! });
@@ -30,5 +30,5 @@ export const useGenerationOptions = (
     : status === "error" ? "failed"
     : "ready";
 
-  return { options: data ?? null, optionsStatus };
+  return { options: data ?? null, optionsStatus, refetchOptions: refetch };
 };

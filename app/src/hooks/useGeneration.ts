@@ -18,8 +18,8 @@ interface UseGenerationParams {
   updateWorkById: (workId: string, patch: Partial<Work>) => void;
   updateActiveWork: (updater: WorkUpdater) => void;
   patchWork: (work: Work) => Promise<void>;
-  setWorksError: Dispatch<SetStateAction<string>>;
-  handleApiError: (error: unknown, fallbackMessage: string) => void;
+  setWorkErrors: Dispatch<SetStateAction<Record<string, string>>>;
+  handleApiError: (key: string, error: unknown, fallbackMessage: string) => void;
   onGenerationFailed?: () => void;
 }
 
@@ -41,7 +41,7 @@ export const useGeneration = ({
   updateWorkById,
   updateActiveWork,
   patchWork,
-  setWorksError,
+  setWorkErrors,
   handleApiError,
   onGenerationFailed,
 }: UseGenerationParams): UseGenerationState => {
@@ -63,7 +63,7 @@ export const useGeneration = ({
     void (async () => {
       closeGenerationStream();
       setShowGenerationValidation(false);
-      setWorksError("");
+      setWorkErrors((prev) => ({ ...prev, generation: "" }));
       updateWorkById(workId, { status: "queued", progress: 0 });
       void patchWork(activeWork);
 
@@ -146,11 +146,11 @@ export const useGeneration = ({
             generationSourceRef.current = null;
           }
           updateWorkById(workId, { status: "failed", progress: 100 });
-          setWorksError("Generation status stream disconnected");
+          setWorkErrors((prev) => ({ ...prev, generation: "Generation status stream disconnected" }));
         };
       } catch (error) {
         updateWorkById(workId, { status: "failed", progress: 100 });
-        handleApiError(error, "Could not start generation");
+        handleApiError("generation", error, "Could not start generation");
         onGenerationFailed?.();
       }
     })();
@@ -163,7 +163,7 @@ export const useGeneration = ({
     onGenerationFailed,
     patchWork,
     setWorks,
-    setWorksError,
+    setWorkErrors,
     token,
     updateWorkById,
   ]);

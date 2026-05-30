@@ -16,7 +16,7 @@ interface WorksSidebarProps {
   onToggleCollapse: () => void;
   username: string;
   works: Work[];
-  worksError: string;
+  workErrors: Record<string, string>;
 }
 
 export const WorksSidebar = ({
@@ -34,8 +34,9 @@ export const WorksSidebar = ({
   onToggleCollapse,
   username,
   works,
-  worksError,
+  workErrors,
 }: WorksSidebarProps) => {
+  const worksError = Object.values(workErrors).find(Boolean) ?? "";
   const [openMenuWorkId, setOpenMenuWorkId] = useState<string | null>(null);
   const [renameWork, setRenameWork] = useState<Work | null>(null);
   const [deleteWork, setDeleteWork] = useState<Work | null>(null);

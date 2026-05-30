@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ConfigSidebar } from "./components/ConfigSidebar";
 import { ConfirmModal } from "./components/ConfirmModal";
 import { GalleryPanel } from "./components/GalleryPanel";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginGate } from "./components/LoginGate";
 import { TopBar } from "./components/TopBar";
 import { WorksSidebar } from "./components/WorksSidebar";
@@ -23,7 +24,7 @@ interface DashboardProps {
 const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   const health = useApiHealth(API_URL);
   const { reachable: comfyReachable, recheckNow } = useComfyHealth(API_URL);
-  const { options, optionsStatus } = useGenerationOptions(
+  const { options, optionsStatus, refetchOptions } = useGenerationOptions(
     API_URL,
     session.token,
     onUnauthorized,
@@ -76,7 +77,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           onSelectWork={worksState.setActiveWorkId}
           username={session.name}
           works={worksState.works}
-          worksError={worksState.worksError}
+          workErrors={worksState.workErrors}
         />
 
         <GalleryPanel
@@ -98,6 +99,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           missingFieldIds={worksState.missingFieldIds}
           models={options?.models ?? {}}
           onRestoreViewing={worksState.restoreViewing}
+          onRetryOptions={refetchOptions}
           onSaveWork={worksState.saveWorks}
           optionsStatus={optionsStatus}
           removeTag={worksState.removeTag}
@@ -133,7 +135,11 @@ const App = () => {
     );
   }
 
-  return <Dashboard onUnauthorized={auth.clearAuth} session={auth.session} />;
+  return (
+    <ErrorBoundary>
+      <Dashboard onUnauthorized={auth.clearAuth} session={auth.session} />
+    </ErrorBoundary>
+  );
 };
 
 export default App;

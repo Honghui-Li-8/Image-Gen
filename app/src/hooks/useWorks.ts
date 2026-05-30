@@ -47,7 +47,7 @@ interface UseWorksState {
   showGenerationValidation: boolean;
   updateActiveWork: (updater: WorkUpdater) => void;
   works: Work[];
-  worksError: string;
+  workErrors: Record<string, string>;
 }
 
 export const useWorks = (
@@ -67,8 +67,8 @@ export const useWorks = (
     activeWorkId,
     setActiveWorkId,
     isLoadingWorks,
-    worksError,
-    setWorksError,
+    workErrors,
+    setWorkErrors,
     handleApiError,
     addWork,
     renameWork,
@@ -152,7 +152,7 @@ export const useWorks = (
         });
         setIsDirty(false);
       } catch (error) {
-        handleApiError(error, "Could not save work");
+        handleApiError("save", error, "Could not save work");
       }
     },
     [apiUrl, handleApiError, token],
@@ -170,7 +170,7 @@ export const useWorks = (
     updateWorkById,
     updateActiveWork,
     patchWork,
-    setWorksError,
+    setWorkErrors,
     handleApiError,
     onGenerationFailed,
   });
@@ -180,9 +180,9 @@ export const useWorks = (
   const saveWorks = useCallback(() => {
     if (!activeWork || isSaving) return;
     setIsSaving(true);
-    setWorksError("");
+    setWorkErrors((prev) => ({ ...prev, save: "" }));
     void patchWork(activeWork).finally(() => setIsSaving(false));
-  }, [activeWork, isSaving, patchWork, setWorksError]);
+  }, [activeWork, isSaving, patchWork, setWorkErrors]);
 
   useEffect(() => {
     const handleSaveShortcut = (event: KeyboardEvent) => {
@@ -266,7 +266,7 @@ export const useWorks = (
             }),
           );
         } catch (error) {
-          handleApiError(error, "Could not delete image");
+          handleApiError("deleteImage", error, "Could not delete image");
         }
       })();
     },
@@ -348,6 +348,6 @@ export const useWorks = (
     showGenerationValidation: generation.showGenerationValidation,
     updateActiveWork,
     works,
-    worksError,
+    workErrors,
   };
 };

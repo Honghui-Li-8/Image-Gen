@@ -11,9 +11,9 @@ export interface UseWorksDataState {
   activeWorkId: string;
   setActiveWorkId: Dispatch<SetStateAction<string>>;
   isLoadingWorks: boolean;
-  worksError: string;
-  setWorksError: Dispatch<SetStateAction<string>>;
-  handleApiError: (error: unknown, fallbackMessage: string) => void;
+  workErrors: Record<string, string>;
+  setWorkErrors: Dispatch<SetStateAction<Record<string, string>>>;
+  handleApiError: (key: string, error: unknown, fallbackMessage: string) => void;
   addWork: () => void;
   renameWork: (workId: string, name: string) => void;
   duplicateWork: (workId: string) => void;
@@ -29,15 +29,16 @@ export const useWorksData = (
   const [works, setWorks] = useState<Work[]>([]);
   const [activeWorkId, setActiveWorkId] = useState("");
   const [isLoadingWorks, setIsLoadingWorks] = useState(true);
-  const [worksError, setWorksError] = useState("");
+  const [workErrors, setWorkErrors] = useState<Record<string, string>>({});
 
   const handleApiError = useCallback(
-    (error: unknown, fallbackMessage: string) => {
+    (key: string, error: unknown, fallbackMessage: string) => {
       if (error instanceof ApiError && error.status === 401) {
         onUnauthorized();
         return;
       }
-      setWorksError(error instanceof Error ? error.message : fallbackMessage);
+      const message = error instanceof Error ? error.message : fallbackMessage;
+      setWorkErrors((prev) => ({ ...prev, [key]: message }));
     },
     [onUnauthorized],
   );
@@ -63,7 +64,7 @@ export const useWorksData = (
 
     const loadWorks = async () => {
       setIsLoadingWorks(true);
-      setWorksError("");
+      setWorkErrors((prev) => ({ ...prev, load: "" }));
 
       try {
         const response = await apiFetch(`${apiUrl}/works`, { token });
@@ -90,7 +91,7 @@ export const useWorksData = (
         }
       } catch (error) {
         if (!ignore) {
-          handleApiError(error, "Could not load works");
+          handleApiError("load", error, "Could not load works");
         }
       } finally {
         if (!ignore) {
@@ -108,7 +109,7 @@ export const useWorksData = (
 
   const addWork = useCallback(() => {
     void (async () => {
-      setWorksError("");
+      setWorkErrors((prev) => ({ ...prev, add: "" }));
       try {
         const response = await apiFetch(`${apiUrl}/works`, {
           method: "POST",
@@ -120,7 +121,7 @@ export const useWorksData = (
         setWorks((current) => [...current, nextWork]);
         setActiveWorkId(nextWork.id);
       } catch (error) {
-        handleApiError(error, "Could not create work");
+        handleApiError("add", error, "Could not create work");
       }
     })();
   }, [apiUrl, handleApiError, loadWorkDetails, token]);
@@ -132,7 +133,7 @@ export const useWorksData = (
       if (!work || !nextName || work.name === nextName) return;
 
       void (async () => {
-        setWorksError("");
+        setWorkErrors((prev) => ({ ...prev, rename: "" }));
         try {
           const response = await apiFetch(`${apiUrl}/works/${workId}`, {
             method: "PATCH",
@@ -148,7 +149,7 @@ export const useWorksData = (
             ),
           );
         } catch (error) {
-          handleApiError(error, "Could not rename work");
+          handleApiError("rename", error, "Could not rename work");
         }
       })();
     },
@@ -161,7 +162,7 @@ export const useWorksData = (
       if (!source) return;
 
       void (async () => {
-        setWorksError("");
+        setWorkErrors((prev) => ({ ...prev, duplicate: "" }));
         try {
           const response = await apiFetch(`${apiUrl}/works`, {
             method: "POST",
@@ -173,7 +174,7 @@ export const useWorksData = (
           setWorks((current) => [...current, nextWork]);
           setActiveWorkId(nextWork.id);
         } catch (error) {
-          handleApiError(error, "Could not duplicate work");
+          handleApiError("duplicate", error, "Could not duplicate work");
         }
       })();
     },
@@ -188,13 +189,13 @@ export const useWorksData = (
           : activeWorkId;
 
       void (async () => {
-        setWorksError("");
+        setWorkErrors((prev) => ({ ...prev, delete: "" }));
         try {
           await apiFetch(`${apiUrl}/works/${workId}`, { method: "DELETE", token });
           setWorks((current) => current.filter((w) => w.id !== workId));
           setActiveWorkId(nextActiveWorkId);
         } catch (error) {
-          handleApiError(error, "Could not delete work");
+          handleApiError("delete", error, "Could not delete work");
         }
       })();
     },
@@ -207,8 +208,8 @@ export const useWorksData = (
     activeWorkId,
     setActiveWorkId,
     isLoadingWorks,
-    worksError,
-    setWorksError,
+    workErrors,
+    setWorkErrors,
     handleApiError,
     addWork,
     renameWork,
