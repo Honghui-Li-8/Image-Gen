@@ -109,10 +109,13 @@ export const ConfigSidebar = ({
               onChange={(event) => {
                 const newModel = models[event.target.value];
                 if (!newModel) return;
+                const newCategoryIds = new Set(newModel.categories.map((c) => c.id));
                 updateActiveWork((work) => ({
                   ...work,
                   selectedModel: newModel.id,
-                  selections: {},
+                  selections: Object.fromEntries(
+                    Object.entries(work.selections ?? {}).filter(([id]) => newCategoryIds.has(id))
+                  ),
                   selectedPreset: newModel.outputPresets[0]?.id || "",
                 }));
               }}
