@@ -2,6 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/.env"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+  set +a
+fi
 
 # ── env validation ─────────────────────────────────────────────────────────
 
@@ -13,7 +21,7 @@ fi
 HEALTH_URL="http://localhost:${PROXY_PORT}/health"
 LOG_DIR="${SCRIPT_DIR}/logs"
 LOG_FILE="${LOG_DIR}/proxy-$(date +%Y%m%d-%H%M%S).log"
-PID_FILE="${SCRIPT_DIR}/proxy.pid"
+PID_FILE="${LOG_DIR}/proxy.pid"
 
 # ── helpers ────────────────────────────────────────────────────────────────
 

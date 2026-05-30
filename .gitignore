@@ -3,6 +3,8 @@ dist/
 build/
 coverage/
 api/db.sqlite
+proxy/logs/*
+!proxy/logs/.gitkeep
 
 .env
 .env.*
