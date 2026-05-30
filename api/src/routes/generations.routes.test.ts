@@ -138,9 +138,7 @@ describe("POST /works/:workId/generations", () => {
   it("rejects missing auth", async () => {
     const workId = await seedWork(aliceId);
 
-    const res = await request(app)
-      .post(`/works/${workId}/generations`)
-      .send(GENERATION_BODY);
+    const res = await request(app).post(`/works/${workId}/generations`).send(GENERATION_BODY);
 
     expect(res.status).toBe(401);
   });
@@ -261,9 +259,7 @@ describe("GET /generations/:generationId/status", () => {
     const workId = await seedWork(aliceId);
     const generationId = await seedGeneration(workId, aliceId, "completed");
 
-    const res = await request(app).get(
-      `/generations/${generationId}/status?token=${ALICE_TOKEN}`
-    );
+    const res = await request(app).get(`/generations/${generationId}/status?token=${ALICE_TOKEN}`);
 
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/event-stream");
@@ -287,9 +283,7 @@ describe("GET /generations/:generationId/status", () => {
     const workId = await seedWork(aliceId);
     const generationId = await seedGeneration(workId, aliceId, "completed");
 
-    const res = await request(app).get(
-      `/generations/${generationId}/status?token=${BOB_TOKEN}`
-    );
+    const res = await request(app).get(`/generations/${generationId}/status?token=${BOB_TOKEN}`);
 
     expect(res.status).toBe(404);
   });
@@ -298,9 +292,7 @@ describe("GET /generations/:generationId/status", () => {
     const workId = await seedWork(aliceId);
     const generationId = await seedGeneration(workId, aliceId, "queued");
 
-    const stream = request(app).get(
-      `/generations/${generationId}/status?token=${ALICE_TOKEN}`
-    );
+    const stream = request(app).get(`/generations/${generationId}/status?token=${ALICE_TOKEN}`);
     const response = stream.then((res) => res);
 
     setTimeout(() => {

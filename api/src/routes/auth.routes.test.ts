@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import express from "express";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,11 +32,7 @@ function buildApp() {
 
 const now = new Date();
 
-async function seedUser(
-  db: ReturnType<typeof drizzle>,
-  name: string,
-  password: string
-) {
+async function seedUser(db: ReturnType<typeof drizzle>, name: string, password: string) {
   const passwordHash = await bcrypt.hash(password, 1);
   const id = createId();
   await db.insert(users).values({ id, name, passwordHash, lastLoginAt: now, createdAt: now });
@@ -104,8 +99,6 @@ describe("POST /auth/login", () => {
     await new Promise((r) => setTimeout(r, 10));
     await request(app).post("/auth/login").send({ name: "alice", password: "pass123" });
     const after = await db.select().from(users).where(eq(users.id, id));
-    expect(after[0].lastLoginAt.getTime()).toBeGreaterThanOrEqual(
-      before[0].lastLoginAt.getTime()
-    );
+    expect(after[0].lastLoginAt.getTime()).toBeGreaterThanOrEqual(before[0].lastLoginAt.getTime());
   });
 });

@@ -14,8 +14,7 @@ export const ConfirmModal = ({ onCancel, onConfirm }: ConfirmModalProps) => {
       >
         <h2 id="cancel-title">Cancel generation?</h2>
         <p>
-          The current work is generating. Canceling will stop this run and reset
-          the work progress.
+          The current work is generating. Canceling will stop this run and reset the work progress.
         </p>
         <div className="modal-actions">
           <button type="button" onClick={onCancel}>

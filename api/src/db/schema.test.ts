@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createId } from "@paralleldrive/cuid2";
 import { generations, users, works } from "./schema.js";
 
@@ -64,16 +64,17 @@ describe("schema constraints", () => {
   });
 
   it("enforces FK: inserting a work with a non-existent userId throws", () => {
-    expect(() =>
-      db.insert(works).values(makeWork("nonexistent-user-id")).run()
-    ).toThrow();
+    expect(() => db.insert(works).values(makeWork("nonexistent-user-id")).run()).toThrow();
   });
 
   it("enforces unique constraint: two users with the same name throw", () => {
     const user = makeUser({ name: "alice" });
     db.insert(users).values(user).run();
     expect(() =>
-      db.insert(users).values({ ...makeUser(), name: "alice" }).run()
+      db
+        .insert(users)
+        .values({ ...makeUser(), name: "alice" })
+        .run()
     ).toThrow();
   });
 

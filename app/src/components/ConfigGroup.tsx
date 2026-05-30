@@ -6,11 +6,7 @@ interface ConfigGroupProps {
   title: string;
 }
 
-export const ConfigGroup = ({
-  children,
-  className = "",
-  title,
-}: ConfigGroupProps) => {
+export const ConfigGroup = ({ children, className = "", title }: ConfigGroupProps) => {
   return (
     <fieldset className={`control-group ${className}`}>
       <legend>{title}</legend>

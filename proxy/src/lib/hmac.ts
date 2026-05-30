@@ -33,8 +33,7 @@ const constantTimeHexEqual = (actual: string, expected: string): boolean => {
   return timingSafeEqual(actualBuffer, expectedBuffer);
 };
 
-export const signPayload = (secret: string, payload: string): string =>
-  hmacSha256(secret, payload);
+export const signPayload = (secret: string, payload: string): string => hmacSha256(secret, payload);
 
 export const verifyBackendSignature = (
   secret: string,
@@ -53,10 +52,7 @@ export const verifyBackendSignature = (
     return false;
   }
 
-  const expected = hmacSha256(
-    secret,
-    canonicalRequestPayload(method, pathWithQuery, timestamp)
-  );
+  const expected = hmacSha256(secret, canonicalRequestPayload(method, pathWithQuery, timestamp));
   return constantTimeHexEqual(signature, expected);
 };
 

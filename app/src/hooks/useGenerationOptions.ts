@@ -6,8 +6,12 @@ import { ApiError, apiFetch } from "../utils/api";
 export const useGenerationOptions = (
   apiUrl: string,
   token: string | null,
-  onUnauthorized: () => void,
-): { options: GenerationOptions | null; optionsStatus: OptionsStatus; refetchOptions: () => void } => {
+  onUnauthorized: () => void
+): {
+  options: GenerationOptions | null;
+  optionsStatus: OptionsStatus;
+  refetchOptions: () => void;
+} => {
   const { data, status, error, refetch } = useQuery({
     queryKey: ["generation-options", apiUrl],
     queryFn: async () => {
@@ -26,9 +30,7 @@ export const useGenerationOptions = (
   }, [error, onUnauthorized]);
 
   const optionsStatus: OptionsStatus =
-    !token || status === "pending" ? "loading"
-    : status === "error" ? "failed"
-    : "ready";
+    !token || status === "pending" ? "loading" : status === "error" ? "failed" : "ready";
 
   return { options: data ?? null, optionsStatus, refetchOptions: refetch };
 };

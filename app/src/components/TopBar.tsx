@@ -30,9 +30,7 @@ export const TopBar = ({
     <header className="top-status-bar">
       <div className="brand-block">
         <span className="product-name">Image Gen</span>
-        <span className="workspace-name">
-          {activeWork?.name || "Loading work"}
-        </span>
+        <span className="workspace-name">{activeWork?.name || "Loading work"}</span>
       </div>
 
       <div className="work-status">
@@ -41,15 +39,10 @@ export const TopBar = ({
           <strong>{activeWork?.status || "loading"}</strong>
         </div>
         <div className="progress-track" aria-label="Work progress">
-          <div
-            className="progress-fill"
-            style={{ width: `${activeWork?.progress || 0}%` }}
-          />
+          <div className="progress-fill" style={{ width: `${activeWork?.progress || 0}%` }} />
         </div>
         <span className="progress-value">{activeWork?.progress || 0}%</span>
-        {comfyReachable === false && (
-          <span className="gpu-offline-label">GPU offline</span>
-        )}
+        {comfyReachable === false && <span className="gpu-offline-label">GPU offline</span>}
         <button
           className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
           type="button"

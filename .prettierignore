@@ -1,0 +1,4 @@
+node_modules
+dist
+api/src/db/migrations
+pnpm-lock.yaml

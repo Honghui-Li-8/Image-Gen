@@ -1,7 +1,7 @@
 import type { GenerationCategory, GenerationOptions, ModelConfig, Work } from "../types";
 
 export const buildInitialSelections = (
-  _categories: GenerationCategory[] = [],
+  _categories: GenerationCategory[] = []
 ): Record<string, string> => {
   return {};
 };
@@ -10,16 +10,11 @@ export const getMissingFieldIds = (work: Work, model: ModelConfig): string[] => 
   const invalidCategoryIds = model.categories
     .filter((category) => {
       const selectedValue = work.selections[category.id];
-      return (
-        !selectedValue ||
-        !category.options.some((option) => option.value === selectedValue)
-      );
+      return !selectedValue || !category.options.some((option) => option.value === selectedValue);
     })
     .map((category) => category.id);
 
-  const isPresetValid = model.outputPresets.some(
-    (preset) => preset.id === work.selectedPreset,
-  );
+  const isPresetValid = model.outputPresets.some((preset) => preset.id === work.selectedPreset);
 
   return [
     ...invalidCategoryIds,
@@ -28,10 +23,7 @@ export const getMissingFieldIds = (work: Work, model: ModelConfig): string[] => 
   ];
 };
 
-export const createWork = (
-  options: GenerationOptions | null,
-  index = 1,
-): Work => {
+export const createWork = (options: GenerationOptions | null, index = 1): Work => {
   const modelId = options?.defaultModelId || "";
   const model = modelId ? options?.models[modelId] : null;
 

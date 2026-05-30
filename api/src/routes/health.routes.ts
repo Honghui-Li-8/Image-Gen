@@ -12,7 +12,7 @@ healthRouter.get("/health", (_req: Request, res: Response) => {
     ok: true,
     status: "healthy",
     service: "image-gen-api",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

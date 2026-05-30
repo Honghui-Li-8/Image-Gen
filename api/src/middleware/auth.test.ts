@@ -10,7 +10,10 @@ function makeReq(authorization?: string): Partial<Request> {
 function makeRes(): { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> } {
   const json = vi.fn();
   const status = vi.fn(() => ({ json }));
-  return { status, json } as unknown as { status: ReturnType<typeof vi.fn>; json: ReturnType<typeof vi.fn> };
+  return { status, json } as unknown as {
+    status: ReturnType<typeof vi.fn>;
+    json: ReturnType<typeof vi.fn>;
+  };
 }
 
 beforeEach(() => tokenStore.clear());

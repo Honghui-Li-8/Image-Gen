@@ -9,13 +9,7 @@ export const requireBackendAuth: RequestHandler = (req, res, next) => {
   if (
     !timestamp ||
     !signature ||
-    !verifyBackendSignature(
-      getProxyAuthSecret(),
-      req.method,
-      req.originalUrl,
-      timestamp,
-      signature
-    )
+    !verifyBackendSignature(getProxyAuthSecret(), req.method, req.originalUrl, timestamp, signature)
   ) {
     res.status(401).json({ error: "Invalid proxy signature" });
     return;

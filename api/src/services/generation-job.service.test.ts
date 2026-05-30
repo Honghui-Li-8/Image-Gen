@@ -156,16 +156,13 @@ describe("generation job service", () => {
   it("updates the database before emitting status events", async () => {
     const generation = await createQueuedGeneration({ workId, userId, config: TEST_CONFIG });
 
-    generationEmitter.once(
-      GENERATION_UPDATE_EVENT,
-      async (event: GenerationUpdateEvent) => {
-        const [row] = await db
-          .select()
-          .from(generations)
-          .where(eq(generations.id, event.generationId));
-        expect(row.status).toBe(event.status);
-      }
-    );
+    generationEmitter.once(GENERATION_UPDATE_EVENT, async (event: GenerationUpdateEvent) => {
+      const [row] = await db
+        .select()
+        .from(generations)
+        .where(eq(generations.id, event.generationId));
+      expect(row.status).toBe(event.status);
+    });
 
     await updateGenerationStatus({
       generationId: generation.id,
@@ -187,10 +184,7 @@ describe("generation job service", () => {
     await vi.runAllTimersAsync();
     await worker;
 
-    const [row] = await db
-      .select()
-      .from(generations)
-      .where(eq(generations.id, generation.id));
+    const [row] = await db.select().from(generations).where(eq(generations.id, generation.id));
 
     expect(row.status).toBe("completed");
     expect(row.completedAt).toBeInstanceOf(Date);

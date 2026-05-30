@@ -18,8 +18,7 @@ authRouter.post("/auth/login", async (req, res) => {
 
   const [user] = await db.select().from(users).where(eq(users.name, name));
 
-  const valid =
-    user !== undefined && (await bcrypt.compare(password, user.passwordHash));
+  const valid = user !== undefined && (await bcrypt.compare(password, user.passwordHash));
 
   if (!valid) {
     res.status(401).json({ error: "Invalid credentials" });
@@ -29,10 +28,7 @@ authRouter.post("/auth/login", async (req, res) => {
   const token = createId();
   tokenStore.set(token, { token, userId: user.id, createdAt: new Date() });
 
-  await db
-    .update(users)
-    .set({ lastLoginAt: new Date() })
-    .where(eq(users.id, user.id));
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
 
   res.json({ token, userId: user.id, name: user.name });
 });

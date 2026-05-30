@@ -76,10 +76,7 @@ export const GalleryPanel = ({
         <div className="image-frame">
           {activeImage ? (
             <>
-              <img
-                src={activeImage.url}
-                alt={activeImage.alt || "Generated anime character"}
-              />
+              <img src={activeImage.url} alt={activeImage.alt || "Generated anime character"} />
               {activeImage.id && (
                 <button
                   className="image-delete-button"
@@ -102,10 +99,7 @@ export const GalleryPanel = ({
         <button
           className="gallery-nav gallery-nav--right"
           type="button"
-          disabled={
-            !images.length ||
-            (activeWork?.activeImageIndex ?? 0) >= images.length - 1
-          }
+          disabled={!images.length || (activeWork?.activeImageIndex ?? 0) >= images.length - 1}
           onClick={() => onMoveImage(1)}
           aria-label="Next image"
         >
@@ -171,11 +165,7 @@ export const GalleryPanel = ({
               >
                 Delete
               </button>
-              <button
-                className="modal-button"
-                type="button"
-                onClick={() => setPendingDelete(null)}
-              >
+              <button className="modal-button" type="button" onClick={() => setPendingDelete(null)}>
                 Cancel
               </button>
             </div>

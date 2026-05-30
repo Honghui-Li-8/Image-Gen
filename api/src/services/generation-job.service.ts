@@ -58,12 +58,7 @@ export const countInFlightGenerations = async (userId: string): Promise<number> 
   const rows = await db
     .select({ id: generations.id })
     .from(generations)
-    .where(
-      and(
-        eq(generations.userId, userId),
-        inArray(generations.status, IN_FLIGHT_STATUSES)
-      )
-    );
+    .where(and(eq(generations.userId, userId), inArray(generations.status, IN_FLIGHT_STATUSES)));
 
   return rows.length;
 };
@@ -126,10 +121,7 @@ export const createQueuedGeneration = async ({
     completedAt: null,
   });
 
-  const [generation] = await db
-    .select()
-    .from(generations)
-    .where(eq(generations.id, id));
+  const [generation] = await db.select().from(generations).where(eq(generations.id, id));
 
   return generation;
 };
@@ -164,10 +156,7 @@ export const updateGenerationStatus = async ({
 
   await db.update(generations).set(patch).where(eq(generations.id, generationId));
 
-  const [generation] = await db
-    .select()
-    .from(generations)
-    .where(eq(generations.id, generationId));
+  const [generation] = await db.select().from(generations).where(eq(generations.id, generationId));
 
   emitGenerationUpdate({
     generationId,
@@ -222,10 +211,7 @@ export const runStubGeneration = async (generationId: string): Promise<void> => 
 };
 
 const getGeneration = async (generationId: string): Promise<Generation | null> => {
-  const [generation] = await db
-    .select()
-    .from(generations)
-    .where(eq(generations.id, generationId));
+  const [generation] = await db.select().from(generations).where(eq(generations.id, generationId));
   return generation ?? null;
 };
 
@@ -300,7 +286,12 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       const imageUrl = extractComfyImageFilename(history, promptId);
 
       if (imageUrl !== null) {
-        await updateGenerationStatus({ generationId, status: "completed", progress: 100, imageUrl });
+        await updateGenerationStatus({
+          generationId,
+          status: "completed",
+          progress: 100,
+          imageUrl,
+        });
         logger.info("generation.comfy.completed", { generationId, imageUrl });
         return;
       }

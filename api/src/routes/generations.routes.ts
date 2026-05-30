@@ -18,10 +18,7 @@ import type {
   GenerationRequestConfig,
   GenerationUpdateEvent,
 } from "../services/generation-job.service.js";
-import {
-  buildSignedImageUrl,
-  serializeGenerationImageUrl,
-} from "../services/image-url.service.js";
+import { buildSignedImageUrl, serializeGenerationImageUrl } from "../services/image-url.service.js";
 import { logger } from "../utils/logger.js";
 
 const getMaxInFlightPerUser = () => Number(process.env.COMFYUI_MAX_ACTIVE_JOBS ?? "1");
@@ -47,18 +44,12 @@ const getRequestToken = (req: Request): string | null => {
   return typeof req.query.token === "string" ? req.query.token : null;
 };
 
-const writeSseEvent = (
-  res: Response,
-  eventName: string,
-  payload: object
-): void => {
+const writeSseEvent = (res: Response, eventName: string, payload: object): void => {
   res.write(`event: ${eventName}\n`);
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
 };
 
-const serializeGenerationUpdate = (
-  event: GenerationUpdateEvent
-): GenerationUpdateEvent => ({
+const serializeGenerationUpdate = (event: GenerationUpdateEvent): GenerationUpdateEvent => ({
   ...event,
   imageUrl:
     event.imageUrl === undefined
@@ -104,10 +95,7 @@ generationsRouter.post(
       workId: requestedWorkId,
     });
 
-    const [work] = await db
-      .select()
-      .from(works)
-      .where(eq(works.id, requestedWorkId));
+    const [work] = await db.select().from(works).where(eq(works.id, requestedWorkId));
 
     if (!work || work.userId !== req.userId) {
       logger.warn("generation.create.rejected", {
@@ -138,7 +126,9 @@ generationsRouter.post(
         userId: req.userId,
         workId: work.id,
       });
-      res.status(429).json({ error: "You already have an active generation, wait for it to finish" });
+      res
+        .status(429)
+        .json({ error: "You already have an active generation, wait for it to finish" });
       return;
     }
 
@@ -238,106 +228,100 @@ generationsRouter.get(
   }
 );
 
-generationsRouter.get(
-  "/generations/:generationId/status",
-  async (req: Request, res: Response) => {
-    const generationId = req.params.generationId as string;
-    const startedAt = Date.now();
-    const token = getRequestToken(req);
-    const userId = token ? resolveTokenUserId(token) : null;
+generationsRouter.get("/generations/:generationId/status", async (req: Request, res: Response) => {
+  const generationId = req.params.generationId as string;
+  const startedAt = Date.now();
+  const token = getRequestToken(req);
+  const userId = token ? resolveTokenUserId(token) : null;
 
-    if (!userId) {
-      logger.warn("generation.sse.rejected", {
-        generationId,
-        reason: "unauthorized",
-      });
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+  if (!userId) {
+    logger.warn("generation.sse.rejected", {
+      generationId,
+      reason: "unauthorized",
+    });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
 
-    const [generation] = await db
-      .select()
-      .from(generations)
-      .where(eq(generations.id, generationId));
+  const [generation] = await db.select().from(generations).where(eq(generations.id, generationId));
 
-    if (!generation || generation.userId !== userId) {
-      logger.warn("generation.sse.rejected", {
-        generationId,
-        reason: "generation_not_found",
-        userId,
-      });
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
+  if (!generation || generation.userId !== userId) {
+    logger.warn("generation.sse.rejected", {
+      generationId,
+      reason: "generation_not_found",
+      userId,
+    });
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("X-Accel-Buffering", "no");
-    res.flushHeaders?.();
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
 
-    logger.info("generation.sse.opened", {
+  logger.info("generation.sse.opened", {
+    generationId: generation.id,
+    status: generation.status,
+    userId,
+  });
+  writeSseEvent(res, "status", {
+    generationId: generation.id,
+    status: generation.status,
+    imageUrl: serializeGenerationImageUrl(generation.status, generation.imageUrl),
+    error: generation.error,
+  });
+
+  if (isTerminalGenerationStatus(generation.status)) {
+    logger.info("generation.sse.terminal_sent", {
+      durationMs: Date.now() - startedAt,
       generationId: generation.id,
       status: generation.status,
       userId,
     });
-    writeSseEvent(res, "status", {
-      generationId: generation.id,
-      status: generation.status,
-      imageUrl: serializeGenerationImageUrl(generation.status, generation.imageUrl),
-      error: generation.error,
-    });
+    res.end();
+    return;
+  }
 
-    if (isTerminalGenerationStatus(generation.status)) {
-      logger.info("generation.sse.terminal_sent", {
-        durationMs: Date.now() - startedAt,
-        generationId: generation.id,
-        status: generation.status,
-        userId,
-      });
-      res.end();
+  let closed = false;
+  const cleanup = () => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    clearInterval(pingInterval);
+    generationEmitter.off(GENERATION_UPDATE_EVENT, onGenerationUpdate);
+    logger.info("generation.sse.closed", {
+      durationMs: Date.now() - startedAt,
+      generationId: generation.id,
+      userId,
+    });
+  };
+
+  const onGenerationUpdate = (event: GenerationUpdateEvent) => {
+    if (event.generationId !== generation.id || closed) {
       return;
     }
 
-    let closed = false;
-    const cleanup = () => {
-      if (closed) {
-        return;
-      }
-      closed = true;
-      clearInterval(pingInterval);
-      generationEmitter.off(GENERATION_UPDATE_EVENT, onGenerationUpdate);
-      logger.info("generation.sse.closed", {
-        durationMs: Date.now() - startedAt,
-        generationId: generation.id,
-        userId,
-      });
-    };
+    writeSseEvent(res, "status", serializeGenerationUpdate(event));
+    logger.debug("generation.sse.event_sent", {
+      generationId: event.generationId,
+      progress: event.progress,
+      status: event.status,
+      userId,
+    });
 
-    const onGenerationUpdate = (event: GenerationUpdateEvent) => {
-      if (event.generationId !== generation.id || closed) {
-        return;
-      }
+    if (isTerminalGenerationStatus(event.status)) {
+      cleanup();
+      res.end();
+    }
+  };
 
-      writeSseEvent(res, "status", serializeGenerationUpdate(event));
-      logger.debug("generation.sse.event_sent", {
-        generationId: event.generationId,
-        progress: event.progress,
-        status: event.status,
-        userId,
-      });
+  const pingInterval = setInterval(() => {
+    writeSseEvent(res, "ping", { timestamp: new Date().toISOString() });
+  }, 20_000);
 
-      if (isTerminalGenerationStatus(event.status)) {
-        cleanup();
-        res.end();
-      }
-    };
-
-    const pingInterval = setInterval(() => {
-      writeSseEvent(res, "ping", { timestamp: new Date().toISOString() });
-    }, 20_000);
-
-    generationEmitter.on(GENERATION_UPDATE_EVENT, onGenerationUpdate);
-    req.on("close", cleanup);
-  }
-);
+  generationEmitter.on(GENERATION_UPDATE_EVENT, onGenerationUpdate);
+  req.on("close", cleanup);
+});

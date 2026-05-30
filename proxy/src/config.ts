@@ -12,11 +12,13 @@ export const getComfyUrl = (): string => {
 };
 
 const BLOCKED_PORTS = new Set([
-  80, 443,           // HTTP / HTTPS
-  8080, 8443,        // common HTTP alternatives
-  8188,              // ComfyUI default
-  3000,              // api
-  5173,              // Vite dev server
+  80,
+  443, // HTTP / HTTPS
+  8080,
+  8443, // common HTTP alternatives
+  8188, // ComfyUI default
+  3000, // api
+  5173, // Vite dev server
 ]);
 
 export const resolveProxyPort = (): number => {
