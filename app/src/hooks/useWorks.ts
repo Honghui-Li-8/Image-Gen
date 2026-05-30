@@ -689,17 +689,19 @@ export const useWorks = (
                     },
                   ]
                 : work.images;
+              const shouldAutoSelectNewImage = Boolean(
+                isNewImage && work.viewingConfig === null,
+              );
 
               return {
                 ...work,
                 status: payload.status,
                 progress: nextProgress,
                 images: nextImages,
-                activeImageIndex:
-                  nextImages.length > work.images.length
-                    ? nextImages.length - 1
-                    : work.activeImageIndex,
-                viewingConfig: null,
+                activeImageIndex: shouldAutoSelectNewImage
+                  ? nextImages.length - 1
+                  : work.activeImageIndex,
+                viewingConfig: work.viewingConfig,
               };
             }),
           );
