@@ -153,9 +153,7 @@ export const generationOptions: GenerationOptions = {
     positive: [
       "masterpiece",
       "best quality",
-      "anime style",
       "full body",
-      "full-length portrait",
       "standing",
       "head to toe",
       "feet visible",
@@ -182,7 +180,7 @@ export const generationOptions: GenerationOptions = {
       label: "Illustrious XL",
       tags: ["anime style", "high quality illustration"],
       promptDefaults: {
-        positive: ["highres", "absurdres"],
+        positive: ["highres", "absurdres", "full body", "head to toe", "standing"],
         negative: ["lowres", "blurry", "jpeg artifacts"]
       },
       categories: baseCategories,
@@ -194,7 +192,7 @@ export const generationOptions: GenerationOptions = {
       label: "Pony Diffusion V6",
       tags: ["anime style", "pony diffusion"],
       promptDefaults: {
-        positive: ["score_9", "score_8_up", "score_7_up", "source_anime"],
+        positive: ["score_9", "score_8_up", "score_7_up", "full body", "head to toe", "standing"],
         negative: ["score_6", "score_5", "score_4", "lowres", "worst quality"]
       },
       categories: baseCategories,
@@ -206,7 +204,7 @@ export const generationOptions: GenerationOptions = {
       label: "Animagine XL v3",
       tags: ["anime style", "animagine"],
       promptDefaults: {
-        positive: ["extremely detailed", "intricate details", "sharp focus"],
+        positive: [],
         negative: ["simple background", "lowres", "bad proportions", "ugly"]
       },
       categories: baseCategories,

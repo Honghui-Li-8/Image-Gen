@@ -32,7 +32,7 @@
     "class_type": "CLIPTextEncode",
     "inputs": {
       "clip": ["2", 0],
-      "text": "worst quality, low quality, lowres, blurry, bad score, average score, jpeg artifacts, bad anatomy, bad proportions, bad face, bad eyes, bad hands, malformed hands, bad fingers, extra fingers, missing fingers, fused fingers, extra digits, fewer digits, bad feet, cropped, out of frame, cropped feet, hands out of frame, duplicate person, multiple people, multiple views, reference sheet, character sheet, text, watermark, signature, adult content, nudity, sexual content"
+      "text": "worst quality, low quality, lowres, blurry, bad score, average score, jpeg artifacts, bad anatomy, bad proportions, bad face, bad eyes, bad hands, malformed hands, bad fingers, extra fingers, missing fingers, fused fingers, extra digits, fewer digits, bad feet, cropped, out of frame, cropped feet, hands out of frame, duplicate person, multiple people, multiple views, reference sheet, character sheet, text, watermark, signature, nsfw, loli, child, teen, teenager, young-looking, underage, minor, childlike"
     },
     "_meta": {
       "title": "Simplified Weighted QC Negative Prompt"
