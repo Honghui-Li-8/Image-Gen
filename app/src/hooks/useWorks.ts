@@ -193,13 +193,22 @@ export const useWorks = (
   const missingFieldIds = useMemo(() => {
     if (!activeWork || !activeModel) return [];
 
-    const missingCategoryIds = activeModel.categories
-      .filter((category) => !activeWork.selections[category.id])
+    const invalidCategoryIds = activeModel.categories
+      .filter((category) => {
+        const selectedValue = activeWork.selections[category.id];
+        return (
+          !selectedValue ||
+          !category.options.some((option) => option.value === selectedValue)
+        );
+      })
       .map((category) => category.id);
+    const isPresetValid = activeModel.outputPresets.some(
+      (preset) => preset.id === activeWork.selectedPreset,
+    );
 
     return [
-      ...missingCategoryIds,
-      ...(activeWork.selectedPreset ? [] : ["selectedPreset"]),
+      ...invalidCategoryIds,
+      ...(isPresetValid ? [] : ["selectedPreset"]),
       ...(activeWork.seed.trim() ? [] : ["seed"]),
     ];
   }, [activeModel, activeWork]);

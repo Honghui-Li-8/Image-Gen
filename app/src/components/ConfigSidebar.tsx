@@ -190,14 +190,27 @@ export const ConfigSidebar = ({
         ) : null}
 
         {activeModel ? (
+          (() => {
+            const selectedPreset =
+              displayConfig?.selectedPreset ?? activeWork?.selectedPreset ?? "";
+            const presetValue = activeModel.outputPresets.some(
+              (preset) => preset.id === selectedPreset,
+            ) ? selectedPreset : "";
+
+            return (
           <>
             {(() => {
               const [leftGroups, rightGroups] = distributeGroups(
                 groupCategories(activeModel.categories),
               );
 
-              const selectionValue = (categoryId: string) =>
-                (displayConfig?.selections ?? activeWork?.selections)?.[categoryId] ?? "";
+              const selectionValue = (category: GenerationCategory) => {
+                const selectedValue =
+                  (displayConfig?.selections ?? activeWork?.selections)?.[category.id] ?? "";
+                return category.options.some((option) => option.value === selectedValue)
+                  ? selectedValue
+                  : "";
+              };
 
               const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
                 groups.map(([group, categories]) => (
@@ -213,8 +226,8 @@ export const ConfigSidebar = ({
                       >
                         <span>{category.label}</span>
                         <select
-                          className={selectionValue(category.id) ? "" : "select-placeholder"}
-                          value={selectionValue(category.id)}
+                          className={selectionValue(category) ? "" : "select-placeholder"}
+                          value={selectionValue(category)}
                           disabled={isViewing}
                           onChange={(event) =>
                             updateActiveWork((work) => ({
@@ -281,10 +294,8 @@ export const ConfigSidebar = ({
             >
               <span>Output Size</span>
               <select
-                className={
-                  (displayConfig?.selectedPreset ?? activeWork?.selectedPreset) ? "" : "select-placeholder"
-                }
-                value={displayConfig?.selectedPreset ?? activeWork?.selectedPreset ?? ""}
+                className={presetValue ? "" : "select-placeholder"}
+                value={presetValue}
                 disabled={isViewing}
                 onChange={(event) =>
                   updateActiveWork({ selectedPreset: event.target.value })
@@ -299,6 +310,8 @@ export const ConfigSidebar = ({
               </select>
             </label>
           </>
+            );
+          })()
         ) : null}
       </div>
 
