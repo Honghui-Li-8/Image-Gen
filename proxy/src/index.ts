@@ -40,6 +40,13 @@ const writeUpgradeError = (socket: Duplex, statusCode: number): void => {
   socket.destroy();
 };
 
+const REQUIRED_ENV_VARS = ["PROXY_AUTH_SECRET", "COMFYUI_IMAGE_ROOT"] as const;
+const missingVars = REQUIRED_ENV_VARS.filter((k) => !process.env[k]);
+if (missingVars.length > 0) {
+  console.error(`Missing required env vars: ${missingVars.join(", ")}`);
+  process.exit(1);
+}
+
 const app = createApp();
 const server = createServer(app);
 const wsServer = new WebSocketServer({ noServer: true });
