@@ -54,22 +54,26 @@ const server = createServer(app);
 const wsServer = new WebSocketServer({ noServer: true });
 
 const pipeWebSockets = (clientWs: WebSocket, upstreamWs: WebSocket): void => {
+  const closeBoth = () => {
+    clientWs.close();
+    upstreamWs.close();
+  };
+
   clientWs.on("message", (data, isBinary) => {
     if (upstreamWs.readyState === WebSocket.OPEN) {
-      upstreamWs.send(data, { binary: isBinary });
+      upstreamWs.send(data, { binary: isBinary }, (err) => {
+        if (err) closeBoth();
+      });
     }
   });
 
   upstreamWs.on("message", (data, isBinary) => {
     if (clientWs.readyState === WebSocket.OPEN) {
-      clientWs.send(data, { binary: isBinary });
+      clientWs.send(data, { binary: isBinary }, (err) => {
+        if (err) closeBoth();
+      });
     }
   });
-
-  const closeBoth = () => {
-    clientWs.close();
-    upstreamWs.close();
-  };
 
   clientWs.on("close", closeBoth);
   upstreamWs.on("close", closeBoth);
