@@ -3,6 +3,7 @@ import type { GenerationOptions, ServerStatus, Theme, Work } from "../types";
 
 interface TopBarProps {
   activeWork: Work | undefined;
+  comfyReachable: boolean | null;
   isGenerating: boolean;
   isLoadingWorks: boolean;
   isSaving: boolean;
@@ -15,6 +16,7 @@ interface TopBarProps {
 
 export const TopBar = ({
   activeWork,
+  comfyReachable,
   isGenerating,
   isLoadingWorks,
   isSaving,
@@ -45,12 +47,14 @@ export const TopBar = ({
           />
         </div>
         <span className="progress-value">{activeWork?.progress || 0}%</span>
+        {comfyReachable === false && (
+          <span className="gpu-offline-label">GPU offline</span>
+        )}
         <button
           className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
           type="button"
-          disabled={
-            isLoadingWorks || isSaving || !options
-          }
+          disabled={isLoadingWorks || isSaving || !options || comfyReachable === false}
+          title={comfyReachable === false ? "ComfyUI is not reachable" : undefined}
           onClick={onGenerationAction}
         >
           {isGenerating ? "Cancel" : "Generate"}
