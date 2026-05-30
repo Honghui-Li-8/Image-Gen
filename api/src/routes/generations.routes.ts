@@ -11,7 +11,7 @@ import {
   countInFlightGenerations,
   createQueuedGeneration,
   isTerminalGenerationStatus,
-  runStubGeneration,
+  runComfyGeneration,
 } from "../services/generation-job.service.js";
 import type {
   GenerationRequestConfig,
@@ -148,7 +148,7 @@ generationsRouter.post(
       userId: req.userId,
       workId: work.id,
     });
-    void runStubGeneration(generation.id);
+    void runComfyGeneration(generation.id);
 
     logger.info("generation.create.accepted", {
       durationMs: Date.now() - startedAt,
