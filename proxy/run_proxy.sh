@@ -11,7 +11,8 @@ if [[ -z "${PROXY_PORT:-}" ]]; then
 fi
 
 HEALTH_URL="http://localhost:${PROXY_PORT}/health"
-LOG_FILE="${SCRIPT_DIR}/proxy.log"
+LOG_DIR="${SCRIPT_DIR}/logs"
+LOG_FILE="${LOG_DIR}/proxy-$(date +%Y%m%d-%H%M%S).log"
 PID_FILE="${SCRIPT_DIR}/proxy.pid"
 
 # ── helpers ────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ fi
 
 # ── launch ─────────────────────────────────────────────────────────────────
 
+mkdir -p "${LOG_DIR}"
 cd "${SCRIPT_DIR}"
 nohup pnpm start >> "${LOG_FILE}" 2>&1 &
 PROXY_PID=$!

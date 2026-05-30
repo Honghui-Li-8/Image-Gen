@@ -7,12 +7,14 @@ import { WebSocket, WebSocketServer } from "ws";
 import { getProxyAuthSecret, getProxyPort, buildComfyWsUrl } from "./config.js";
 import { verifyBackendSignature } from "./lib/hmac.js";
 import { requireBackendAuth } from "./middleware/require-backend-auth.js";
+import { requestLogger, logWsEvent } from "./middleware/request-logger.js";
 import { comfyProxyHandler } from "./routes/comfy.js";
 import { healthHandler } from "./routes/health.js";
 import { imageHandler } from "./routes/images.js";
 
 export const createApp = () => {
   const app = express();
+  app.use(requestLogger);
   app.get("/health", healthHandler);
   app.use("/comfy", requireBackendAuth, comfyProxyHandler);
   app.get("/images/:filename", imageHandler);
@@ -81,18 +83,23 @@ server.on("upgrade", (req, socket, head) => {
   }
 
   if (!verifyUpgradeAuth(req)) {
+    logWsEvent("auth_fail", pathname);
     writeUpgradeError(socket, 401);
     return;
   }
 
   wsServer.handleUpgrade(req, socket, head, (clientWs) => {
+    logWsEvent("connect", pathname);
     const upstreamWs = new WebSocket(buildComfyWsUrl());
 
     const pingInterval = setInterval(() => {
       if (clientWs.readyState === WebSocket.OPEN) clientWs.ping();
     }, 30_000);
 
-    clientWs.on("close", () => clearInterval(pingInterval));
+    clientWs.on("close", () => {
+      clearInterval(pingInterval);
+      logWsEvent("disconnect", pathname);
+    });
 
     upstreamWs.on("open", () => {
       pipeWebSockets(clientWs, upstreamWs);
