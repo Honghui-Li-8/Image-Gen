@@ -10,6 +10,10 @@
     "dev": "pnpm --parallel --recursive dev",
     "dev:app": "pnpm --filter image-gen-app dev",
     "dev:api": "pnpm --filter image-gen-api dev",
-    "test": "pnpm --filter image-gen-api test"
+    "lint": "pnpm -r lint && proxy/node_modules/.bin/eslint --config proxy/eslint.config.js proxy/src",
+    "typecheck": "pnpm -r typecheck && proxy/node_modules/.bin/tsc -p proxy/tsconfig.json --noEmit",
+    "test": "pnpm -r --if-present test && proxy/node_modules/.bin/vitest run --root proxy",
+    "format": "pnpm -r format && proxy/node_modules/.bin/prettier --write proxy/src",
+    "format:check": "pnpm -r format:check && proxy/node_modules/.bin/prettier --check proxy/src"
   }
 }

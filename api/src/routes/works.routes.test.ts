@@ -39,7 +39,6 @@ let app: ReturnType<typeof buildApp>;
 let aliceToken: string;
 let aliceId: string;
 let bobToken: string;
-let bobId: string;
 
 const DEFAULT_CONFIG: WorkConfig = {
   selectedModel: "illustrious-xl",
@@ -110,9 +109,11 @@ beforeEach(async () => {
   tokenStore.clear();
 
   aliceId = await seedUser("alice", "alice123");
-  bobId = await seedUser("bob", "bob123");
+  await seedUser("bob", "bob123");
 
-  const aliceRes = await request(app).post("/auth/login").send({ name: "alice", password: "alice123" });
+  const aliceRes = await request(app)
+    .post("/auth/login")
+    .send({ name: "alice", password: "alice123" });
   aliceToken = aliceRes.body.token;
 
   const bobRes = await request(app).post("/auth/login").send({ name: "bob", password: "bob123" });
@@ -170,20 +171,26 @@ describe("GET /works", () => {
 describe("GET /works/:id", () => {
   it("returns the work with generations: [] when none exist", async () => {
     const workId = await insertWork(aliceId);
-    const res = await request(app).get(`/works/${workId}`).set("Authorization", `Bearer ${aliceToken}`);
+    const res = await request(app)
+      .get(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`);
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(workId);
     expect(res.body.generations).toEqual([]);
   });
 
   it("returns 404 for an unknown id", async () => {
-    const res = await request(app).get("/works/nonexistent").set("Authorization", `Bearer ${aliceToken}`);
+    const res = await request(app)
+      .get("/works/nonexistent")
+      .set("Authorization", `Bearer ${aliceToken}`);
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for another user's work", async () => {
     const workId = await insertWork(aliceId);
-    const res = await request(app).get(`/works/${workId}`).set("Authorization", `Bearer ${bobToken}`);
+    const res = await request(app)
+      .get(`/works/${workId}`)
+      .set("Authorization", `Bearer ${bobToken}`);
     expect(res.status).toBe(404);
   });
 
@@ -208,7 +215,10 @@ describe("GET /works/:id", () => {
 
 describe("POST /works — create mode", () => {
   it("returns 201 with a CUID2 id and createdAt", async () => {
-    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({});
     expect(res.status).toBe(201);
     expect(typeof res.body.id).toBe("string");
     expect(res.body.id.length).toBeGreaterThan(0);
@@ -216,22 +226,34 @@ describe("POST /works — create mode", () => {
   });
 
   it("sets createdAt and updatedAt to the same value", async () => {
-    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({});
     expect(res.body.createdAt).toBe(res.body.updatedAt);
   });
 
   it("defaults name to Work 1 when not provided", async () => {
-    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({});
     expect(res.body.name).toBe("Work 1");
   });
 
   it("uses provided name when given", async () => {
-    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({ name: "My Work" });
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({ name: "My Work" });
     expect(res.body.name).toBe("My Work");
   });
 
   it("returns config.selections = {} and correct defaultModelId", async () => {
-    const res = await request(app).post("/works").set("Authorization", `Bearer ${aliceToken}`).send({});
+    const res = await request(app)
+      .post("/works")
+      .set("Authorization", `Bearer ${aliceToken}`)
+      .send({});
     expect(res.body.config.selections).toEqual({});
     expect(res.body.config.selectedModel).toBe("illustrious-xl");
   });
@@ -276,7 +298,9 @@ describe("POST /works — duplicate mode", () => {
     const url = new URL(res.body.generations[0].imageUrl);
     expect(url.origin).toBe("http://proxy.test");
     expect(url.pathname).toBe("/images/ComfyUI_00001_.png");
-    expect(res.body.generations.every((g: { workId: string }) => g.workId === res.body.id)).toBe(true);
+    expect(res.body.generations.every((g: { workId: string }) => g.workId === res.body.id)).toBe(
+      true
+    );
   });
 
   it("skips queued and running generations", async () => {
@@ -426,7 +450,9 @@ describe("PATCH /works/:id", () => {
 describe("DELETE /works/:id", () => {
   it("returns 204 with no body", async () => {
     const workId = await insertWork(aliceId);
-    const res = await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${aliceToken}`);
+    const res = await request(app)
+      .delete(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`);
     expect(res.status).toBe(204);
     expect(res.body).toEqual({});
   });
@@ -450,13 +476,17 @@ describe("DELETE /works/:id", () => {
   });
 
   it("returns 404 for an unknown id", async () => {
-    const res = await request(app).delete("/works/nonexistent").set("Authorization", `Bearer ${aliceToken}`);
+    const res = await request(app)
+      .delete("/works/nonexistent")
+      .set("Authorization", `Bearer ${aliceToken}`);
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for another user's work", async () => {
     const workId = await insertWork(aliceId);
-    const res = await request(app).delete(`/works/${workId}`).set("Authorization", `Bearer ${bobToken}`);
+    const res = await request(app)
+      .delete(`/works/${workId}`)
+      .set("Authorization", `Bearer ${bobToken}`);
     expect(res.status).toBe(404);
   });
 });
