@@ -6,7 +6,7 @@ set -euo pipefail
 
 TUNNEL_NAME="image-gen-proxy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROXY_ENV="$SCRIPT_DIR/../proxy/.env"
+PROXY_ENV="$SCRIPT_DIR/.env"
 
 # ── 1. Detect proxy port ──────────────────────────────────────────────────────
 PROXY_PORT=3001
