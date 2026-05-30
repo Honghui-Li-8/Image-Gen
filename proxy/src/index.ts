@@ -7,10 +7,12 @@ import { getProxyAuthSecret, getProxyPort, buildComfyWsUrl } from "./config.js";
 import { verifyBackendSignature } from "./lib/hmac.js";
 import { requireBackendAuth } from "./middleware/require-backend-auth.js";
 import { comfyProxyHandler } from "./routes/comfy.js";
+import { healthHandler } from "./routes/health.js";
 import { imageHandler } from "./routes/images.js";
 
 export const createApp = () => {
   const app = express();
+  app.get("/health", healthHandler);
   app.use("/comfy", requireBackendAuth, comfyProxyHandler);
   app.get("/images/:filename", imageHandler);
   return app;

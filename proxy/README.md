@@ -17,6 +17,15 @@ Backend-to-proxy requests include `X-Proxy-Timestamp` and `X-Proxy-Signature`. T
 
 Image URLs are minted by the backend only after normal user auth and generation ownership checks pass. The URL contains a filename-bound token and expiry. The proxy validates that token before touching the filesystem.
 
+## Routes
+
+| Route | Auth | Purpose |
+|---|---|---|
+| `GET /health` | None | Reports whether ComfyUI is reachable from the proxy. |
+| `ALL /comfy/*` | Backend HMAC | Forwards ComfyUI HTTP API calls to `COMFYUI_URL`. |
+| `GET /comfy/ws` | Backend HMAC | Tunnels ComfyUI WebSocket progress messages. |
+| `GET /images/:filename?token=...&exp=...` | Signed URL | Streams a generated image from `COMFYUI_IMAGE_ROOT`. |
+
 ## Image Serving Trade-Off
 
 Serving directly from disk keeps the MVP simple and keeps the backend out of the image byte path. For production durability, caching, and global delivery, move generated images to object storage or a CDN such as CloudFront or Bunny and keep the same signed-URL pattern at the edge.
