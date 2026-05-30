@@ -121,7 +121,7 @@
   "13": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "<character_1>\n<n>$character_1$</n>\n\n<count>\n1girl, solo, one person\n</count>\n\n<appearance>\n</appearance>\n\n<clothing>\n</clothing>\n\n<expression>\ncalm, relaxed eyes, looking at viewer\n</expression>\n\n<pose>\nstanding naturally, relaxed posture, arms relaxed, simple hand pose, natural hands\n</pose>\n\n<composition>\nfront-facing, full body, head to toe, entire body visible, both feet visible, centered, clean silhouette, simple composition\n</composition>\n\n</character_1>"
+      "value": "<character_1>\n\n<n>$character_1$</n>\n\n<gender>\n1 adult woman\n</gender>\n\n<appearance>\n</appearance>\n\n<body_type>\n</body_type>\n\n<clothing>\n</clothing>\n\n</character_1>\n\n<general_tags>\n\n<count>\n1girl, solo, adult woman\n</count>\n\n<style>\npolished shading\n</style>\n\n<quality>\nmasterpiece, best quality, absurdres, highres\n</quality>\n\n<other>\ndetailed eyes, detailed hands, detailed fingers, detailed feet, detailed legs, detailed thighs, correct anatomy, clean silhouette, polished rendering, character-centric composition, full body, head to toe, both feet visible, full-length shot, shoes, no extra limbs, no distorted feet\n</other>\n\n</general_tags>"
     },
     "_meta": {
       "title": "Custom Prompt Config XML Tags"
@@ -209,7 +209,7 @@
   "21": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "masterpiece, best quality, good quality, highres, absurdres, clean anime illustration, finished color artwork, polished anime illustration, clean lineart, polished shading, detailed face, detailed eyes, stable anatomy, detailed hands, natural hands, natural fingers, five fingers on each hand, correct finger count, separated fingers, relaxed fingers, detailed feet, front-facing, full body, head to toe, both feet visible, one person only, single outfit, fully clothed, clean silhouette"
+      "value": "masterpiece, best quality, good quality, highres, absurdres, finished color artwork, polished shading, detailed face, detailed eyes, stable anatomy, detailed hands, natural hands, natural fingers, five fingers on each hand, correct finger count, separated fingers, relaxed fingers, detailed feet, front-facing, full body, head to toe, both feet visible, one person only, single outfit, fully clothed, clean silhouette"
     },
     "_meta": {
       "title": "Always-On Model Quality + Anatomy Tags"

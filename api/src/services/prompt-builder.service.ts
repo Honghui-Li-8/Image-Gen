@@ -27,45 +27,96 @@ const MODEL_WORKFLOW_FILES: Record<string, string> = {
 };
 
 interface XmlSectionConfig {
+  group: "character" | "general";
   tag: string;
   alwaysOn: string[];
   categoryIds: string[];
 }
 
 const XML_SECTIONS: XmlSectionConfig[] = [
+  // character_1 block — per-character attributes
   {
-    tag: "ordered_custom_tags",
-    alwaysOn: [
-      "1girl",
-      "original character",
-      "safe",
-      "solo",
-      "looking at viewer",
-      "full body",
-      "standing",
-    ],
+    group: "character",
+    tag: "gender",
+    alwaysOn: ["1 adult woman"],
     categoryIds: [],
   },
   {
-    tag: "appearance_tags",
+    group: "character",
+    tag: "appearance",
     alwaysOn: [],
-    categoryIds: ["bodyType", "breastSize", "hipSize", "hairStyle", "hairColor", "eyeColor"],
+    categoryIds: ["hairStyle", "hairColor", "eyeColor"],
   },
   {
-    tag: "outfit_tags",
+    group: "character",
+    tag: "body_type",
+    alwaysOn: [],
+    categoryIds: ["bodyType", "breastSize", "hipSize"],
+  },
+  {
+    group: "character",
+    tag: "clothing",
     alwaysOn: [],
     categoryIds: ["clothingStyle"],
   },
+  { group: "character", tag: "expression", alwaysOn: [], categoryIds: [] },
+  { group: "character", tag: "action",     alwaysOn: [], categoryIds: [] },
+  { group: "character", tag: "position",   alwaysOn: [], categoryIds: [] },
+
+  // general_tags block — shared always-on descriptors
   {
-    tag: "composition_tags",
+    group: "general",
+    tag: "count",
+    alwaysOn: ["1girl", "solo", "adult woman"],
+    categoryIds: [],
+  },
+  {
+    group: "general",
+    tag: "style",
     alwaysOn: [
-      "one person only",
-      "one outfit only",
-      "front-facing full body",
+      "polished shading",
+    ],
+    categoryIds: [],
+  },
+  { group: "general", tag: "inspirations", alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "background",   alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "environment",  alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "perspective",  alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "atmosphere",   alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "lighting",     alwaysOn: [], categoryIds: [] },
+  {
+    group: "general",
+    tag: "quality",
+    alwaysOn: [
+      "masterpiece",
+      "best quality",
+      "absurdres",
+      "highres",
+    ],
+    categoryIds: [],
+  },
+  { group: "general", tag: "pixiv_tags", alwaysOn: [], categoryIds: [] },
+  {
+    group: "general",
+    tag: "other",
+    alwaysOn: [
+      "detailed eyes",
+      "detailed hands",
+      "detailed fingers",
+      "detailed feet",
+      "detailed legs",
+      "detailed thighs",
+      "correct anatomy",
+      "clean silhouette",
+      "polished rendering",
+      "character-centric composition",
+      "full body",
       "head to toe",
-      "entire body visible",
       "both feet visible",
-      "centered composition",
+      "full-length shot",
+      "shoes",
+      "no extra limbs",
+      "no distorted feet",
     ],
     categoryIds: [],
   },
@@ -98,21 +149,52 @@ const resolveSelectionTags = (
   return tags;
 };
 
+const renderSection = (
+  section: XmlSectionConfig,
+  selections: Record<string, string>,
+  categories: Category[]
+): string | null => {
+  const tags = [
+    ...section.alwaysOn,
+    ...resolveSelectionTags(selections, categories, section.categoryIds),
+  ];
+  if (tags.length === 0) return null;
+  return `<${section.tag}>\n${tags.join(", ")}\n</${section.tag}>`;
+};
+
 export const buildXml = (
   sections: XmlSectionConfig[],
   selections: Record<string, string>,
   categories: Category[]
 ): string => {
-  const parts: string[] = [];
-  for (const section of sections) {
-    const tags = [
-      ...section.alwaysOn,
-      ...resolveSelectionTags(selections, categories, section.categoryIds),
-    ];
-    if (tags.length === 0) continue;
-    parts.push(`<${section.tag}>\n${tags.join(", ")}\n</${section.tag}>`);
-  }
-  return parts.join("\n\n");
+  // character_1 block — always present (always has <n> anchor)
+  const characterSections = sections
+    .filter((s) => s.group === "character")
+    .map((s) => renderSection(s, selections, categories))
+    .filter((s): s is string => s !== null);
+
+  const characterBlock = [
+    "<character_1>",
+    "<n>$character_1$</n>",
+    ...characterSections,
+    "</character_1>",
+  ].join("\n\n");
+
+  // general_tags block — omitted when all sections are empty
+  const generalSections = sections
+    .filter((s) => s.group === "general")
+    .map((s) => renderSection(s, selections, categories))
+    .filter((s): s is string => s !== null);
+
+  if (generalSections.length === 0) return characterBlock;
+
+  const generalBlock = [
+    "<general_tags>",
+    ...generalSections,
+    "</general_tags>",
+  ].join("\n\n");
+
+  return `${characterBlock}\n\n${generalBlock}`;
 };
 
 export const buildGenerationPromptInput = (

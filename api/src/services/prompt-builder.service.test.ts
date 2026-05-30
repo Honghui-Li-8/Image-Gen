@@ -87,29 +87,35 @@ describe("buildGenerationPromptInput — model and preset validation", () => {
 });
 
 describe("buildGenerationPromptInput — XML prompt", () => {
-  it("places appearance selections in the appearance_tags section", () => {
+  it("places appearance selections inside character_1 appearance section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.customPromptXml).toContain("<appearance_tags>");
+    expect(result.customPromptXml).toContain("<appearance>");
     expect(result.customPromptXml).toContain("slim");
     expect(result.customPromptXml).toContain("blue hair");
   });
 
-  it("places clothing selection in the outfit_tags section", () => {
+  it("places clothing selection inside character_1 clothing section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.customPromptXml).toContain("<outfit_tags>");
+    expect(result.customPromptXml).toContain("<clothing>");
     expect(result.customPromptXml).toContain("casual");
   });
 
-  it("always includes ordered_custom_tags and composition_tags", () => {
+  it("always includes character_1, gender, count, style, quality, and other", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
-    expect(result.customPromptXml).toContain("<ordered_custom_tags>");
-    expect(result.customPromptXml).toContain("<composition_tags>");
+    expect(result.customPromptXml).toContain("<character_1>");
+    expect(result.customPromptXml).toContain("<gender>");
+    expect(result.customPromptXml).toContain("<general_tags>");
+    expect(result.customPromptXml).toContain("<count>");
+    expect(result.customPromptXml).toContain("<style>");
+    expect(result.customPromptXml).toContain("<quality>");
+    expect(result.customPromptXml).toContain("<other>");
   });
 
-  it("omits appearance_tags and outfit_tags when nothing is selected", () => {
+  it("omits appearance, body_type, and clothing when nothing is selected", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
-    expect(result.customPromptXml).not.toContain("<appearance_tags>");
-    expect(result.customPromptXml).not.toContain("<outfit_tags>");
+    expect(result.customPromptXml).not.toContain("<appearance>");
+    expect(result.customPromptXml).not.toContain("<body_type>");
+    expect(result.customPromptXml).not.toContain("<clothing>");
   });
 });
 
@@ -146,35 +152,42 @@ describe("buildGenerationPromptInput — caption", () => {
 });
 
 describe("buildXml — section assembly", () => {
-  it("skips sections where both alwaysOn and resolved tags are empty", () => {
+  it("skips character sections with no content but keeps the character_1 wrapper", () => {
     const xml = buildXml(
-      [{ tag: "empty_section", alwaysOn: [], categoryIds: [] }],
+      [{ group: "character", tag: "empty_section", alwaysOn: [], categoryIds: [] }],
       {},
       []
     );
-    expect(xml).toBe("");
+    expect(xml).toContain("<character_1>");
+    expect(xml).not.toContain("<empty_section>");
   });
 
-  it("includes a section when it has alwaysOn tags even with no selections", () => {
+  it("includes character section when it has alwaysOn tags", () => {
     const xml = buildXml(
-      [{ tag: "static_section", alwaysOn: ["tag_a", "tag_b"], categoryIds: [] }],
+      [{ group: "character", tag: "gender", alwaysOn: ["1 adult woman"], categoryIds: [] }],
       {},
       []
     );
-    expect(xml).toBe("<static_section>\ntag_a, tag_b\n</static_section>");
+    expect(xml).toContain("<gender>\n1 adult woman\n</gender>");
   });
 
-  it("joins multiple sections with a blank line", () => {
+  it("wraps general sections inside general_tags block", () => {
     const xml = buildXml(
-      [
-        { tag: "section_a", alwaysOn: ["a"], categoryIds: [] },
-        { tag: "section_b", alwaysOn: ["b"], categoryIds: [] },
-      ],
+      [{ group: "general", tag: "count", alwaysOn: ["1girl"], categoryIds: [] }],
       {},
       []
     );
-    expect(xml).toBe(
-      "<section_a>\na\n</section_a>\n\n<section_b>\nb\n</section_b>"
+    expect(xml).toContain("<general_tags>");
+    expect(xml).toContain("<count>\n1girl\n</count>");
+  });
+
+  it("omits general_tags block when all general sections are empty", () => {
+    const xml = buildXml(
+      [{ group: "general", tag: "background", alwaysOn: [], categoryIds: [] }],
+      {},
+      []
     );
+    expect(xml).not.toContain("<general_tags>");
+    expect(xml).not.toContain("<background>");
   });
 });

@@ -121,7 +121,7 @@
   "13": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "<ordered_custom_tags>\n1girl, original character, safe, solo, looking at viewer, full body, standing\n</ordered_custom_tags>\n\n<appearance_tags>\n</appearance_tags>\n\n<outfit_tags>\n</outfit_tags>\n\n<composition_tags>\none person only, one outfit only, front-facing full body, head to toe, entire body visible, both feet visible, centered composition\n</composition_tags>"
+      "value": "<character_1>\n\n<n>$character_1$</n>\n\n<gender>\n1 adult woman\n</gender>\n\n<appearance>\n</appearance>\n\n<body_type>\n</body_type>\n\n<clothing>\n</clothing>\n\n</character_1>\n\n<general_tags>\n\n<count>\n1girl, solo, adult woman\n</count>\n\n<style>\npolished shading\n</style>\n\n<quality>\nmasterpiece, best quality, absurdres, highres\n</quality>\n\n<other>\ndetailed eyes, detailed hands, detailed fingers, detailed feet, detailed legs, detailed thighs, correct anatomy, clean silhouette, polished rendering, character-centric composition, full body, head to toe, both feet visible, full-length shot, shoes, no extra limbs, no distorted feet\n</other>\n\n</general_tags>"
     },
     "_meta": {
       "title": "Custom Prompt Config XML Tags"
@@ -209,7 +209,7 @@
   "21": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "masterpiece, high score, great score, absurdres, clean anime illustration, clean lineart, polished shading, stable anatomy, detailed face, detailed eyes, detailed hands, natural fingers, correct finger anatomy, five fingers on each hand, natural thumbs, detailed feet"
+      "value": "masterpiece, high score, great score, absurdres, polished shading, stable anatomy, detailed face, detailed eyes, detailed hands, natural fingers, correct finger anatomy, five fingers on each hand, natural thumbs, detailed feet, full body, head to toe, both feet visible"
     },
     "_meta": {
       "title": "Always-On Positive Tags - Comma Separated"
