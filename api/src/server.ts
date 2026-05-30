@@ -4,6 +4,18 @@ import { seed } from "./seed.js";
 import { createApp } from "./app.js";
 import { failInterruptedGenerations } from "./services/generation-job.service.js";
 
+const REQUIRED_ENV_VARS = ["PROXY_AUTH_SECRET"] as const;
+const missingVars = REQUIRED_ENV_VARS.filter((k) => !process.env[k]);
+if (missingVars.length > 0) {
+  console.error(`Missing required env vars: ${missingVars.join(", ")}`);
+  process.exit(1);
+}
+
+if (process.env.NODE_ENV === "production" && !process.env.PROXY_URL) {
+  console.error("Missing required env var in production: PROXY_URL");
+  process.exit(1);
+}
+
 const port = Number(process.env.PORT) || 3000;
 
 async function start() {

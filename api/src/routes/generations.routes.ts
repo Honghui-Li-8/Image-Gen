@@ -23,7 +23,7 @@ import {
 } from "../services/image-url.service.js";
 import { logger } from "../utils/logger.js";
 
-const MAX_IN_FLIGHT_GENERATIONS = 10;
+const MAX_IN_FLIGHT_GENERATIONS = Number(process.env.COMFYUI_MAX_ACTIVE_JOBS ?? "1");
 
 export const generationsRouter = Router();
 
@@ -136,7 +136,7 @@ generationsRouter.post(
         userId: req.userId,
         workId: work.id,
       });
-      res.status(429).json({ error: "Too many active generations" });
+      res.status(429).json({ error: "GPU busy, try again shortly" });
       return;
     }
 
