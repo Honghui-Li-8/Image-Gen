@@ -1,0 +1,232 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "ponyDiffusionForAnime.safetensors"
+    },
+    "_meta": {
+      "title": "CheckpointLoaderSimple"
+    }
+  },
+  "2": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": ["1", 1],
+      "stop_at_clip_layer": -2
+    },
+    "_meta": {
+      "title": "Clip Skip 2 for Pony"
+    }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": ["16", 0]
+    },
+    "_meta": {
+      "title": "Positive Prompt (XML Tags + Scene Caption)"
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["2", 0],
+      "text": "score_4, score_3, score_2, score_1, worst quality, low quality, lowres, blurry, jpeg artifacts, bad anatomy, bad proportions, deformed body, bad face, bad eyes, (bad hands:1.35), (malformed hands:1.35), (bad hand anatomy:1.35), (bad fingers:1.45), (extra fingers:1.5), (missing fingers:1.5), (fused fingers:1.4), (broken fingers:1.35), (extra digits:1.45), (fewer digits:1.45), bad thumbs, bad feet, cropped, out of frame, cropped feet, feet out of frame, hands out of frame, duplicate person, multiple people, multiple views, reference sheet, character sheet, text, watermark, signature, adult content, nudity, sexual content"
+    },
+    "_meta": {
+      "title": "Simplified Weighted QC Negative Prompt"
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 896,
+      "height": 1344,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "EmptyLatentImage"
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["5", 0],
+      "seed": 300795551743258,
+      "steps": 32,
+      "cfg": 6,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "Base Generation - Sharper DPM++"
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["7", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "Decode Base Image"
+    }
+  },
+  "9": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "_meta": {
+      "title": "4x-UltraSharp Loader"
+    }
+  },
+  "10": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": ["9", 0],
+      "image": ["8", 0]
+    },
+    "_meta": {
+      "title": "Sharp Image Upscale"
+    }
+  },
+  "11": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["10", 0],
+      "upscale_method": "lanczos",
+      "width": 1536,
+      "height": 2304,
+      "crop": "disabled"
+    },
+    "_meta": {
+      "title": "Lanczos Downscale to Size"
+    }
+  },
+  "12": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "You are a professional anime illustrator and art director. Generate a high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<always_on_pony_quality_tags>\n{quality_prompt}\n</always_on_pony_quality_tags>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n</prompt>"
+    },
+    "_meta": {
+      "title": "Prompt Template - Professional XML Alignment"
+    }
+  },
+  "13": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "<custom_prompt_config>\n<subject_tags>\n1girl, solo, exactly one adult woman, single person\n</subject_tags>\n\n<appearance_tags>\n</appearance_tags>\n\n<outfit_tags>\n</outfit_tags>\n\n<pose_tags>\nfront-facing full body, standing naturally, looking at viewer, hands visible\n</pose_tags>\n\n<scene_tags>\n</scene_tags>\n\n<composition_tags>\none person only, one outfit only, head to toe, entire body visible, both feet visible, centered composition\n</composition_tags>\n</custom_prompt_config>"
+    },
+    "_meta": {
+      "title": "Custom Prompt Config XML Tags"
+    }
+  },
+  "14": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "A finished anime-style full-body fashion portrait of one woman standing naturally. The character is centered in frame and fully visible from head to toe, with both feet visible, stable anatomy, a clean silhouette, detailed face and eyes, and natural readable hands.\n"
+    },
+    "_meta": {
+      "title": "Scene Caption - Natural Language"
+    }
+  },
+  "15": {
+    "class_type": "StringReplace",
+    "inputs": {
+      "string": ["22", 0],
+      "find": "{user_prompt}",
+      "replace": ["13", 0]
+    },
+    "_meta": {
+      "title": "Insert Custom Tags"
+    }
+  },
+  "16": {
+    "class_type": "StringReplace",
+    "inputs": {
+      "string": ["15", 0],
+      "find": "{caption}",
+      "replace": ["14", 0]
+    },
+    "_meta": {
+      "title": "Insert Caption"
+    }
+  },
+  "17": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["11", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "Encode Sharp Upscale"
+    }
+  },
+  "18": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["17", 0],
+      "seed": 304062130738842,
+      "steps": 12,
+      "cfg": 4.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.18
+    },
+    "_meta": {
+      "title": "Low-Denoise Sharp Detail Pass"
+    }
+  },
+  "19": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["18", 0],
+      "vae": ["1", 2]
+    },
+    "_meta": {
+      "title": "Decode Sharp Image"
+    }
+  },
+  "20": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": ["19", 0],
+      "filename_prefix": "api_workflow/workflow_pony_v6"
+    },
+    "_meta": {
+      "title": "Save Result"
+    }
+  },
+  "21": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "score_9, score_8_up, score_7_up, score_6_up, source_anime, rating_safe, high quality, clean anime illustration, clean lineart, polished shading, stable anatomy, detailed face, detailed eyes, detailed hands, natural hands, natural fingers, correct finger anatomy, five fingers on each hand, natural thumbs, separated fingers, relaxed fingers, detailed feet, full body, head to toe, both feet visible, one person only, single outfit, fully clothed, no text, no labels, no annotations"
+    },
+    "_meta": {
+      "title": "Always-On Positive Tags - Comma Separated"
+    }
+  },
+  "22": {
+    "class_type": "StringReplace",
+    "inputs": {
+      "string": ["12", 0],
+      "find": "{quality_prompt}",
+      "replace": ["21", 0]
+    },
+    "_meta": {
+      "title": "Insert Always-On Quality"
+    }
+  },
+  "_meta": {
+    "title": "workflow_pony_v6"
+  }
+}
