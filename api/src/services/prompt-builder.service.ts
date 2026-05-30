@@ -132,6 +132,17 @@ const buildCaption = (baseCaption: string, additionalPrompt: string): string => 
   return userCaption ? `${caption}\n${userCaption}` : caption;
 };
 
+const resolveSelectionOverrideTags = (
+  selections: Record<string, string>,
+  overrides: Record<string, Record<string, string[]>> = {}
+): string[] => {
+  const tags: string[] = [];
+  for (const [categoryId, selectedValue] of Object.entries(selections)) {
+    tags.push(...(overrides[categoryId]?.[selectedValue] ?? []));
+  }
+  return tags;
+};
+
 const renderPositivePrompt = ({
   template,
   qualityPrompt,
@@ -249,7 +260,13 @@ export const buildGenerationPromptInput = (
     ...promptPreset.qualityTags,
     ...config.additionalTags,
   ]);
-  const negativeTagList = dedupeTags(promptPreset.negativeTags);
+  const negativeTagList = dedupeTags([
+    ...promptPreset.negativeTags,
+    ...resolveSelectionOverrideTags(
+      config.selections,
+      promptPreset.selectionNegativeTagOverrides
+    ),
+  ]);
   const qualityPrompt = qualityTagList.join(", ");
   const customPromptXml = buildXml(
     XML_SECTIONS,

@@ -5,6 +5,7 @@ export interface ModelPromptPreset {
   qualityTags: string[];
   negativeTags: string[];
   selectionTagOverrides?: Record<string, Record<string, string[]>>;
+  selectionNegativeTagOverrides?: Record<string, Record<string, string[]>>;
 }
 
 const COMMON_QUALITY_TAGS = [
@@ -60,6 +61,67 @@ const COMMON_NEGATIVE_TAGS = [
   "minor",
   "childlike",
 ];
+
+const SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES = {
+  bodyType: {
+    slender: ["chubby", "overweight", "thick body"],
+    athletic: ["chubby", "overweight"],
+    average: ["very skinny", "chubby", "overweight", "muscular body"],
+    plump: ["skinny", "slim", "thin body"],
+  },
+  breastSize: {
+    subtle: ["medium breasts", "large breasts", "huge breasts", "busty"],
+    small: ["large breasts", "huge breasts", "busty"],
+    medium: ["flat chest", "huge breasts"],
+    large: ["flat chest", "small breasts", "huge breasts"],
+    prominent: ["flat chest", "small breasts"],
+  },
+  hipSize: {
+    small: ["wide hips", "thick thighs", "curvy"],
+    medium: ["narrow hips", "wide hips", "thick thighs", "curvy"],
+    large: ["narrow hips"],
+    prominent: ["narrow hips"],
+  },
+};
+
+const PONY_FORM_SELECTION_NEGATIVE_OVERRIDES = {
+  ...SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES,
+  breastSize: {
+    ...SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES.breastSize,
+    subtle: [
+      "medium breasts",
+      "large breasts",
+      "huge breasts",
+      "big breasts",
+      "large chest",
+      "huge chest",
+      "busty",
+      "cleavage",
+    ],
+    small: [
+      "large breasts",
+      "huge breasts",
+      "big breasts",
+      "large chest",
+      "huge chest",
+      "busty",
+      "cleavage",
+    ],
+  },
+  hipSize: {
+    ...SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES.hipSize,
+    medium: [
+      "narrow hips",
+      "wide hips",
+      "huge hips",
+      "oversized hips",
+      "exaggerated hips",
+      "thick thighs",
+      "pear-shaped body",
+      "curvy",
+    ],
+  },
+};
 
 export const modelPromptPresets: Record<string, ModelPromptPreset> = {
   "illustrious-xl": {
@@ -167,6 +229,7 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       "obscured fingers",
       ...COMMON_NEGATIVE_TAGS,
     ],
+    selectionNegativeTagOverrides: SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES,
   },
   "pony-v6": {
     workflowFile: "workflow_pony_v6.json",
@@ -228,10 +291,15 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       ...COMMON_NEGATIVE_TAGS,
     ],
     selectionTagOverrides: {
+      breastSize: {
+        subtle: ["flat chest", "small chest", "petite chest"],
+        small: ["small breasts", "modest breasts", "small chest"],
+      },
       hipSize: {
         medium: ["average hips", "proportional hips"],
       },
     },
+    selectionNegativeTagOverrides: PONY_FORM_SELECTION_NEGATIVE_OVERRIDES,
   },
   "animagine-xl-v3": {
     workflowFile: "workflow_animagine_xl.json",
@@ -256,5 +324,6 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       // "average score",
       ...COMMON_NEGATIVE_TAGS.filter((tag) => tag !== "feet out of frame"),
     ],
+    selectionNegativeTagOverrides: SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES,
   },
 };

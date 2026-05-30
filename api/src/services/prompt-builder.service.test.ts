@@ -180,8 +180,59 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
 
     expect(pony.positivePrompt).toContain("average hips");
     expect(pony.positivePrompt).toContain("proportional hips");
+    expect(pony.negativePrompt).toContain("wide hips");
+    expect(pony.negativePrompt).toContain("thick thighs");
+    expect(pony.negativePrompt).toContain("huge hips");
+    expect(pony.negativePrompt).toContain("pear-shaped body");
     expect(illustrious.positivePrompt).not.toContain("average hips");
     expect(illustrious.positivePrompt).not.toContain("proportional hips");
+    expect(illustrious.negativePrompt).toContain("wide hips");
+    expect(illustrious.negativePrompt).not.toContain("huge hips");
+    expect(illustrious.negativePrompt).not.toContain("pear-shaped body");
+  });
+
+  it("adds Pony-specific small-bust regulators for subtle and small breast selections", () => {
+    const subtle = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "pony-v6",
+      selections: {
+        ...BASE_CONFIG.selections,
+        breastSize: "subtle",
+      },
+    });
+    const small = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "pony-v6",
+      selections: {
+        ...BASE_CONFIG.selections,
+        breastSize: "small",
+      },
+    });
+
+    expect(subtle.positivePrompt).toContain("petite chest");
+    expect(subtle.negativePrompt).toContain("medium breasts");
+    expect(subtle.negativePrompt).toContain("large breasts");
+    expect(subtle.negativePrompt).toContain("busty");
+    expect(small.positivePrompt).toContain("modest breasts");
+    expect(small.negativePrompt).toContain("large breasts");
+    expect(small.negativePrompt).toContain("huge breasts");
+  });
+
+  it("adds simple form selection negative overrides for non-Pony models", () => {
+    const result = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "animagine-xl-v3",
+      selections: {
+        bodyType: "slender",
+        breastSize: "medium",
+        hipSize: "small",
+      },
+    });
+
+    expect(result.negativePrompt).toContain("chubby");
+    expect(result.negativePrompt).toContain("huge breasts");
+    expect(result.negativePrompt).toContain("wide hips");
+    expect(result.negativePrompt).not.toContain("oversized hips");
   });
 });
 
