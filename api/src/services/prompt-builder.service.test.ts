@@ -152,8 +152,12 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     const animagine = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "animagine-xl-v3" });
 
     expect(pony.positivePrompt).toContain("score_9");
+    expect(pony.positivePrompt).toContain("anime girl");
+    expect(pony.positivePrompt).toContain("normal human body");
+    expect(pony.positivePrompt).not.toContain("realistic human proportions");
+    expect(pony.positivePrompt).not.toContain("source_anime");
     expect(pony.negativePrompt).toContain("pony");
-    expect(animagine.positivePrompt).toContain("great score");
+    expect(animagine.positivePrompt).toContain("high score");
     expect(animagine.negativePrompt).toContain("bad score");
   });
 });
