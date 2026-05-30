@@ -117,11 +117,11 @@ export const baseCategories: Category[] = [
     group: "Wardrobe",
     control: "single-select",
     options: [
-      { value: "academy-uniform", label: "Academy Uniform", tags: ["school uniform", "pleated skirt"] },
-      { value: "cyberpunk", label: "Cyberpunk", tags: ["cyberpunk", "neon lights", "bodysuit"] },
+      { value: "academy-uniform", label: "Academy Uniform", tags: ["school uniform", "pleated skirt", "modest clothing"] },
+      { value: "cyberpunk", label: "Cyberpunk", tags: ["cyberpunk", "neon lights", "bodysuit", "jacket", "covered outfit"] },
       { value: "fantasy-armor", label: "Fantasy Armor", tags: ["armor", "full armor", "pauldrons"] },
-      { value: "casual", label: "Casual", tags: ["casual"] },
-      { value: "sci-fi", label: "Sci-Fi", tags: ["science fiction", "futuristic", "bodysuit"] }
+      { value: "casual", label: "Casual", tags: ["casual outfit", "t-shirt", "jacket", "long pants", "sneakers", "modest clothing"] },
+      { value: "sci-fi", label: "Sci-Fi", tags: ["science fiction", "futuristic", "bodysuit", "jacket", "covered outfit"] }
     ]
   }
 ];

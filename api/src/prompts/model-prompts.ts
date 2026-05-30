@@ -236,7 +236,7 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
     promptTemplate:
       "You are a professional anime illustrator and art director. Generate a high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<always_on_pony_quality_tags>\n{quality_prompt}\n</always_on_pony_quality_tags>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n</prompt>",
     caption:
-      "A finished anime-style full-body fashion portrait of one woman standing naturally. The character is centered in frame and fully visible from head to toe, with both feet visible, stable anatomy, a clean silhouette, detailed face and eyes, and natural readable hands.",
+      "A finished anime-style full-body character design of one woman standing naturally in a modest, fully clothed outfit. The character is centered in frame and fully visible from head to toe, with both feet visible, stable anatomy, a clean silhouette, detailed face and eyes, and natural readable hands.",
     qualityTags: [
       "score_9",
       "score_8_up",
@@ -258,6 +258,9 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       "one person only",
       "single outfit",
       "fully clothed",
+      "modest outfit",
+      "non-revealing clothing",
+      "tasteful outfit",
       "no text",
       "no labels",
       "no annotations",
@@ -288,6 +291,16 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       "my little pony",
       "equine",
       "furry",
+      "bikini",
+      "swimsuit",
+      "lingerie",
+      "underwear",
+      "cleavage",
+      "exposed midriff",
+      "skimpy outfit",
+      "revealing clothes",
+      "see-through clothing",
+      "leotard",
       ...COMMON_NEGATIVE_TAGS,
     ],
     selectionTagOverrides: {

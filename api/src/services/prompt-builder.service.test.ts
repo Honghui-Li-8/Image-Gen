@@ -154,11 +154,31 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(pony.positivePrompt).toContain("score_9");
     expect(pony.positivePrompt).toContain("anime girl");
     expect(pony.positivePrompt).toContain("normal human body");
+    expect(pony.positivePrompt).toContain("modest outfit");
+    expect(pony.positivePrompt).toContain("non-revealing clothing");
+    expect(pony.positivePrompt).toContain("fully clothed outfit");
     expect(pony.positivePrompt).not.toContain("realistic human proportions");
     expect(pony.positivePrompt).not.toContain("source_anime");
     expect(pony.negativePrompt).toContain("pony");
+    expect(pony.negativePrompt).toContain("bikini");
+    expect(pony.negativePrompt).toContain("revealing clothes");
     expect(animagine.positivePrompt).toContain("high score");
     expect(animagine.negativePrompt).toContain("bad score");
+  });
+
+  it("keeps bodysuit wardrobe options covered with non-revealing outerwear tags", () => {
+    const pony = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "pony-v6",
+      selections: {
+        ...BASE_CONFIG.selections,
+        clothingStyle: "sci-fi",
+      },
+    });
+
+    expect(pony.positivePrompt).toContain("bodysuit");
+    expect(pony.positivePrompt).toContain("jacket");
+    expect(pony.positivePrompt).toContain("covered outfit");
   });
 
   it("adds Pony-specific neutral hip tags for medium hip selection", () => {
