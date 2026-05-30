@@ -1,53 +1,34 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { ApiHealth } from "../types";
 
 export const useApiHealth = (apiUrl: string): ApiHealth => {
-  const [health, setHealth] = useState<ApiHealth>({
-    status: "checking",
-    message: "Checking API connection...",
+  const { data, status } = useQuery({
+    queryKey: ["health", apiUrl],
+    queryFn: async () => {
+      const response = await fetch(`${apiUrl}/health`);
+      if (!response.ok) {
+        throw new Error(`Health check failed with ${response.status}`);
+      }
+      return response.json() as Promise<{ ok: boolean; timestamp?: string }>;
+    },
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    retry: false,
   });
 
-  useEffect(() => {
-    let ignore = false;
+  if (status === "pending") {
+    return { status: "checking", message: "Checking API connection..." };
+  }
 
-    const checkHealth = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/health`);
+  if (status === "error") {
+    return { status: "offline", message: "API server is not reachable" };
+  }
 
-        if (!response.ok) {
-          throw new Error(`Health check failed with ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!ignore) {
-          setHealth({
-            status: data.ok ? "healthy" : "unhealthy",
-            message: data.ok
-              ? "API server is healthy"
-              : "API server returned an unhealthy status",
-            checkedAt: data.timestamp,
-          });
-        }
-      } catch (error) {
-        if (!ignore) {
-          setHealth({
-            status: "offline",
-            message: "API server is not reachable",
-            detail: error instanceof Error ? error.message : "Unknown error",
-          });
-        }
-      }
-    };
-
-    checkHealth();
-    const timer = window.setInterval(checkHealth, 15000);
-
-    return () => {
-      ignore = true;
-      window.clearInterval(timer);
-    };
-  }, [apiUrl]);
-
-  return health;
+  return {
+    status: data.ok ? "healthy" : "unhealthy",
+    message: data.ok
+      ? "API server is healthy"
+      : "API server returned an unhealthy status",
+    checkedAt: data.timestamp,
+  };
 };

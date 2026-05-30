@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { GenerationOptions, OptionsStatus } from "../types";
 import { ApiError, apiFetch } from "../utils/api";
 
@@ -7,48 +8,27 @@ export const useGenerationOptions = (
   token: string | null,
   onUnauthorized: () => void,
 ): { options: GenerationOptions | null; optionsStatus: OptionsStatus } => {
-  const [options, setOptions] = useState<GenerationOptions | null>(null);
-  const [optionsStatus, setOptionsStatus] =
-    useState<OptionsStatus>("loading");
+  const { data, status, error } = useQuery({
+    queryKey: ["generation-options", apiUrl],
+    queryFn: async () => {
+      const response = await apiFetch(`${apiUrl}/generation-options`, { token: token! });
+      return (await response.json()) as GenerationOptions;
+    },
+    staleTime: Infinity,
+    retry: 2,
+    enabled: Boolean(token),
+  });
 
   useEffect(() => {
-    if (!token) {
-      setOptions(null);
-      setOptionsStatus("loading");
-      return undefined;
+    if (error instanceof ApiError && error.status === 401) {
+      onUnauthorized();
     }
+  }, [error, onUnauthorized]);
 
-    let ignore = false;
+  const optionsStatus: OptionsStatus =
+    !token || status === "pending" ? "loading"
+    : status === "error" ? "failed"
+    : "ready";
 
-    const loadGenerationOptions = async () => {
-      try {
-        const response = await apiFetch(`${apiUrl}/generation-options`, { token });
-        const data = (await response.json()) as GenerationOptions;
-
-        if (!ignore) {
-          setOptions(data);
-          setOptionsStatus("ready");
-        }
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
-          onUnauthorized();
-          return;
-        }
-
-        if (!ignore) {
-          setOptions(null);
-          setOptionsStatus("failed");
-          console.error(error);
-        }
-      }
-    };
-
-    loadGenerationOptions();
-
-    return () => {
-      ignore = true;
-    };
-  }, [apiUrl, onUnauthorized, token]);
-
-  return { options, optionsStatus };
+  return { options: data ?? null, optionsStatus };
 };
