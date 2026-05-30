@@ -689,9 +689,7 @@ export const useWorks = (
                     },
                   ]
                 : work.images;
-              const shouldAutoSelectNewImage = Boolean(
-                isNewImage && work.viewingConfig === null,
-              );
+              const shouldAutoSelectNewImage = Boolean(isNewImage);
 
               return {
                 ...work,
@@ -701,7 +699,9 @@ export const useWorks = (
                 activeImageIndex: shouldAutoSelectNewImage
                   ? nextImages.length - 1
                   : work.activeImageIndex,
-                viewingConfig: work.viewingConfig,
+                viewingConfig: shouldAutoSelectNewImage
+                  ? generationConfig
+                  : work.viewingConfig,
               };
             }),
           );
