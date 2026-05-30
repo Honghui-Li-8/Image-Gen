@@ -95,12 +95,8 @@ export const WorksSidebar = ({
       </div>
 
       <div className="work-list">
-        {isLoading && !works.length ? (
-          <div className="work-list-message">Loading works</div>
-        ) : null}
-        {worksError && !isCollapsed ? (
-          <div className="work-list-error">{worksError}</div>
-        ) : null}
+        {isLoading && !works.length ? <div className="work-list-message">Loading works</div> : null}
+        {worksError && !isCollapsed ? <div className="work-list-error">{worksError}</div> : null}
         {works.map((work) => (
           <div
             className={`work-item-shell ${work.id === activeWork?.id ? "work-item-shell--active" : ""}`}
@@ -122,14 +118,17 @@ export const WorksSidebar = ({
               )}
             </button>
             {!isCollapsed ? (
-              <div className="work-item-menu-wrap" ref={openMenuWorkId === work.id ? menuRef : null}>
+              <div
+                className="work-item-menu-wrap"
+                ref={openMenuWorkId === work.id ? menuRef : null}
+              >
                 <button
                   aria-label={`Open actions for ${work.name}`}
                   className="work-item-menu-button"
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setOpenMenuWorkId((current) => current === work.id ? null : work.id);
+                    setOpenMenuWorkId((current) => (current === work.id ? null : work.id));
                   }}
                 >
                   ...

@@ -24,7 +24,7 @@ export const useWorksData = (
   apiUrl: string,
   token: string,
   optionsStatus: OptionsStatus,
-  onUnauthorized: () => void,
+  onUnauthorized: () => void
 ): UseWorksDataState => {
   const [works, setWorks] = useState<Work[]>([]);
   const [activeWorkId, setActiveWorkId] = useState("");
@@ -40,7 +40,7 @@ export const useWorksData = (
       const message = error instanceof Error ? error.message : fallbackMessage;
       setWorkErrors((prev) => ({ ...prev, [key]: message }));
     },
-    [onUnauthorized],
+    [onUnauthorized]
   );
 
   const loadWorkDetails = useCallback(
@@ -50,11 +50,11 @@ export const useWorksData = (
         workList.map(async (work) => {
           const response = await apiFetch(`${apiUrl}/works/${work.id}`, { token });
           return (await response.json()) as BackendWork;
-        }),
+        })
       );
       return detailedWorks.map(mapBackendWork);
     },
-    [apiUrl, token],
+    [apiUrl, token]
   );
 
   useEffect(() => {
@@ -143,17 +143,15 @@ export const useWorksData = (
           const savedWork = mapBackendWork((await response.json()) as BackendWork);
           setWorks((current) =>
             current.map((w) =>
-              w.id === workId
-                ? { ...w, name: savedWork.name, savedAt: savedWork.savedAt }
-                : w,
-            ),
+              w.id === workId ? { ...w, name: savedWork.name, savedAt: savedWork.savedAt } : w
+            )
           );
         } catch (error) {
           handleApiError("rename", error, "Could not rename work");
         }
       })();
     },
-    [apiUrl, handleApiError, token, works],
+    [apiUrl, handleApiError, token, works]
   );
 
   const duplicateWork = useCallback(
@@ -178,15 +176,13 @@ export const useWorksData = (
         }
       })();
     },
-    [apiUrl, handleApiError, loadWorkDetails, token, works],
+    [apiUrl, handleApiError, loadWorkDetails, token, works]
   );
 
   const deleteWork = useCallback(
     (workId: string) => {
       const nextActiveWorkId =
-        activeWorkId === workId
-          ? (works.find((w) => w.id !== workId)?.id ?? "")
-          : activeWorkId;
+        activeWorkId === workId ? (works.find((w) => w.id !== workId)?.id ?? "") : activeWorkId;
 
       void (async () => {
         setWorkErrors((prev) => ({ ...prev, delete: "" }));
@@ -199,7 +195,7 @@ export const useWorksData = (
         }
       })();
     },
-    [activeWorkId, apiUrl, handleApiError, token, works],
+    [activeWorkId, apiUrl, handleApiError, token, works]
   );
 
   return {

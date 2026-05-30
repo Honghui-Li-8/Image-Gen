@@ -54,14 +54,12 @@ export const useAuth = (apiUrl: string) => {
         window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
         setSession(nextSession);
       } catch (error) {
-        setLoginError(
-          error instanceof Error ? error.message : "Could not log in",
-        );
+        setLoginError(error instanceof Error ? error.message : "Could not log in");
       } finally {
         setIsLoggingIn(false);
       }
     },
-    [apiUrl],
+    [apiUrl]
   );
 
   return {

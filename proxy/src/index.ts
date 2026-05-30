@@ -26,13 +26,7 @@ const verifyUpgradeAuth = (req: IncomingMessage): boolean => {
     return false;
   }
 
-  return verifyBackendSignature(
-    getProxyAuthSecret(),
-    "GET",
-    req.url,
-    timestamp,
-    signature
-  );
+  return verifyBackendSignature(getProxyAuthSecret(), "GET", req.url, timestamp, signature);
 };
 
 const writeUpgradeError = (socket: Duplex, statusCode: number): void => {

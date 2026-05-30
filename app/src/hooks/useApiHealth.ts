@@ -26,9 +26,7 @@ export const useApiHealth = (apiUrl: string): ApiHealth => {
 
   return {
     status: data.ok ? "healthy" : "unhealthy",
-    message: data.ok
-      ? "API server is healthy"
-      : "API server returned an unhealthy status",
+    message: data.ok ? "API server is healthy" : "API server returned an unhealthy status",
     checkedAt: data.timestamp,
   };
 };

@@ -95,9 +95,7 @@
       "indexes": {
         "generations_work_id_idx": {
           "name": "generations_work_id_idx",
-          "columns": [
-            "work_id"
-          ],
+          "columns": ["work_id"],
           "isUnique": false
         }
       },
@@ -106,12 +104,8 @@
           "name": "generations_work_id_works_id_fk",
           "tableFrom": "generations",
           "tableTo": "works",
-          "columnsFrom": [
-            "work_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["work_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -119,12 +113,8 @@
           "name": "generations_user_id_users_id_fk",
           "tableFrom": "generations",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -175,9 +165,7 @@
       "indexes": {
         "users_name_unique": {
           "name": "users_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },
@@ -242,9 +230,7 @@
       "indexes": {
         "works_user_id_idx": {
           "name": "works_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -253,12 +239,8 @@
           "name": "works_user_id_users_id_fk",
           "tableFrom": "works",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

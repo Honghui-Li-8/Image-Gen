@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildGenerationPromptInput,
-  buildXml,
-} from "./prompt-builder.service.js";
+import { buildGenerationPromptInput, buildXml } from "./prompt-builder.service.js";
 import type { GenerationRequestConfig } from "./prompt-builder.service.js";
 
 const BASE_CONFIG: GenerationRequestConfig = {
@@ -50,9 +47,9 @@ describe("buildGenerationPromptInput — seed validation", () => {
 
 describe("buildGenerationPromptInput — model and preset validation", () => {
   it("throws on unknown modelId", () => {
-    expect(() =>
-      buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "unknown-model" })
-    ).toThrow("Unknown modelId: unknown-model");
+    expect(() => buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "unknown-model" })).toThrow(
+      "Unknown modelId: unknown-model"
+    );
   });
 
   it("throws on unknown selectedPreset", () => {
@@ -71,9 +68,9 @@ describe("buildGenerationPromptInput — model and preset validation", () => {
     expect(buildGenerationPromptInput(BASE_CONFIG).workflowFile).toBe(
       "workflow_illustrious_xl_v2.json"
     );
-    expect(
-      buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6" }).workflowFile
-    ).toBe("workflow_pony_v6.json");
+    expect(buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6" }).workflowFile).toBe(
+      "workflow_pony_v6.json"
+    );
     expect(
       buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "animagine-xl-v3" }).workflowFile
     ).toBe("workflow_animagine_xl.json");

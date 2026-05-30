@@ -26,9 +26,7 @@ const baseModel: ModelConfig = {
       options: [{ value: "blue", label: "Blue", tags: [] }],
     },
   ],
-  outputPresets: [
-    { id: "portrait", label: "Portrait", width: 768, height: 1344 },
-  ],
+  outputPresets: [{ id: "portrait", label: "Portrait", width: 768, height: 1344 }],
 };
 
 const baseWork: Work = {

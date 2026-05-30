@@ -6,11 +6,7 @@ interface LoginGateProps {
   onLogin: (input: { name: string; password: string }) => Promise<void>;
 }
 
-export const LoginGate = ({
-  isLoggingIn,
-  loginError,
-  onLogin,
-}: LoginGateProps) => {
+export const LoginGate = ({ isLoggingIn, loginError, onLogin }: LoginGateProps) => {
   const credentialsFromUrl = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return {

@@ -41,7 +41,7 @@ const makeWorkflow = (): Workflow => ({
     inputs: { seed: 200, steps: 12, denoise: 0.18 },
     _meta: { title: "KSampler refine" },
   },
-  "_meta": { title: "test_workflow" },
+  _meta: { title: "test_workflow" },
 });
 
 afterEach(() => {

@@ -54,8 +54,8 @@ const XML_SECTIONS: XmlSectionConfig[] = [
     categoryIds: ["clothingStyle"],
   },
   { group: "character", tag: "expression", alwaysOn: [], categoryIds: [] },
-  { group: "character", tag: "action",     alwaysOn: [], categoryIds: [] },
-  { group: "character", tag: "position",   alwaysOn: [], categoryIds: [] },
+  { group: "character", tag: "action", alwaysOn: [], categoryIds: [] },
+  { group: "character", tag: "position", alwaysOn: [], categoryIds: [] },
 
   // general_tags block — shared always-on descriptors
   {
@@ -66,20 +66,15 @@ const XML_SECTIONS: XmlSectionConfig[] = [
   },
   { group: "general", tag: "style", alwaysOn: [], categoryIds: [] },
   { group: "general", tag: "inspirations", alwaysOn: [], categoryIds: [] },
-  { group: "general", tag: "background",   alwaysOn: [], categoryIds: [] },
-  { group: "general", tag: "environment",  alwaysOn: [], categoryIds: [] },
-  { group: "general", tag: "perspective",  alwaysOn: [], categoryIds: [] },
-  { group: "general", tag: "atmosphere",   alwaysOn: [], categoryIds: [] },
-  { group: "general", tag: "lighting",     alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "background", alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "environment", alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "perspective", alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "atmosphere", alwaysOn: [], categoryIds: [] },
+  { group: "general", tag: "lighting", alwaysOn: [], categoryIds: [] },
   {
     group: "general",
     tag: "quality",
-    alwaysOn: [
-      "masterpiece",
-      "best quality",
-      "absurdres",
-      "highres",
-    ],
+    alwaysOn: ["masterpiece", "best quality", "absurdres", "highres"],
     categoryIds: [],
   },
   { group: "general", tag: "pixiv_tags", alwaysOn: [], categoryIds: [] },
@@ -188,12 +183,7 @@ const renderSection = (
 ): string | null => {
   const tags = [
     ...section.alwaysOn,
-    ...resolveSelectionTags(
-      selections,
-      categories,
-      section.categoryIds,
-      selectionTagOverrides
-    ),
+    ...resolveSelectionTags(selections, categories, section.categoryIds, selectionTagOverrides),
   ];
   if (tags.length === 0) return null;
   return `<${section.tag}>\n${tags.join(", ")}\n</${section.tag}>`;
@@ -226,11 +216,7 @@ export const buildXml = (
 
   if (generalSections.length === 0) return characterBlock;
 
-  const generalBlock = [
-    "<general_tags>",
-    ...generalSections,
-    "</general_tags>",
-  ].join("\n\n");
+  const generalBlock = ["<general_tags>", ...generalSections, "</general_tags>"].join("\n\n");
 
   return `${characterBlock}\n\n${generalBlock}`;
 };
@@ -256,16 +242,10 @@ export const buildGenerationPromptInput = (
     if (!option) throw new Error(`Unknown option '${selectedValue}' for category '${catId}'`);
   }
 
-  const qualityTagList = dedupeTags([
-    ...promptPreset.qualityTags,
-    ...config.additionalTags,
-  ]);
+  const qualityTagList = dedupeTags([...promptPreset.qualityTags, ...config.additionalTags]);
   const negativeTagList = dedupeTags([
     ...promptPreset.negativeTags,
-    ...resolveSelectionOverrideTags(
-      config.selections,
-      promptPreset.selectionNegativeTagOverrides
-    ),
+    ...resolveSelectionOverrideTags(config.selections, promptPreset.selectionNegativeTagOverrides),
   ]);
   const qualityPrompt = qualityTagList.join(", ");
   const customPromptXml = buildXml(

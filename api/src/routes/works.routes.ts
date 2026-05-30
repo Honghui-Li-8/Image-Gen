@@ -64,10 +64,7 @@ worksRouter.post("/works", async (req: Request, res: Response) => {
 
   // duplicate mode
   if (body.duplicateFromId) {
-    const [source] = await db
-      .select()
-      .from(works)
-      .where(eq(works.id, body.duplicateFromId));
+    const [source] = await db.select().from(works).where(eq(works.id, body.duplicateFromId));
 
     if (!source || source.userId !== req.userId) {
       res.status(404).json({ error: "Not found" });
@@ -78,10 +75,7 @@ worksRouter.post("/works", async (req: Request, res: Response) => {
       .select()
       .from(generations)
       .where(
-        and(
-          eq(generations.workId, source.id),
-          inArray(generations.status, ["completed", "failed"])
-        )
+        and(eq(generations.workId, source.id), inArray(generations.status, ["completed", "failed"]))
       );
 
     const idMap = new Map<string, string>();
@@ -134,10 +128,7 @@ worksRouter.post("/works", async (req: Request, res: Response) => {
   const defaultModel = generationOptions.models[generationOptions.defaultModelId];
   const defaultPreset = defaultModel.outputPresets[0].id;
 
-  const existingWorks = await db
-    .select()
-    .from(works)
-    .where(eq(works.userId, req.userId));
+  const existingWorks = await db.select().from(works).where(eq(works.userId, req.userId));
 
   const config: WorkConfig = {
     selectedModel: generationOptions.defaultModelId,

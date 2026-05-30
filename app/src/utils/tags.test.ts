@@ -45,9 +45,7 @@ describe("getSelectedTags", () => {
       label: "Eyes",
       group: "Appearance",
       control: "select",
-      options: [
-        { value: "blue", label: "Blue", tags: ["blue eyes"] },
-      ],
+      options: [{ value: "blue", label: "Blue", tags: ["blue eyes"] }],
     },
   ];
 

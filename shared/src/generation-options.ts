@@ -43,8 +43,8 @@ export const baseCategories: Category[] = [
       { value: "slender", label: "Slender", tags: ["slim"] },
       { value: "athletic", label: "Athletic", tags: ["toned"] },
       { value: "average", label: "Average", tags: [] },
-      { value: "plump", label: "Plump", tags: ["chubby"] }
-    ]
+      { value: "plump", label: "Plump", tags: ["chubby"] },
+    ],
   },
   {
     id: "breastSize",
@@ -56,8 +56,8 @@ export const baseCategories: Category[] = [
       { value: "small", label: "Small", tags: ["small breasts"] },
       { value: "medium", label: "Medium", tags: ["medium breasts"] },
       { value: "large", label: "Large", tags: ["large breasts"] },
-      { value: "prominent", label: "Prominent", tags: ["huge breasts"] }
-    ]
+      { value: "prominent", label: "Prominent", tags: ["huge breasts"] },
+    ],
   },
   {
     id: "hipSize",
@@ -68,8 +68,8 @@ export const baseCategories: Category[] = [
       { value: "small", label: "Small", tags: ["narrow hips"] },
       { value: "medium", label: "Medium", tags: [] },
       { value: "large", label: "Large", tags: ["wide hips"] },
-      { value: "prominent", label: "Prominent", tags: ["wide hips", "thick thighs"] }
-    ]
+      { value: "prominent", label: "Prominent", tags: ["wide hips", "thick thighs"] },
+    ],
   },
   {
     id: "hairStyle",
@@ -81,8 +81,8 @@ export const baseCategories: Category[] = [
       { value: "short-hair", label: "Short Hair", tags: ["short hair"] },
       { value: "twintails", label: "Twintails", tags: ["twintails"] },
       { value: "ponytail", label: "Ponytail", tags: ["ponytail"] },
-      { value: "bob-cut", label: "Bob Cut", tags: ["bob cut"] }
-    ]
+      { value: "bob-cut", label: "Bob Cut", tags: ["bob cut"] },
+    ],
   },
   {
     id: "hairColor",
@@ -95,8 +95,8 @@ export const baseCategories: Category[] = [
       { value: "brown", label: "Brown", tags: ["brown hair"] },
       { value: "pink", label: "Pink", tags: ["pink hair"] },
       { value: "blue", label: "Blue", tags: ["blue hair"] },
-      { value: "white", label: "White", tags: ["white hair"] }
-    ]
+      { value: "white", label: "White", tags: ["white hair"] },
+    ],
   },
   {
     id: "eyeColor",
@@ -108,8 +108,8 @@ export const baseCategories: Category[] = [
       { value: "blue", label: "Blue", tags: ["blue eyes"] },
       { value: "green", label: "Green", tags: ["green eyes"] },
       { value: "red", label: "Red", tags: ["red eyes"] },
-      { value: "purple", label: "Purple", tags: ["purple eyes"] }
-    ]
+      { value: "purple", label: "Purple", tags: ["purple eyes"] },
+    ],
   },
   {
     id: "clothingStyle",
@@ -117,19 +117,39 @@ export const baseCategories: Category[] = [
     group: "Wardrobe",
     control: "single-select",
     options: [
-      { value: "academy-uniform", label: "Academy Uniform", tags: ["school uniform", "pleated skirt", "modest clothing"] },
-      { value: "cyberpunk", label: "Cyberpunk", tags: ["cyberpunk", "neon lights", "bodysuit", "jacket", "covered outfit"] },
-      { value: "fantasy-armor", label: "Fantasy Armor", tags: ["armor", "full armor", "pauldrons"] },
-      { value: "casual", label: "Casual", tags: ["casual outfit", "t-shirt", "jacket", "long pants", "sneakers", "modest clothing"] },
-      { value: "sci-fi", label: "Sci-Fi", tags: ["science fiction", "futuristic", "bodysuit", "jacket", "covered outfit"] }
-    ]
-  }
+      {
+        value: "academy-uniform",
+        label: "Academy Uniform",
+        tags: ["school uniform", "pleated skirt", "modest clothing"],
+      },
+      {
+        value: "cyberpunk",
+        label: "Cyberpunk",
+        tags: ["cyberpunk", "neon lights", "bodysuit", "jacket", "covered outfit"],
+      },
+      {
+        value: "fantasy-armor",
+        label: "Fantasy Armor",
+        tags: ["armor", "full armor", "pauldrons"],
+      },
+      {
+        value: "casual",
+        label: "Casual",
+        tags: ["casual outfit", "t-shirt", "jacket", "long pants", "sneakers", "modest clothing"],
+      },
+      {
+        value: "sci-fi",
+        label: "Sci-Fi",
+        tags: ["science fiction", "futuristic", "bodysuit", "jacket", "covered outfit"],
+      },
+    ],
+  },
 ];
 
 const BASE_OUTPUT_PRESETS: OutputPreset[] = [
   { id: "portrait-2-3", label: "2:3 Portrait", width: 832, height: 1216 },
   { id: "portrait-3-4", label: "3:4 Portrait", width: 896, height: 1152 },
-  { id: "vertical-9-16", label: "9:16 Vertical", width: 768, height: 1344 }
+  { id: "vertical-9-16", label: "9:16 Vertical", width: 768, height: 1344 },
 ];
 
 const BASE_ADDITIONAL_TAGS = [
@@ -137,7 +157,7 @@ const BASE_ADDITIONAL_TAGS = [
   "detailed background",
   "depth of field",
   "dramatic shadows",
-  "vibrant colors"
+  "vibrant colors",
 ];
 
 export const generationOptions: GenerationOptions = {
@@ -149,7 +169,7 @@ export const generationOptions: GenerationOptions = {
       tags: ["anime style", "amanatsu illustrious", "high quality illustration"],
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
-      outputPresets: BASE_OUTPUT_PRESETS
+      outputPresets: BASE_OUTPUT_PRESETS,
     },
     "pony-v6": {
       id: "pony-v6",
@@ -157,7 +177,7 @@ export const generationOptions: GenerationOptions = {
       tags: ["anime style", "pony diffusion"],
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
-      outputPresets: BASE_OUTPUT_PRESETS
+      outputPresets: BASE_OUTPUT_PRESETS,
     },
     "animagine-xl-v3": {
       id: "animagine-xl-v3",
@@ -165,7 +185,7 @@ export const generationOptions: GenerationOptions = {
       tags: ["anime style", "animagine"],
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
-      outputPresets: BASE_OUTPUT_PRESETS
-    }
-  }
+      outputPresets: BASE_OUTPUT_PRESETS,
+    },
+  },
 };

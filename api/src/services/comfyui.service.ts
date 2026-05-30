@@ -31,18 +31,14 @@ export const WORKFLOW_NODE_IDS = {
   latentImage: "5",
 } as const;
 
-const WORKFLOW_DIR = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../../workflow"
-);
+const WORKFLOW_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../../../workflow");
 
 export const getBaseUrl = (): string => {
   const url = process.env.PROXY_URL ?? "http://localhost:3001";
   return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
-export const getComfyTimeoutMs = (): number =>
-  Number(process.env.COMFYUI_TIMEOUT_MS ?? 600000);
+export const getComfyTimeoutMs = (): number => Number(process.env.COMFYUI_TIMEOUT_MS ?? 600000);
 
 export const getComfyPollIntervalMs = (): number =>
   Number(process.env.COMFYUI_POLL_INTERVAL_MS ?? 1000);
@@ -80,9 +76,7 @@ export const isWorkflowNode = (value: unknown): value is WorkflowNode =>
   typeof (value as Record<string, unknown>).class_type === "string";
 
 export const stripWorkflowMetadata = (workflow: Workflow): Workflow =>
-  Object.fromEntries(
-    Object.entries(workflow).filter(([, value]) => isWorkflowNode(value))
-  );
+  Object.fromEntries(Object.entries(workflow).filter(([, value]) => isWorkflowNode(value)));
 
 const patchRequiredNodeInput = (
   workflow: Workflow,
@@ -111,30 +105,10 @@ export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch
     throw new Error("ComfyUI workflow has no seed input to patch");
   }
 
-  patchRequiredNodeInput(
-    patched,
-    WORKFLOW_NODE_IDS.latentImage,
-    "width",
-    patch.baseWidth
-  );
-  patchRequiredNodeInput(
-    patched,
-    WORKFLOW_NODE_IDS.latentImage,
-    "height",
-    patch.baseHeight
-  );
-  patchRequiredNodeInput(
-    patched,
-    WORKFLOW_NODE_IDS.positivePrompt,
-    "text",
-    patch.positivePrompt
-  );
-  patchRequiredNodeInput(
-    patched,
-    WORKFLOW_NODE_IDS.negativePrompt,
-    "text",
-    patch.negativePrompt
-  );
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.latentImage, "width", patch.baseWidth);
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.latentImage, "height", patch.baseHeight);
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.positivePrompt, "text", patch.positivePrompt);
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.negativePrompt, "text", patch.negativePrompt);
 
   return patched;
 };
@@ -146,9 +120,7 @@ export const loadComfyWorkflow = async (filename?: string): Promise<Workflow> =>
   try {
     raw = await readFile(workflowPath, "utf-8");
   } catch (err) {
-    throw new Error(
-      `Failed to read workflow file at ${workflowPath}: ${(err as Error).message}`
-    );
+    throw new Error(`Failed to read workflow file at ${workflowPath}: ${(err as Error).message}`);
   }
 
   if (!raw.trim()) {
@@ -180,9 +152,7 @@ export const submitComfyWorkflow = async (workflow: Workflow): Promise<string> =
   });
 
   if (!response.ok) {
-    throw new Error(
-      `ComfyUI /prompt returned ${response.status}: ${await response.text()}`
-    );
+    throw new Error(`ComfyUI /prompt returned ${response.status}: ${await response.text()}`);
   }
 
   const body = (await response.json()) as Record<string, unknown>;

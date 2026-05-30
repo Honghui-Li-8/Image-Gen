@@ -30,18 +30,21 @@ interface ConfigSidebarProps {
 }
 
 const groupCategories = (
-  categories: GenerationCategory[],
+  categories: GenerationCategory[]
 ): Record<string, GenerationCategory[]> => {
-  return categories.reduce((groups, category) => {
-    groups[category.group] = [...(groups[category.group] || []), category];
-    return groups;
-  }, {} as Record<string, GenerationCategory[]>);
+  return categories.reduce(
+    (groups, category) => {
+      groups[category.group] = [...(groups[category.group] || []), category];
+      return groups;
+    },
+    {} as Record<string, GenerationCategory[]>
+  );
 };
 
 // Sort groups by size descending, greedy-assign to the shorter column,
 // then restore original insertion order within each column.
 export const distributeGroups = (
-  groups: Record<string, GenerationCategory[]>,
+  groups: Record<string, GenerationCategory[]>
 ): [Array<[string, GenerationCategory[]]>, Array<[string, GenerationCategory[]]>] => {
   const indexed = Object.entries(groups).map((entry, idx) => ({
     entry,
@@ -78,7 +81,7 @@ const randomizeCategorySelections = (model: ModelConfig) => {
       }
       return nextSelections;
     },
-    {} as Record<string, string>,
+    {} as Record<string, string>
   );
 };
 
@@ -92,73 +95,73 @@ interface CategoryColumnsProps {
   updateActiveWork: (updater: WorkUpdater) => void;
 }
 
-const CategoryColumns = memo(({
-  categories,
-  isViewing,
-  showGenerationValidation,
-  missingFields,
-  activeSelections,
-  displaySelections,
-  updateActiveWork,
-}: CategoryColumnsProps) => {
-  const [leftGroups, rightGroups] = useMemo(
-    () => distributeGroups(groupCategories(categories)),
-    [categories],
-  );
+const CategoryColumns = memo(
+  ({
+    categories,
+    isViewing,
+    showGenerationValidation,
+    missingFields,
+    activeSelections,
+    displaySelections,
+    updateActiveWork,
+  }: CategoryColumnsProps) => {
+    const [leftGroups, rightGroups] = useMemo(
+      () => distributeGroups(groupCategories(categories)),
+      [categories]
+    );
 
-  const selectionValue = (category: GenerationCategory) => {
-    const selectedValue = (displaySelections ?? activeSelections)?.[category.id] ?? "";
-    return category.options.some((option) => option.value === selectedValue)
-      ? selectedValue
-      : "";
-  };
+    const selectionValue = (category: GenerationCategory) => {
+      const selectedValue = (displaySelections ?? activeSelections)?.[category.id] ?? "";
+      return category.options.some((option) => option.value === selectedValue) ? selectedValue : "";
+    };
 
-  const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
-    groups.map(([group, cats]) => (
-      <ConfigGroup key={group} title={group}>
-        {cats.map((category) => (
-          <label
-            className={`field ${
-              !isViewing && showGenerationValidation && missingFields.has(category.id)
-                ? "field--error"
-                : ""
-            }`}
-            key={category.id}
-          >
-            <span>{category.label}</span>
-            <select
-              className={selectionValue(category) ? "" : "select-placeholder"}
-              value={selectionValue(category)}
-              disabled={isViewing}
-              onChange={(event) =>
-                updateActiveWork((work) => ({
-                  ...work,
-                  selections: {
-                    ...work.selections,
-                    [category.id]: event.target.value,
-                  },
-                }))
-              }
+    const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
+      groups.map(([group, cats]) => (
+        <ConfigGroup key={group} title={group}>
+          {cats.map((category) => (
+            <label
+              className={`field ${
+                !isViewing && showGenerationValidation && missingFields.has(category.id)
+                  ? "field--error"
+                  : ""
+              }`}
+              key={category.id}
             >
-              <option value="">Select {category.label}</option>
-              {category.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
-      </ConfigGroup>
-    ));
+              <span>{category.label}</span>
+              <select
+                className={selectionValue(category) ? "" : "select-placeholder"}
+                value={selectionValue(category)}
+                disabled={isViewing}
+                onChange={(event) =>
+                  updateActiveWork((work) => ({
+                    ...work,
+                    selections: {
+                      ...work.selections,
+                      [category.id]: event.target.value,
+                    },
+                  }))
+                }
+              >
+                <option value="">Select {category.label}</option>
+                {category.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </ConfigGroup>
+      ));
 
-  return (
-    <div className="options-columns">
-      <div className="options-column">{renderGroups(leftGroups)}</div>
-      <div className="options-column">{renderGroups(rightGroups)}</div>
-    </div>
-  );
-});
+    return (
+      <div className="options-columns">
+        <div className="options-column">{renderGroups(leftGroups)}</div>
+        <div className="options-column">{renderGroups(rightGroups)}</div>
+      </div>
+    );
+  }
+);
 
 export const ConfigSidebar = ({
   activeModel,
@@ -183,9 +186,9 @@ export const ConfigSidebar = ({
   const displayConfig: WorkConfig | null = activeWork?.viewingConfig ?? null;
 
   const selectedPreset = displayConfig?.selectedPreset ?? activeWork?.selectedPreset ?? "";
-  const presetValue = activeModel?.outputPresets.some(
-    (preset) => preset.id === selectedPreset,
-  ) ? selectedPreset : "";
+  const presetValue = activeModel?.outputPresets.some((preset) => preset.id === selectedPreset)
+    ? selectedPreset
+    : "";
 
   return (
     <aside className="config-sidebar">
@@ -223,11 +226,7 @@ export const ConfigSidebar = ({
           {isViewing ? (
             <>
               <span className="config-viewing-hint">Viewing past generation</span>
-              <button
-                className="config-save-button"
-                type="button"
-                onClick={onRestoreViewing}
-              >
+              <button className="config-save-button" type="button" onClick={onRestoreViewing}>
                 Restore
               </button>
             </>
@@ -267,7 +266,6 @@ export const ConfigSidebar = ({
       </div>
 
       <div className="options-scroll">
-
         {optionsStatus === "failed" ? (
           <div className="options-error">
             <p className="error-text">Could not load generation options from the API.</p>
@@ -298,9 +296,11 @@ export const ConfigSidebar = ({
               {isViewing ? (
                 <div className="tag-list--readonly">
                   {(displayConfig?.additionalTags ?? []).map((tag) => (
-                    <span key={tag} className="tag-chip">{tag}</span>
+                    <span key={tag} className="tag-chip">
+                      {tag}
+                    </span>
                   ))}
-                  {!(displayConfig?.additionalTags?.length) && (
+                  {!displayConfig?.additionalTags?.length && (
                     <span className="tag-empty">No additional tags</span>
                   )}
                 </div>
@@ -327,9 +327,7 @@ export const ConfigSidebar = ({
                 className={presetValue ? "" : "select-placeholder"}
                 value={presetValue}
                 disabled={isViewing}
-                onChange={(event) =>
-                  updateActiveWork({ selectedPreset: event.target.value })
-                }
+                onChange={(event) => updateActiveWork({ selectedPreset: event.target.value })}
               >
                 <option value="">Select output size</option>
                 {activeModel.outputPresets.map((preset) => (
@@ -366,9 +364,7 @@ export const ConfigSidebar = ({
           <textarea
             value={displayConfig?.additionalPrompt ?? activeWork?.additionalPrompt ?? ""}
             disabled={isViewing}
-            onChange={(event) =>
-              updateActiveWork({ additionalPrompt: event.target.value })
-            }
+            onChange={(event) => updateActiveWork({ additionalPrompt: event.target.value })}
             placeholder="standing on a neon-lit rooftop at night"
           />
         </section>

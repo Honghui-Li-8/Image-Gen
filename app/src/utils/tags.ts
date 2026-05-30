@@ -2,11 +2,11 @@ import type { GenerationCategory, Work } from "../types";
 
 export const getSelectedTags = (
   categories: GenerationCategory[],
-  selections: Record<string, string>,
+  selections: Record<string, string>
 ): string[] => {
   return categories.flatMap((category) => {
     const selectedOption = category.options.find(
-      (option) => option.value === selections[category.id],
+      (option) => option.value === selections[category.id]
     );
     return selectedOption?.tags || [];
   });

@@ -29,12 +29,7 @@ export const works = sqliteTable(
 
 export type Work = typeof works.$inferSelect;
 
-export const generationStatusEnum = [
-  "queued",
-  "running",
-  "completed",
-  "failed",
-] as const;
+export const generationStatusEnum = ["queued", "running", "completed", "failed"] as const;
 export type GenerationStatus = (typeof generationStatusEnum)[number];
 
 export const generations = sqliteTable(

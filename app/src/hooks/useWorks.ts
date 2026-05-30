@@ -56,7 +56,7 @@ export const useWorks = (
   options: GenerationOptions | null,
   optionsStatus: OptionsStatus,
   onUnauthorized: () => void,
-  onGenerationFailed?: () => void,
+  onGenerationFailed?: () => void
 ): UseWorksState => {
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,7 +80,7 @@ export const useWorks = (
 
   const activeWork = useMemo(
     () => works.find((w) => w.id === activeWorkId) ?? works[0],
-    [works, activeWorkId],
+    [works, activeWorkId]
   );
 
   const activeModel = useMemo((): ModelConfig | null => {
@@ -95,21 +95,20 @@ export const useWorks = (
 
   const selectedTags = useMemo(
     () => getSelectedTags(activeModel?.categories ?? [], activeWork?.selections || {}),
-    [activeModel?.categories, activeWork?.selections],
+    [activeModel?.categories, activeWork?.selections]
   );
 
   const customTags = useMemo(
     () => normalizeTags(activeWork?.additionalTags),
-    [activeWork?.additionalTags],
+    [activeWork?.additionalTags]
   );
 
   const activeImage = activeWork?.images?.[activeWork.activeImageIndex];
-  const isGenerating =
-    activeWork?.status === "queued" || activeWork?.status === "running";
+  const isGenerating = activeWork?.status === "queued" || activeWork?.status === "running";
 
   const missingFieldIds = useMemo(
     () => (activeWork && activeModel ? getMissingFieldIds(activeWork, activeModel) : []),
-    [activeWork, activeModel],
+    [activeWork, activeModel]
   );
 
   const canGenerate = Boolean(activeWork && activeModel && missingFieldIds.length === 0);
@@ -121,25 +120,21 @@ export const useWorks = (
       setWorks((currentWorks) =>
         currentWorks.map((work) => {
           if (work.id !== activeWork?.id) return work;
-          return typeof updater === "function"
-            ? updater(work)
-            : { ...work, ...updater };
-        }),
+          return typeof updater === "function" ? updater(work) : { ...work, ...updater };
+        })
       );
       setIsDirty(true);
     },
-    [activeWork?.id, setWorks],
+    [activeWork?.id, setWorks]
   );
 
   const updateWorkById = useCallback(
     (workId: string, patch: Partial<Work>) => {
       setWorks((currentWorks) =>
-        currentWorks.map((work) =>
-          work.id === workId ? { ...work, ...patch } : work,
-        ),
+        currentWorks.map((work) => (work.id === workId ? { ...work, ...patch } : work))
       );
     },
-    [setWorks],
+    [setWorks]
   );
 
   const patchWork = useCallback(
@@ -155,7 +150,7 @@ export const useWorks = (
         handleApiError("save", error, "Could not save work");
       }
     },
-    [apiUrl, handleApiError, token],
+    [apiUrl, handleApiError, token]
   );
 
   // --- Generation sub-hook ---
@@ -208,7 +203,7 @@ export const useWorks = (
         };
       });
     },
-    [updateActiveWork],
+    [updateActiveWork]
   );
 
   const selectDraft = useCallback(() => {
@@ -229,7 +224,7 @@ export const useWorks = (
       viewingConfig: null,
     };
     setWorks((currentWorks) =>
-      currentWorks.map((work) => (work.id === activeWork.id ? restored : work)),
+      currentWorks.map((work) => (work.id === activeWork.id ? restored : work))
     );
     setIsDirty(false);
     void patchWork(restored);
@@ -250,27 +245,23 @@ export const useWorks = (
             currentWorks.map((work) => {
               if (work.id !== workId) return work;
               const nextImages = work.images.filter((img) => img.id !== generationId);
-              const nextIndex = Math.min(
-                work.activeImageIndex,
-                Math.max(0, nextImages.length - 1),
-              );
+              const nextIndex = Math.min(work.activeImageIndex, Math.max(0, nextImages.length - 1));
               const wasViewing =
-                work.viewingConfig &&
-                work.images[work.activeImageIndex]?.id === generationId;
+                work.viewingConfig && work.images[work.activeImageIndex]?.id === generationId;
               return {
                 ...work,
                 images: nextImages,
                 activeImageIndex: nextIndex,
                 viewingConfig: wasViewing ? null : work.viewingConfig,
               };
-            }),
+            })
           );
         } catch (error) {
           handleApiError("deleteImage", error, "Could not delete image");
         }
       })();
     },
-    [activeWork, apiUrl, handleApiError, setWorks, token],
+    [activeWork, apiUrl, handleApiError, setWorks, token]
   );
 
   const moveImage = useCallback(
@@ -279,7 +270,7 @@ export const useWorks = (
       updateActiveWork((work) => {
         const nextIndex = Math.min(
           work.images.length - 1,
-          Math.max(0, work.activeImageIndex + offset),
+          Math.max(0, work.activeImageIndex + offset)
         );
         return {
           ...work,
@@ -288,7 +279,7 @@ export const useWorks = (
         };
       });
     },
-    [activeWork?.images?.length, updateActiveWork],
+    [activeWork?.images?.length, updateActiveWork]
   );
 
   // --- Tag operations ---
@@ -307,12 +298,10 @@ export const useWorks = (
     (tagToRemove: string) => {
       updateActiveWork((work) => ({
         ...work,
-        additionalTags: normalizeTags(work.additionalTags).filter(
-          (tag) => tag !== tagToRemove,
-        ),
+        additionalTags: normalizeTags(work.additionalTags).filter((tag) => tag !== tagToRemove),
       }));
     },
-    [updateActiveWork],
+    [updateActiveWork]
   );
 
   return {

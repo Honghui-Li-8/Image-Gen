@@ -18,16 +18,9 @@ describe("verifyBackendSignature", () => {
       canonicalRequestPayload("POST", "/comfy/prompt", timestamp)
     );
 
-    expect(
-      verifyBackendSignature(
-        SECRET,
-        "POST",
-        "/comfy/prompt",
-        timestamp,
-        signature,
-        NOW
-      )
-    ).toBe(true);
+    expect(verifyBackendSignature(SECRET, "POST", "/comfy/prompt", timestamp, signature, NOW)).toBe(
+      true
+    );
   });
 
   it("rejects a signature made with another secret", () => {
@@ -37,16 +30,9 @@ describe("verifyBackendSignature", () => {
       canonicalRequestPayload("POST", "/comfy/prompt", timestamp)
     );
 
-    expect(
-      verifyBackendSignature(
-        SECRET,
-        "POST",
-        "/comfy/prompt",
-        timestamp,
-        signature,
-        NOW
-      )
-    ).toBe(false);
+    expect(verifyBackendSignature(SECRET, "POST", "/comfy/prompt", timestamp, signature, NOW)).toBe(
+      false
+    );
   });
 
   it("rejects tampered paths", () => {
@@ -57,14 +43,7 @@ describe("verifyBackendSignature", () => {
     );
 
     expect(
-      verifyBackendSignature(
-        SECRET,
-        "POST",
-        "/comfy/history/abc",
-        timestamp,
-        signature,
-        NOW
-      )
+      verifyBackendSignature(SECRET, "POST", "/comfy/history/abc", timestamp, signature, NOW)
     ).toBe(false);
   });
 
@@ -75,16 +54,9 @@ describe("verifyBackendSignature", () => {
       canonicalRequestPayload("POST", "/comfy/prompt", timestamp)
     );
 
-    expect(
-      verifyBackendSignature(
-        SECRET,
-        "POST",
-        "/comfy/prompt",
-        timestamp,
-        signature,
-        NOW
-      )
-    ).toBe(false);
+    expect(verifyBackendSignature(SECRET, "POST", "/comfy/prompt", timestamp, signature, NOW)).toBe(
+      false
+    );
   });
 });
 

@@ -27,7 +27,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   const { options, optionsStatus, refetchOptions } = useGenerationOptions(
     API_URL,
     session.token,
-    onUnauthorized,
+    onUnauthorized
   );
   const { theme, toggleTheme } = useTheme();
   const worksState = useWorks(
@@ -36,7 +36,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     options,
     optionsStatus,
     onUnauthorized,
-    recheckNow,
+    recheckNow
   );
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
@@ -71,9 +71,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           onDuplicateWork={worksState.duplicateWork}
           onLogout={onUnauthorized}
           onRenameWork={worksState.renameWork}
-          onToggleCollapse={() =>
-            setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)
-          }
+          onToggleCollapse={() => setLeftSidebarCollapsed((isCollapsed) => !isCollapsed)}
           onSelectWork={worksState.setActiveWorkId}
           username={session.name}
           works={worksState.works}
@@ -127,11 +125,7 @@ const App = () => {
 
   if (!auth.session) {
     return (
-      <LoginGate
-        isLoggingIn={auth.isLoggingIn}
-        loginError={auth.loginError}
-        onLogin={auth.login}
-      />
+      <LoginGate isLoggingIn={auth.isLoggingIn} loginError={auth.loginError} onLogin={auth.login} />
     );
   }
 

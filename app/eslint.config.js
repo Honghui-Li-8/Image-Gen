@@ -16,13 +16,13 @@ export default [
       parserOptions: {
         ecmaVersion: "latest",
         ecmaFeatures: { jsx: true },
-        sourceType: "module"
-      }
+        sourceType: "module",
+      },
     },
     plugins: {
       "@typescript-eslint": tsPlugin,
       "react-hooks": reactHooks,
-      "react-refresh": reactRefresh
+      "react-refresh": reactRefresh,
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -33,13 +33,10 @@ export default [
         "error",
         {
           argsIgnorePattern: "^_",
-          varsIgnorePattern: "^[A-Z_]"
-        }
+          varsIgnorePattern: "^[A-Z_]",
+        },
       ],
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true }
-      ]
-    }
-  }
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+    },
+  },
 ];

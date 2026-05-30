@@ -27,10 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="login-panel">
             <h1>Something went wrong.</h1>
             <p>An unexpected error occurred. Reload the page to continue.</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-            >
+            <button type="button" onClick={() => window.location.reload()}>
               Reload
             </button>
           </div>

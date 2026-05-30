@@ -14,7 +14,7 @@ interface ApiFetchOptions extends RequestInit {
 
 export const apiFetch = async (
   url: string,
-  { headers, token, ...init }: ApiFetchOptions = {},
+  { headers, token, ...init }: ApiFetchOptions = {}
 ): Promise<Response> => {
   const response = await fetch(url, {
     ...init,

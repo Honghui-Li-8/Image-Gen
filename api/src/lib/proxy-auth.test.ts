@@ -15,11 +15,7 @@ describe("signProxyRequest", () => {
     const headers = signProxyRequest(SECRET, "post", "/comfy/prompt", NOW);
     const expected = signPayload(
       SECRET,
-      canonicalProxyRequestPayload(
-        "POST",
-        "/comfy/prompt",
-        headers["X-Proxy-Timestamp"]
-      )
+      canonicalProxyRequestPayload("POST", "/comfy/prompt", headers["X-Proxy-Timestamp"])
     );
 
     expect(headers["X-Proxy-Timestamp"]).toBe(String(NOW));
@@ -27,12 +23,7 @@ describe("signProxyRequest", () => {
   });
 
   it("includes the query string in the signed path", () => {
-    const headers = signProxyRequest(
-      SECRET,
-      "GET",
-      "/comfy/history/abc?preview=true",
-      NOW
-    );
+    const headers = signProxyRequest(SECRET, "GET", "/comfy/history/abc?preview=true", NOW);
     const withoutQuery = signPayload(
       SECRET,
       canonicalProxyRequestPayload("GET", "/comfy/history/abc", String(NOW))
@@ -54,9 +45,7 @@ describe("signImageUrl", () => {
   });
 
   it("encodes filenames in the path", () => {
-    const url = new URL(
-      signImageUrl("http://proxy.test/", SECRET, "Comfy UI 1.png", 60, NOW)
-    );
+    const url = new URL(signImageUrl("http://proxy.test/", SECRET, "Comfy UI 1.png", 60, NOW));
 
     expect(url.pathname).toBe("/images/Comfy%20UI%201.png");
   });

@@ -72,7 +72,7 @@ export const generationToImage = (generation: BackendGeneration): GeneratedImage
 export const mapBackendWork = (backendWork: BackendWork): Work => {
   const generations = backendWork.generations ?? [];
   const activeGeneration = generations.find(
-    (generation) => generation.id === backendWork.activeGenerationId,
+    (generation) => generation.id === backendWork.activeGenerationId
   );
   const images = generations
     .map(generationToImage)

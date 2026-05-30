@@ -2,10 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { apiFetch } from "../utils/api";
 import { buildWorkConfig } from "../utils/worksApi";
-import type {
-  GenerationCreateResponse,
-  GenerationStatusEvent,
-} from "../utils/worksApi";
+import type { GenerationCreateResponse, GenerationStatusEvent } from "../utils/worksApi";
 import type { Work, WorkUpdater } from "../types";
 
 interface UseGenerationParams {
@@ -86,7 +83,7 @@ export const useGeneration = ({
 
         // Token passed in URL — EventSource does not support custom headers.
         const source = new EventSource(
-          `${apiUrl}/generations/${result.generationId}/status?token=${encodeURIComponent(token)}`,
+          `${apiUrl}/generations/${result.generationId}/status?token=${encodeURIComponent(token)}`
         );
         generationSourceRef.current = source;
 
@@ -101,8 +98,7 @@ export const useGeneration = ({
               if (work.id !== workId) return work;
 
               const isNewImage =
-                payload.imageUrl &&
-                !work.images.some((image) => image.id === payload.generationId);
+                payload.imageUrl && !work.images.some((image) => image.id === payload.generationId);
 
               const nextImages = isNewImage
                 ? [
@@ -122,14 +118,10 @@ export const useGeneration = ({
                 status: payload.status,
                 progress: nextProgress,
                 images: nextImages,
-                activeImageIndex: shouldAutoSelect
-                  ? nextImages.length - 1
-                  : work.activeImageIndex,
-                viewingConfig: shouldAutoSelect
-                  ? generationConfig
-                  : work.viewingConfig,
+                activeImageIndex: shouldAutoSelect ? nextImages.length - 1 : work.activeImageIndex,
+                viewingConfig: shouldAutoSelect ? generationConfig : work.viewingConfig,
               };
-            }),
+            })
           );
 
           if (payload.status === "completed" || payload.status === "failed") {
@@ -146,7 +138,10 @@ export const useGeneration = ({
             generationSourceRef.current = null;
           }
           updateWorkById(workId, { status: "failed", progress: 100 });
-          setWorkErrors((prev) => ({ ...prev, generation: "Generation status stream disconnected" }));
+          setWorkErrors((prev) => ({
+            ...prev,
+            generation: "Generation status stream disconnected",
+          }));
         };
       } catch (error) {
         updateWorkById(workId, { status: "failed", progress: 100 });
