@@ -24,9 +24,7 @@ jobs:
         run: pnpm install
 
       - name: Install proxy dependencies
-        run: |
-          pnpm --dir proxy install --ignore-workspace || true
-          node proxy/node_modules/esbuild/install.js
+        run: pnpm --dir proxy install --ignore-workspace || true
 
       - name: Test
         run: pnpm test
