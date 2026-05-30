@@ -24,6 +24,12 @@ export interface WorkflowNode {
 
 export type Workflow = Record<string, unknown>;
 
+export const WORKFLOW_NODE_IDS = {
+  positivePrompt: "3",
+  negativePrompt: "4",
+  latentImage: "5",
+} as const;
+
 const WORKFLOW_DIR = resolve(
   dirname(fileURLToPath(import.meta.url)),
   "../../../workflow"
@@ -91,10 +97,30 @@ export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch
     throw new Error("ComfyUI workflow has no seed input to patch");
   }
 
-  patchRequiredNodeInput(patched, "5", "width", patch.baseWidth);
-  patchRequiredNodeInput(patched, "5", "height", patch.baseHeight);
-  patchRequiredNodeInput(patched, "3", "text", patch.positivePrompt);
-  patchRequiredNodeInput(patched, "4", "text", patch.negativePrompt);
+  patchRequiredNodeInput(
+    patched,
+    WORKFLOW_NODE_IDS.latentImage,
+    "width",
+    patch.baseWidth
+  );
+  patchRequiredNodeInput(
+    patched,
+    WORKFLOW_NODE_IDS.latentImage,
+    "height",
+    patch.baseHeight
+  );
+  patchRequiredNodeInput(
+    patched,
+    WORKFLOW_NODE_IDS.positivePrompt,
+    "text",
+    patch.positivePrompt
+  );
+  patchRequiredNodeInput(
+    patched,
+    WORKFLOW_NODE_IDS.negativePrompt,
+    "text",
+    patch.negativePrompt
+  );
 
   return patched;
 };

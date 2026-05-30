@@ -4,6 +4,7 @@ import {
   isWorkflowNode,
   patchComfyWorkflow,
   stripWorkflowMetadata,
+  WORKFLOW_NODE_IDS,
 } from "./comfyui.service.js";
 import type { ComfyWorkflowPatch, Workflow } from "./comfyui.service.js";
 
@@ -70,20 +71,26 @@ describe("patchComfyWorkflow — seed", () => {
 describe("patchComfyWorkflow — canvas and prompt nodes", () => {
   it("patches node 5 width and height", () => {
     const result = patchComfyWorkflow(makeWorkflow(), PATCH);
-    const node5 = result["5"] as { inputs: Record<string, unknown> };
+    const node5 = result[WORKFLOW_NODE_IDS.latentImage] as {
+      inputs: Record<string, unknown>;
+    };
     expect(node5.inputs.width).toBe(832);
     expect(node5.inputs.height).toBe(1216);
   });
 
   it("patches node 3 text with positivePrompt", () => {
     const result = patchComfyWorkflow(makeWorkflow(), PATCH);
-    const node3 = result["3"] as { inputs: Record<string, unknown> };
+    const node3 = result[WORKFLOW_NODE_IDS.positivePrompt] as {
+      inputs: Record<string, unknown>;
+    };
     expect(node3.inputs.text).toBe("A fully rendered positive prompt");
   });
 
   it("patches node 4 text with negativePrompt", () => {
     const result = patchComfyWorkflow(makeWorkflow(), PATCH);
-    const node4 = result["4"] as { inputs: Record<string, unknown> };
+    const node4 = result[WORKFLOW_NODE_IDS.negativePrompt] as {
+      inputs: Record<string, unknown>;
+    };
     expect(node4.inputs.text).toBe("cropped, bad anatomy");
   });
 });

@@ -31,7 +31,7 @@
       "text": "API_PATCHED_POSITIVE_PROMPT"
     },
     "_meta": {
-      "title": "Positive Prompt (XML Tags + Scene Caption)"
+      "title": "API Patched Positive Prompt"
     }
   },
   "4": {
@@ -44,7 +44,7 @@
       "text": "API_PATCHED_NEGATIVE_PROMPT"
     },
     "_meta": {
-      "title": "Simplified Weighted QC Negative Prompt"
+      "title": "API Patched Negative Prompt"
     }
   },
   "5": {
