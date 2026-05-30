@@ -23,20 +23,12 @@ export interface ModelConfig {
   id: string;
   label: string;
   tags: string[];
-  promptDefaults: {
-    positive: string[];
-    negative: string[];
-  };
   categories: Category[];
   additionalTagSuggestions: string[];
   outputPresets: OutputPreset[];
 }
 
 export interface GenerationOptions {
-  promptDefaults: {
-    positive: string[];
-    negative: string[];
-  };
   models: Record<string, ModelConfig>;
   defaultModelId: string;
 }
@@ -149,40 +141,12 @@ const BASE_ADDITIONAL_TAGS = [
 ];
 
 export const generationOptions: GenerationOptions = {
-  promptDefaults: {
-    positive: [
-      "masterpiece",
-      "best quality",
-      "full body",
-      "standing",
-      "head to toe",
-      "feet visible",
-      "solo",
-      "centered composition"
-    ],
-    negative: [
-      "cropped",
-      "close-up",
-      "portrait",
-      "upper body",
-      "half body",
-      "out of frame",
-      "missing feet",
-      "missing legs",
-      "bad anatomy",
-      "extra limbs"
-    ]
-  },
   defaultModelId: "illustrious-xl",
   models: {
     "illustrious-xl": {
       id: "illustrious-xl",
       label: "Illustrious XL",
       tags: ["anime style", "high quality illustration"],
-      promptDefaults: {
-        positive: ["highres", "absurdres", "full body", "head to toe", "standing"],
-        negative: ["lowres", "blurry", "jpeg artifacts"]
-      },
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS
@@ -191,10 +155,6 @@ export const generationOptions: GenerationOptions = {
       id: "pony-v6",
       label: "Pony Diffusion V6",
       tags: ["anime style", "pony diffusion"],
-      promptDefaults: {
-        positive: ["score_9", "score_8_up", "score_7_up", "full body", "head to toe", "standing"],
-        negative: ["score_6", "score_5", "score_4", "lowres", "worst quality"]
-      },
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS
@@ -203,10 +163,6 @@ export const generationOptions: GenerationOptions = {
       id: "animagine-xl-v3",
       label: "Animagine XL v3",
       tags: ["anime style", "animagine"],
-      promptDefaults: {
-        positive: [],
-        negative: ["simple background", "lowres", "bad proportions", "ugly"]
-      },
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS

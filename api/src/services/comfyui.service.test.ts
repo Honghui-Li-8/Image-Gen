@@ -11,9 +11,11 @@ const PATCH: ComfyWorkflowPatch = {
   seed: 999,
   baseWidth: 832,
   baseHeight: 1216,
+  promptTemplate: "Prompt template with {quality_prompt}, {user_prompt}, and {caption}",
   qualityTags: "masterpiece, best quality",
+  negativePrompt: "cropped, bad anatomy",
   customPromptXml: "<appearance_tags>\nblue hair\n</appearance_tags>",
-  caption: "dynamic pose",
+  caption: "A full-body anime portrait.\nDynamic pose",
 };
 
 const makeWorkflow = (): Workflow => ({
@@ -22,10 +24,18 @@ const makeWorkflow = (): Workflow => ({
     inputs: { width: 896, height: 1344, batch_size: 1 },
     _meta: { title: "EmptyLatentImage" },
   },
+  "4": {
+    class_type: "CLIPTextEncode",
+    inputs: { text: "old negative prompt" },
+  },
   "7": {
     class_type: "KSampler",
     inputs: { seed: 100, steps: 32, cfg: 6, denoise: 1 },
     _meta: { title: "KSampler base" },
+  },
+  "12": {
+    class_type: "PrimitiveStringMultiline",
+    inputs: { value: "old prompt template" },
   },
   "13": {
     class_type: "PrimitiveStringMultiline",
@@ -86,30 +96,30 @@ describe("patchComfyWorkflow — canvas and prompt nodes", () => {
     expect(node13.inputs.value).toBe(PATCH.customPromptXml);
   });
 
+  it("patches node 12 value with promptTemplate", () => {
+    const result = patchComfyWorkflow(makeWorkflow(), PATCH);
+    const node12 = result["12"] as { inputs: Record<string, unknown> };
+    expect(node12.inputs.value).toBe(PATCH.promptTemplate);
+  });
+
   it("patches node 21 value with qualityTags", () => {
     const result = patchComfyWorkflow(makeWorkflow(), PATCH);
     const node21 = result["21"] as { inputs: Record<string, unknown> };
     expect(node21.inputs.value).toBe("masterpiece, best quality");
   });
+
+  it("patches node 4 text with negativePrompt", () => {
+    const result = patchComfyWorkflow(makeWorkflow(), PATCH);
+    const node4 = result["4"] as { inputs: Record<string, unknown> };
+    expect(node4.inputs.text).toBe("cropped, bad anatomy");
+  });
 });
 
 describe("patchComfyWorkflow — caption (node 14)", () => {
-  it("appends non-empty user caption to existing node 14 value", () => {
+  it("patches node 14 value with the fully assembled caption", () => {
     const result = patchComfyWorkflow(makeWorkflow(), PATCH);
     const node14 = result["14"] as { inputs: Record<string, unknown> };
-    expect(node14.inputs.value).toBe("A full-body anime portrait.\n\ndynamic pose");
-  });
-
-  it("keeps existing node 14 value unchanged when caption is empty", () => {
-    const result = patchComfyWorkflow(makeWorkflow(), { ...PATCH, caption: "" });
-    const node14 = result["14"] as { inputs: Record<string, unknown> };
-    expect(node14.inputs.value).toBe("A full-body anime portrait.\n");
-  });
-
-  it("trims whitespace-only caption and keeps existing value unchanged", () => {
-    const result = patchComfyWorkflow(makeWorkflow(), { ...PATCH, caption: "   " });
-    const node14 = result["14"] as { inputs: Record<string, unknown> };
-    expect(node14.inputs.value).toBe("A full-body anime portrait.\n");
+    expect(node14.inputs.value).toBe("A full-body anime portrait.\nDynamic pose");
   });
 });
 
@@ -147,7 +157,7 @@ describe("stripWorkflowMetadata", () => {
 
   it("retains all workflow nodes", () => {
     const stripped = stripWorkflowMetadata(makeWorkflow());
-    expect(Object.keys(stripped).sort()).toEqual(["13", "14", "18", "21", "5", "7"]);
+    expect(Object.keys(stripped).sort()).toEqual(["12", "13", "14", "18", "21", "4", "5", "7"]);
   });
 });
 

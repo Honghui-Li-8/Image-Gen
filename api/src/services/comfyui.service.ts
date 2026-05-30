@@ -6,7 +6,9 @@ export interface ComfyWorkflowPatch {
   seed: number;
   baseWidth: number;
   baseHeight: number;
+  promptTemplate: string;
   qualityTags: string;
+  negativePrompt: string;
   customPromptXml: string;
   caption: string;
 }
@@ -65,16 +67,17 @@ export const stripWorkflowMetadata = (workflow: Workflow): Workflow =>
     Object.entries(workflow).filter(([, value]) => isWorkflowNode(value))
   );
 
-const patchNodeInput = (
+const patchRequiredNodeInput = (
   workflow: Workflow,
   nodeId: string,
   field: string,
   value: unknown
 ): void => {
   const node = workflow[nodeId];
-  if (isWorkflowNode(node)) {
-    node.inputs[field] = value;
+  if (!isWorkflowNode(node)) {
+    throw new Error(`ComfyUI workflow missing required node ${nodeId}`);
   }
+  node.inputs[field] = value;
 };
 
 export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch): Workflow => {
@@ -91,24 +94,13 @@ export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch
     throw new Error("ComfyUI workflow has no seed input to patch");
   }
 
-  patchNodeInput(patched, "5", "width", patch.baseWidth);
-  patchNodeInput(patched, "5", "height", patch.baseHeight);
-  patchNodeInput(patched, "13", "value", patch.customPromptXml);
-
-  // Append user caption to the existing full-body guardrail in node 14
-  const node14 = patched["14"];
-  const existingCaption = isWorkflowNode(node14)
-    ? ((node14.inputs.value as string) ?? "")
-    : "";
-  const userCaption = patch.caption.trim();
-  patchNodeInput(
-    patched,
-    "14",
-    "value",
-    userCaption ? `${existingCaption}\n${userCaption}` : existingCaption
-  );
-
-  patchNodeInput(patched, "21", "value", patch.qualityTags);
+  patchRequiredNodeInput(patched, "5", "width", patch.baseWidth);
+  patchRequiredNodeInput(patched, "5", "height", patch.baseHeight);
+  patchRequiredNodeInput(patched, "4", "text", patch.negativePrompt);
+  patchRequiredNodeInput(patched, "12", "value", patch.promptTemplate);
+  patchRequiredNodeInput(patched, "13", "value", patch.customPromptXml);
+  patchRequiredNodeInput(patched, "14", "value", patch.caption);
+  patchRequiredNodeInput(patched, "21", "value", patch.qualityTags);
 
   return patched;
 };

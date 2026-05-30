@@ -100,13 +100,11 @@ describe("buildGenerationPromptInput — XML prompt", () => {
     expect(result.customPromptXml).toContain("casual");
   });
 
-  it("always includes character_1, gender, count, style, quality, and other", () => {
+  it("always includes character_1, count, quality, and other", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
     expect(result.customPromptXml).toContain("<character_1>");
-    expect(result.customPromptXml).toContain("<gender>");
     expect(result.customPromptXml).toContain("<general_tags>");
     expect(result.customPromptXml).toContain("<count>");
-    expect(result.customPromptXml).toContain("<style>");
     expect(result.customPromptXml).toContain("<quality>");
     expect(result.customPromptXml).toContain("<other>");
   });
@@ -120,13 +118,14 @@ describe("buildGenerationPromptInput — XML prompt", () => {
 });
 
 describe("buildGenerationPromptInput — quality tags", () => {
-  it("merges additionalTags into qualityTags after model defaults", () => {
+  it("merges additionalTags into qualityTags after backend model prompt preset tags", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
+    expect(result.qualityTags).toContain("finished color artwork");
     expect(result.qualityTags).toContain("cinematic lighting");
   });
 
   it("deduplicates tags that appear in both model defaults and additionalTags", () => {
-    // "highres" is in illustrious-xl promptDefaults.positive
+    // "highres" is in the illustrious-xl backend prompt preset.
     const result = buildGenerationPromptInput({
       ...BASE_CONFIG,
       additionalTags: ["highres", "cinematic lighting"],
@@ -136,18 +135,42 @@ describe("buildGenerationPromptInput — quality tags", () => {
   });
 });
 
+describe("buildGenerationPromptInput — backend prompt presets", () => {
+  it("returns promptTemplate and negativePrompt from the backend model preset", () => {
+    const result = buildGenerationPromptInput(BASE_CONFIG);
+    expect(result.promptTemplate).toContain("{quality_prompt}");
+    expect(result.promptTemplate).toContain("{user_prompt}");
+    expect(result.promptTemplate).toContain("{caption}");
+    expect(result.negativePrompt).toContain("cropped");
+    expect(result.negativePrompt).toContain("upper body only");
+  });
+
+  it("returns model-specific quality and negative prompt values", () => {
+    const pony = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6" });
+    const animagine = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "animagine-xl-v3" });
+
+    expect(pony.qualityTags).toContain("score_9");
+    expect(pony.negativePrompt).toContain("pony");
+    expect(animagine.qualityTags).toContain("great score");
+    expect(animagine.negativePrompt).toContain("bad score");
+  });
+});
+
 describe("buildGenerationPromptInput — caption", () => {
-  it("passes additionalPrompt through trimmed as caption", () => {
+  it("appends additionalPrompt to the backend full-body caption", () => {
     const result = buildGenerationPromptInput({
       ...BASE_CONFIG,
       additionalPrompt: "  dynamic pose  ",
     });
-    expect(result.caption).toBe("dynamic pose");
+    expect(result.caption).toContain("full-body illustration");
+    expect(result.caption).toContain("both feet visible");
+    expect(result.caption.endsWith("dynamic pose")).toBe(true);
   });
 
-  it("produces empty string caption when additionalPrompt is empty", () => {
+  it("uses the backend full-body caption when additionalPrompt is empty", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, additionalPrompt: "" });
-    expect(result.caption).toBe("");
+    expect(result.caption).toContain("full-body illustration");
+    expect(result.caption).toContain("head to toe");
   });
 });
 

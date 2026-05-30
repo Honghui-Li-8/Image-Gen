@@ -11,7 +11,10 @@
   "2": {
     "class_type": "CLIPSetLastLayer",
     "inputs": {
-      "clip": ["1", 1],
+      "clip": [
+        "1",
+        1
+      ],
       "stop_at_clip_layer": -2
     },
     "_meta": {
@@ -21,8 +24,14 @@
   "3": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "clip": ["2", 0],
-      "text": ["16", 0]
+      "clip": [
+        "2",
+        0
+      ],
+      "text": [
+        "16",
+        0
+      ]
     },
     "_meta": {
       "title": "Positive Prompt (XML Tags + Scene Caption)"
@@ -31,8 +40,11 @@
   "4": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "clip": ["2", 0],
-      "text": "worst quality, bad quality, low quality, average quality, displeasing, very displeasing, comic, scan artifacts, jaggy lines, unclear, lowres, blurry, noisy, grainy, jpeg artifacts, compression artifacts, messy lineart, sketch, sketchy, rough sketch, unfinished, monochrome, greyscale, flat colors, bad anatomy, bad proportions, bad body, deformed body, malformed body, distorted body, long torso, short torso, twisted torso, bad face, deformed face, asymmetrical face, bad eyes, misaligned eyes, bad mouth, bad hands, poorly drawn hands, malformed hands, deformed hands, distorted hands, bad hand anatomy, bad fingers, malformed fingers, unnatural fingers, long fingers, short fingers, extra fingers, missing fingers, fused fingers, broken fingers, duplicated fingers, too many fingers, bad finger count, extra digits, fewer digits, missing knuckles, bad thumbs, bad feet, malformed feet, malformed limbs, missing limbs, extra arms, extra legs, disconnected limbs, cropped, close-up, bust shot, upper body only, lower body only, cropped legs, cropped feet, feet out of frame, head out of frame, hands out of frame, duplicate person, extra person, multiple people, multiple views, alternate view, side view, back view, reference sheet, character sheet, model sheet, turnaround, alternate outfit, outfit comparison, inconsistent outfit, text, letters, words, labels, annotations, watermark, logo, signature, nsfw, loli, child, teen, teenager, young-looking, underage, minor, childlike, hidden hands, hands behind back, complex hand gesture, unclear hands, obscured fingers"
+      "clip": [
+        "2",
+        0
+      ],
+      "text": "API_PATCHED_NEGATIVE_PROMPT"
     },
     "_meta": {
       "title": "Model-Specific QC Negative Prompt"
@@ -52,10 +64,22 @@
   "7": {
     "class_type": "KSampler",
     "inputs": {
-      "model": ["1", 0],
-      "positive": ["3", 0],
-      "negative": ["4", 0],
-      "latent_image": ["5", 0],
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ],
       "seed": 1070619858154929,
       "steps": 32,
       "cfg": 6,
@@ -70,8 +94,14 @@
   "8": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": ["7", 0],
-      "vae": ["1", 2]
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
     },
     "_meta": {
       "title": "Decode Base Image"
@@ -89,8 +119,14 @@
   "10": {
     "class_type": "ImageUpscaleWithModel",
     "inputs": {
-      "upscale_model": ["9", 0],
-      "image": ["8", 0]
+      "upscale_model": [
+        "9",
+        0
+      ],
+      "image": [
+        "8",
+        0
+      ]
     },
     "_meta": {
       "title": "Sharp Image Upscale"
@@ -99,7 +135,10 @@
   "11": {
     "class_type": "ImageScale",
     "inputs": {
-      "image": ["10", 0],
+      "image": [
+        "10",
+        0
+      ],
       "upscale_method": "lanczos",
       "width": 1536,
       "height": 2304,
@@ -112,7 +151,7 @@
   "12": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "You are a professional anime illustrator and art director. Generate a polished high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n{\n\"character_1\": {\n\"bbox\": [\n0,\n0,\n1000,\n1000\n],\n\"name\": \"$character_1$\"\n},\n\"image\": {\n\"quality_tags\": \"{quality_prompt}\",\n\"customization_tags\": \"\n{user_prompt}\n\",\n\"caption\": \"{caption}\"\n}\n}"
+      "value": "API_PATCHED_PROMPT_TEMPLATE\n{quality_prompt}\n{user_prompt}\n{caption}"
     },
     "_meta": {
       "title": "Prompt Template - Professional XML Alignment"
@@ -121,7 +160,7 @@
   "13": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "<character_1>\n\n<n>$character_1$</n>\n\n<gender>\n1 adult woman\n</gender>\n\n<appearance>\n</appearance>\n\n<body_type>\n</body_type>\n\n<clothing>\n</clothing>\n\n</character_1>\n\n<general_tags>\n\n<count>\n1girl, solo, adult woman\n</count>\n\n<style>\npolished shading\n</style>\n\n<quality>\nmasterpiece, best quality, absurdres, highres\n</quality>\n\n<other>\ndetailed eyes, detailed hands, detailed fingers, detailed feet, detailed legs, detailed thighs, correct anatomy, clean silhouette, polished rendering, character-centric composition, full body, head to toe, both feet visible, full-length shot, shoes, no extra limbs, no distorted feet\n</other>\n\n</general_tags>"
+      "value": "<api_patched_custom_prompt />"
     },
     "_meta": {
       "title": "Custom Prompt Config XML Tags"
@@ -130,7 +169,7 @@
   "14": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "A finished anime-style full-body illustration of one woman standing naturally. The character is fully visible from head to toe, centered in frame, with both feet visible. The image is one complete polished color illustration with stable anatomy, detailed face and eyes, a clean silhouette, and natural readable hands and fingers.\n"
+      "value": "API_PATCHED_CAPTION"
     },
     "_meta": {
       "title": "Scene Caption - Fullbody Guard"
@@ -139,9 +178,15 @@
   "15": {
     "class_type": "StringReplace",
     "inputs": {
-      "string": ["22", 0],
+      "string": [
+        "22",
+        0
+      ],
       "find": "{user_prompt}",
-      "replace": ["13", 0]
+      "replace": [
+        "13",
+        0
+      ]
     },
     "_meta": {
       "title": "Insert Custom Tags"
@@ -150,9 +195,15 @@
   "16": {
     "class_type": "StringReplace",
     "inputs": {
-      "string": ["15", 0],
+      "string": [
+        "15",
+        0
+      ],
       "find": "{caption}",
-      "replace": ["14", 0]
+      "replace": [
+        "14",
+        0
+      ]
     },
     "_meta": {
       "title": "Insert Caption"
@@ -161,8 +212,14 @@
   "17": {
     "class_type": "VAEEncode",
     "inputs": {
-      "pixels": ["11", 0],
-      "vae": ["1", 2]
+      "pixels": [
+        "11",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
     },
     "_meta": {
       "title": "Encode Sharp Upscale"
@@ -171,10 +228,22 @@
   "18": {
     "class_type": "KSampler",
     "inputs": {
-      "model": ["1", 0],
-      "positive": ["3", 0],
-      "negative": ["4", 0],
-      "latent_image": ["17", 0],
+      "model": [
+        "1",
+        0
+      ],
+      "positive": [
+        "3",
+        0
+      ],
+      "negative": [
+        "4",
+        0
+      ],
+      "latent_image": [
+        "17",
+        0
+      ],
       "seed": 1001998923130162,
       "steps": 12,
       "cfg": 4.5,
@@ -189,8 +258,14 @@
   "19": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": ["18", 0],
-      "vae": ["1", 2]
+      "samples": [
+        "18",
+        0
+      ],
+      "vae": [
+        "1",
+        2
+      ]
     },
     "_meta": {
       "title": "Decode Sharp Image"
@@ -199,7 +274,10 @@
   "20": {
     "class_type": "SaveImage",
     "inputs": {
-      "images": ["19", 0],
+      "images": [
+        "19",
+        0
+      ],
       "filename_prefix": "api_workflow/workflow_illustrious_xl_v2"
     },
     "_meta": {
@@ -209,7 +287,7 @@
   "21": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": "masterpiece, best quality, good quality, highres, absurdres, finished color artwork, polished shading, detailed face, detailed eyes, stable anatomy, detailed hands, natural hands, natural fingers, five fingers on each hand, correct finger count, separated fingers, relaxed fingers, detailed feet, front-facing, full body, head to toe, both feet visible, one person only, single outfit, fully clothed, clean silhouette"
+      "value": "API_PATCHED_QUALITY_TAGS"
     },
     "_meta": {
       "title": "Always-On Model Quality + Anatomy Tags"
@@ -218,9 +296,15 @@
   "22": {
     "class_type": "StringReplace",
     "inputs": {
-      "string": ["12", 0],
+      "string": [
+        "12",
+        0
+      ],
       "find": "{quality_prompt}",
-      "replace": ["21", 0]
+      "replace": [
+        "21",
+        0
+      ]
     },
     "_meta": {
       "title": "Insert Always-On Quality"

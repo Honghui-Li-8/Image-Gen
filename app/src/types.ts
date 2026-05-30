@@ -35,20 +35,12 @@ export interface ModelConfig {
   id: string;
   label: string;
   tags: string[];
-  promptDefaults: {
-    positive: string[];
-    negative: string[];
-  };
   categories: GenerationCategory[];
   additionalTagSuggestions: string[];
   outputPresets: OutputPreset[];
 }
 
 export interface GenerationOptions {
-  promptDefaults: {
-    positive: string[];
-    negative: string[];
-  };
   models: Record<string, ModelConfig>;
   defaultModelId: string;
 }

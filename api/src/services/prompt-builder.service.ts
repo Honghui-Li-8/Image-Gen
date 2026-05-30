@@ -1,5 +1,6 @@
 import type { Category } from "image-gen-shared";
 import { generationOptions } from "image-gen-shared";
+import { modelPromptPresets } from "../prompts/model-prompts.js";
 
 export interface GenerationRequestConfig {
   modelId: string;
@@ -15,16 +16,12 @@ export interface GenerationPromptInput {
   workflowFile: string;
   baseWidth: number;
   baseHeight: number;
+  promptTemplate: string;
   qualityTags: string;
+  negativePrompt: string;
   customPromptXml: string;
   caption: string;
 }
-
-const MODEL_WORKFLOW_FILES: Record<string, string> = {
-  "pony-v6": "workflow_pony_v6.json",
-  "animagine-xl-v3": "workflow_animagine_xl.json",
-  "illustrious-xl": "workflow_illustrious_xl_v2.json",
-};
 
 interface XmlSectionConfig {
   group: "character" | "general";
@@ -120,6 +117,24 @@ const parseSeed = (seedStr: string): number => {
   return seed;
 };
 
+const dedupeTags = (tags: string[]): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const tag of tags) {
+    const trimmed = tag.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+};
+
+const buildCaption = (baseCaption: string, additionalPrompt: string): string => {
+  const caption = baseCaption.trim();
+  const userCaption = additionalPrompt.trim();
+  return userCaption ? `${caption}\n${userCaption}` : caption;
+};
+
 const resolveSelectionTags = (
   selections: Record<string, string>,
   categories: Category[],
@@ -191,11 +206,11 @@ export const buildGenerationPromptInput = (
 ): GenerationPromptInput => {
   const seed = parseSeed(config.seed);
 
-  const workflowFile = MODEL_WORKFLOW_FILES[config.modelId];
-  if (!workflowFile) throw new Error(`Unknown modelId: ${config.modelId}`);
-
   const model = generationOptions.models[config.modelId];
   if (!model) throw new Error(`Unknown modelId: ${config.modelId}`);
+
+  const promptPreset = modelPromptPresets[config.modelId];
+  if (!promptPreset) throw new Error(`Unknown prompt preset for modelId: ${config.modelId}`);
 
   const preset = model.outputPresets.find((p) => p.id === config.selectedPreset);
   if (!preset) throw new Error(`Unknown preset: ${config.selectedPreset}`);
@@ -207,22 +222,21 @@ export const buildGenerationPromptInput = (
     if (!option) throw new Error(`Unknown option '${selectedValue}' for category '${catId}'`);
   }
 
-  const seen = new Set<string>();
-  const qualityTagList: string[] = [];
-  for (const tag of [...model.promptDefaults.positive, ...config.additionalTags]) {
-    if (!seen.has(tag)) {
-      seen.add(tag);
-      qualityTagList.push(tag);
-    }
-  }
+  const qualityTagList = dedupeTags([
+    ...promptPreset.qualityTags,
+    ...config.additionalTags,
+  ]);
+  const negativeTagList = dedupeTags(promptPreset.negativeTags);
 
   return {
     seed,
-    workflowFile,
+    workflowFile: promptPreset.workflowFile,
     baseWidth: preset.width,
     baseHeight: preset.height,
+    promptTemplate: promptPreset.promptTemplate,
     qualityTags: qualityTagList.join(", "),
+    negativePrompt: negativeTagList.join(", "),
     customPromptXml: buildXml(XML_SECTIONS, config.selections, model.categories),
-    caption: config.additionalPrompt.trim(),
+    caption: buildCaption(promptPreset.caption, config.additionalPrompt),
   };
 };
