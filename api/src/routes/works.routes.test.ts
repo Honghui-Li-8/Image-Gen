@@ -105,6 +105,8 @@ beforeEach(async () => {
   const { db: testDb } = await import("../db/index.js");
   db = testDb;
   app = buildApp();
+  vi.stubEnv("PROXY_URL", "http://proxy.test");
+  vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
   tokenStore.clear();
 
   aliceId = await seedUser("alice", "alice123");
@@ -118,6 +120,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await db.delete(users);
   tokenStore.clear();
 });
@@ -183,6 +186,20 @@ describe("GET /works/:id", () => {
     const res = await request(app).get(`/works/${workId}`).set("Authorization", `Bearer ${bobToken}`);
     expect(res.status).toBe(404);
   });
+
+  it("returns signed imageUrls for completed generation history", async () => {
+    const workId = await insertWork(aliceId);
+    await insertGeneration(workId, aliceId, "completed", "ComfyUI_00002_.png");
+
+    const res = await request(app)
+      .get(`/works/${workId}`)
+      .set("Authorization", `Bearer ${aliceToken}`);
+
+    expect(res.status).toBe(200);
+    const url = new URL(res.body.generations[0].imageUrl);
+    expect(url.origin).toBe("http://proxy.test");
+    expect(url.pathname).toBe("/images/ComfyUI_00002_.png");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -245,9 +262,9 @@ describe("POST /works — duplicate mode", () => {
     expect(res.body.name).toBe("Copy of Original");
   });
 
-  it("copies terminal generations with new ids and same imageUrls", async () => {
+  it("copies terminal generations with new ids and returns signed imageUrls", async () => {
     const sourceId = await insertWork(aliceId);
-    await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+    await insertGeneration(sourceId, aliceId, "completed", "ComfyUI_00001_.png");
     await insertGeneration(sourceId, aliceId, "failed");
 
     const res = await request(app)
@@ -256,7 +273,9 @@ describe("POST /works — duplicate mode", () => {
       .send({ duplicateFromId: sourceId });
 
     expect(res.body.generations).toHaveLength(2);
-    expect(res.body.generations[0].imageUrl).toBe("https://example.com/img.png");
+    const url = new URL(res.body.generations[0].imageUrl);
+    expect(url.origin).toBe("http://proxy.test");
+    expect(url.pathname).toBe("/images/ComfyUI_00001_.png");
     expect(res.body.generations.every((g: { workId: string }) => g.workId === res.body.id)).toBe(true);
   });
 
@@ -264,7 +283,7 @@ describe("POST /works — duplicate mode", () => {
     const sourceId = await insertWork(aliceId);
     await insertGeneration(sourceId, aliceId, "queued");
     await insertGeneration(sourceId, aliceId, "running");
-    await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+    await insertGeneration(sourceId, aliceId, "completed", "ComfyUI_00001_.png");
 
     const res = await request(app)
       .post("/works")
@@ -276,7 +295,7 @@ describe("POST /works — duplicate mode", () => {
 
   it("remaps activeGenerationId to the copied generation id", async () => {
     const sourceId = await insertWork(aliceId);
-    const genId = await insertGeneration(sourceId, aliceId, "completed", "https://example.com/img.png");
+    const genId = await insertGeneration(sourceId, aliceId, "completed", "ComfyUI_00001_.png");
     await db.update(works).set({ activeGenerationId: genId }).where(eq(works.id, sourceId));
 
     const res = await request(app)

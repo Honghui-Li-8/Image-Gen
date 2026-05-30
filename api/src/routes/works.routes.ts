@@ -6,6 +6,7 @@ import { Router } from "express";
 import { db } from "../db/index.js";
 import { generations, works } from "../db/schema.js";
 import type { Generation, Work } from "../db/schema.js";
+import { serializeGenerationImageUrl } from "../services/image-url.service.js";
 
 export interface WorkConfig {
   selectedModel: string;
@@ -19,6 +20,11 @@ export interface WorkConfig {
 type WorkWithGenerations = Work & { generations: Generation[] };
 
 export const worksRouter = Router();
+
+const serializeGenerationForResponse = (generation: Generation): Generation => ({
+  ...generation,
+  imageUrl: serializeGenerationImageUrl(generation.status, generation.imageUrl),
+});
 
 worksRouter.get("/works", async (req: Request, res: Response) => {
   const allWorks = await db
@@ -46,7 +52,10 @@ worksRouter.get("/works/:id", async (req: Request, res: Response) => {
     .where(eq(generations.workId, work.id))
     .orderBy(asc(generations.createdAt));
 
-  const result: WorkWithGenerations = { ...work, generations: workGenerations };
+  const result: WorkWithGenerations = {
+    ...work,
+    generations: workGenerations.map(serializeGenerationForResponse),
+  };
   res.json(result);
 });
 
@@ -113,7 +122,7 @@ worksRouter.post("/works", async (req: Request, res: Response) => {
         completedAt: g.completedAt,
       };
       await db.insert(generations).values(newGen);
-      copiedGenerations.push(newGen);
+      copiedGenerations.push(serializeGenerationForResponse(newGen));
     }
 
     const [newWork] = await db.select().from(works).where(eq(works.id, newWorkId));

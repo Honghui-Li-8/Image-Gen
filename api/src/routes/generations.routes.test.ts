@@ -108,6 +108,8 @@ beforeEach(async () => {
   const { db: testDb } = await import("../db/index.js");
   db = testDb;
   app = buildApp();
+  vi.stubEnv("PROXY_URL", "http://proxy.test");
+  vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
   tokenStore.clear();
   generationEmitter.removeAllListeners(GENERATION_UPDATE_EVENT);
 
@@ -126,6 +128,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await db.delete(users);
   generationEmitter.removeAllListeners(GENERATION_UPDATE_EVENT);
   tokenStore.clear();
@@ -291,5 +294,38 @@ describe("GET /generations/:generationId/status", () => {
     expect(res.text).toContain('"status":"running"');
     expect(res.text).toContain('"progress":50');
     expect(res.text).toContain('"status":"completed"');
+  });
+});
+
+describe("GET /generations/:generationId/image-token", () => {
+  it("returns a signed image URL for the owning user", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+    await db
+      .update(generations)
+      .set({ imageUrl: "ComfyUI_00001_.png" })
+      .where(eq(generations.id, generationId));
+
+    const res = await request(app)
+      .get(`/generations/${generationId}/image-token`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    const url = new URL(res.body.url);
+    expect(url.origin).toBe("http://proxy.test");
+    expect(url.pathname).toBe("/images/ComfyUI_00001_.png");
+    expect(url.searchParams.get("token")).toEqual(expect.any(String));
+    expect(url.searchParams.get("exp")).toEqual(expect.any(String));
+  });
+
+  it("does not issue an image URL to another user", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+
+    const res = await request(app)
+      .get(`/generations/${generationId}/image-token`)
+      .set("Authorization", `Bearer ${BOB_TOKEN}`);
+
+    expect(res.status).toBe(404);
   });
 });

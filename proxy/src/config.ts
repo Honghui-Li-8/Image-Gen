@@ -13,6 +13,14 @@ export const getComfyUrl = (): string => {
 
 export const getProxyPort = (): number => Number(process.env.PROXY_PORT ?? 3001);
 
+export const getComfyImageRoot = (): string => {
+  const root = process.env.COMFYUI_IMAGE_ROOT;
+  if (!root) {
+    throw new Error("COMFYUI_IMAGE_ROOT is required");
+  }
+  return root;
+};
+
 export const buildComfyHttpUrl = (pathWithQuery: string): URL =>
   new URL(pathWithQuery, `${getComfyUrl()}/`);
 
