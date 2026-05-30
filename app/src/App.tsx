@@ -7,6 +7,7 @@ import { TopBar } from "./components/TopBar";
 import { WorksSidebar } from "./components/WorksSidebar";
 import { useApiHealth } from "./hooks/useApiHealth";
 import { useAuth } from "./hooks/useAuth";
+import { useComfyHealth } from "./hooks/useComfyHealth";
 import { useGenerationOptions } from "./hooks/useGenerationOptions";
 import { useTheme } from "./hooks/useTheme";
 import { useWorks } from "./hooks/useWorks";
@@ -21,6 +22,7 @@ interface DashboardProps {
 
 const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   const health = useApiHealth(API_URL);
+  const { reachable: comfyReachable, recheckNow } = useComfyHealth(API_URL);
   const { options, optionsStatus } = useGenerationOptions(
     API_URL,
     session.token,
@@ -33,6 +35,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     options,
     optionsStatus,
     onUnauthorized,
+    recheckNow,
   );
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
@@ -42,6 +45,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
     <main className="creator-shell">
       <TopBar
         activeWork={worksState.activeWork}
+        comfyReachable={comfyReachable}
         isGenerating={worksState.isGenerating}
         isLoadingWorks={worksState.isLoadingWorks}
         isSaving={worksState.isSaving}

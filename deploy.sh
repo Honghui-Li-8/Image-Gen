@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env.deploy"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "Error: .env.deploy not found. Copy .env.deploy.example and fill in values."
+  exit 1
+fi
+
+# shellcheck source=/dev/null
+source "$ENV_FILE"
+
+REQUIRED_VARS=(
+  AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
+  APP_S3_BUCKET APP_CF_DISTRIBUTION_ID VITE_API_URL
+  API_HOST API_USER API_SSH_KEY API_REMOTE_DIR
+)
+MISSING=()
+for var in "${REQUIRED_VARS[@]}"; do
+  [[ -z "${!var:-}" ]] && MISSING+=("$var")
+done
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo "Error: missing values in .env.deploy: ${MISSING[*]}"
+  exit 1
+fi
+
+echo "Deploy target: [app] [api] [all]"
+read -rp "> " TARGET
+
+deploy_app() {
+  echo "==> Building app..."
+  VITE_API_URL="$VITE_API_URL" npx --prefix "$SCRIPT_DIR/app" vite build --outDir dist
+
+  echo "==> Syncing to S3..."
+  aws s3 sync "$SCRIPT_DIR/app/dist/" "s3://$APP_S3_BUCKET" --delete
+
+  echo "==> Invalidating CloudFront..."
+  aws cloudfront create-invalidation \
+    --distribution-id "$APP_CF_DISTRIBUTION_ID" \
+    --paths "/*" \
+    --query "Invalidation.Id" \
+    --output text
+  echo "    CloudFront invalidation submitted (propagates in ~1-3 min)."
+}
+
+deploy_api() {
+  local env_prod="$SCRIPT_DIR/api/.env.production"
+  if [[ ! -f "$env_prod" ]]; then
+    echo "Error: api/.env.production not found. Create it before deploying the API."
+    exit 1
+  fi
+
+  echo "==> Building API..."
+  (cd "$SCRIPT_DIR/api" && npm run build)
+
+  echo "==> Syncing files to Lightsail..."
+  rsync -avz --delete \
+    -e "ssh -i $API_SSH_KEY -o StrictHostKeyChecking=accept-new" \
+    "$SCRIPT_DIR/api/dist/" \
+    "$SCRIPT_DIR/api/package.json" \
+    "$SCRIPT_DIR/api/package-lock.json" \
+    "$API_USER@$API_HOST:$API_REMOTE_DIR/"
+
+  echo "==> Copying .env.production..."
+  scp -i "$API_SSH_KEY" -o StrictHostKeyChecking=accept-new \
+    "$env_prod" \
+    "$API_USER@$API_HOST:$API_REMOTE_DIR/.env"
+
+  echo "==> Installing dependencies and restarting..."
+  ssh -i "$API_SSH_KEY" -o StrictHostKeyChecking=accept-new \
+    "$API_USER@$API_HOST" \
+    "cd $API_REMOTE_DIR && npm ci --production && pm2 restart image-gen-api"
+
+  echo "==> API deployed."
+}
+
+case "$TARGET" in
+  app)  deploy_app ;;
+  api)  deploy_api ;;
+  all)  deploy_app && deploy_api ;;
+  *)    echo "Unknown target '$TARGET'. Choose app, api, or all."; exit 1 ;;
+esac

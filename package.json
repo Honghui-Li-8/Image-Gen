@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --parallel --recursive dev",
     "dev:app": "pnpm --filter image-gen-app dev",
-    "dev:api": "pnpm --filter image-gen-api dev"
+    "dev:api": "pnpm --filter image-gen-api dev",
+    "test": "pnpm --filter image-gen-api test"
   }
 }

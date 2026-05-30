@@ -159,6 +159,7 @@ export const useWorks = (
   options: GenerationOptions | null,
   optionsStatus: OptionsStatus,
   onUnauthorized: () => void,
+  onGenerationFailed?: () => void,
 ): UseWorksState => {
   const [works, setWorks] = useState<Work[]>([]);
   const [activeWorkId, setActiveWorkId] = useState("");
@@ -725,6 +726,7 @@ export const useWorks = (
       } catch (error) {
         updateWorkById(workId, { status: "failed", progress: 100 });
         handleApiError(error, "Could not start generation");
+        onGenerationFailed?.();
       }
     };
 
@@ -735,6 +737,7 @@ export const useWorks = (
     canGenerate,
     closeGenerationStream,
     handleApiError,
+    onGenerationFailed,
     patchWork,
     token,
     updateWorkById,

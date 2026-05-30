@@ -200,11 +200,9 @@ describe("POST /works/:workId/generations", () => {
     expect(work.activeGenerationId).toBe(res.body.generationId);
   });
 
-  it("rejects an eleventh in-flight generation", async () => {
+  it("rejects when user already has an active generation (per-user cap)", async () => {
     const workId = await seedWork(aliceId);
-    for (let i = 0; i < 10; i++) {
-      await seedGeneration(workId, aliceId, i % 2 === 0 ? "queued" : "running");
-    }
+    await seedGeneration(workId, aliceId, "queued");
 
     const res = await request(app)
       .post(`/works/${workId}/generations`)
@@ -212,7 +210,39 @@ describe("POST /works/:workId/generations", () => {
       .send(GENERATION_BODY);
 
     expect(res.status).toBe(429);
-    expect(res.body.error).toBe("Too many active generations");
+    expect(res.body.error).toBe("You already have an active generation, wait for it to finish");
+  });
+
+  it("per-user cap does not block other users", async () => {
+    vi.stubEnv("COMFYUI_MAX_ACTIVE_JOBS", "1");
+    const aliceWork = await seedWork(aliceId);
+    await seedGeneration(aliceWork, aliceId, "queued");
+
+    const bobWork = await seedWork(bobId);
+    const res = await request(app)
+      .post(`/works/${bobWork}/generations`)
+      .set("Authorization", `Bearer ${BOB_TOKEN}`)
+      .send(GENERATION_BODY);
+
+    expect(res.status).toBe(202);
+  });
+
+  it("rejects when global cap is reached across users", async () => {
+    vi.stubEnv("COMFYUI_MAX_ACTIVE_JOBS", "10");
+    vi.stubEnv("COMFYUI_MAX_GLOBAL_ACTIVE_JOBS", "2");
+
+    const aliceWork = await seedWork(aliceId);
+    const bobWork = await seedWork(bobId);
+    await seedGeneration(aliceWork, aliceId, "queued");
+    await seedGeneration(bobWork, bobId, "running");
+
+    const res = await request(app)
+      .post(`/works/${aliceWork}/generations`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send(GENERATION_BODY);
+
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe("GPU busy, try again shortly");
   });
 });
 
