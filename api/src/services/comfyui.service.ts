@@ -6,11 +6,8 @@ export interface ComfyWorkflowPatch {
   seed: number;
   baseWidth: number;
   baseHeight: number;
-  promptTemplate: string;
-  qualityTags: string;
+  positivePrompt: string;
   negativePrompt: string;
-  customPromptXml: string;
-  caption: string;
 }
 
 export interface ComfyImageRef {
@@ -96,11 +93,8 @@ export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch
 
   patchRequiredNodeInput(patched, "5", "width", patch.baseWidth);
   patchRequiredNodeInput(patched, "5", "height", patch.baseHeight);
+  patchRequiredNodeInput(patched, "3", "text", patch.positivePrompt);
   patchRequiredNodeInput(patched, "4", "text", patch.negativePrompt);
-  patchRequiredNodeInput(patched, "12", "value", patch.promptTemplate);
-  patchRequiredNodeInput(patched, "13", "value", patch.customPromptXml);
-  patchRequiredNodeInput(patched, "14", "value", patch.caption);
-  patchRequiredNodeInput(patched, "21", "value", patch.qualityTags);
 
   return patched;
 };

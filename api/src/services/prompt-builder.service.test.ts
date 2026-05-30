@@ -89,39 +89,39 @@ describe("buildGenerationPromptInput — model and preset validation", () => {
 describe("buildGenerationPromptInput — XML prompt", () => {
   it("places appearance selections inside character_1 appearance section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.customPromptXml).toContain("<appearance>");
-    expect(result.customPromptXml).toContain("slim");
-    expect(result.customPromptXml).toContain("blue hair");
+    expect(result.positivePrompt).toContain("<appearance>");
+    expect(result.positivePrompt).toContain("slim");
+    expect(result.positivePrompt).toContain("blue hair");
   });
 
   it("places clothing selection inside character_1 clothing section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.customPromptXml).toContain("<clothing>");
-    expect(result.customPromptXml).toContain("casual");
+    expect(result.positivePrompt).toContain("<clothing>");
+    expect(result.positivePrompt).toContain("casual");
   });
 
   it("always includes character_1, count, quality, and other", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
-    expect(result.customPromptXml).toContain("<character_1>");
-    expect(result.customPromptXml).toContain("<general_tags>");
-    expect(result.customPromptXml).toContain("<count>");
-    expect(result.customPromptXml).toContain("<quality>");
-    expect(result.customPromptXml).toContain("<other>");
+    expect(result.positivePrompt).toContain("<character_1>");
+    expect(result.positivePrompt).toContain("<general_tags>");
+    expect(result.positivePrompt).toContain("<count>");
+    expect(result.positivePrompt).toContain("<quality>");
+    expect(result.positivePrompt).toContain("<other>");
   });
 
   it("omits appearance, body_type, and clothing when nothing is selected", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
-    expect(result.customPromptXml).not.toContain("<appearance>");
-    expect(result.customPromptXml).not.toContain("<body_type>");
-    expect(result.customPromptXml).not.toContain("<clothing>");
+    expect(result.positivePrompt).not.toContain("<appearance>");
+    expect(result.positivePrompt).not.toContain("<body_type>");
+    expect(result.positivePrompt).not.toContain("<clothing>");
   });
 });
 
 describe("buildGenerationPromptInput — quality tags", () => {
-  it("merges additionalTags into qualityTags after backend model prompt preset tags", () => {
+  it("merges additionalTags into the rendered positive prompt after backend model prompt preset tags", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.qualityTags).toContain("finished color artwork");
-    expect(result.qualityTags).toContain("cinematic lighting");
+    expect(result.positivePrompt).toContain("finished color artwork");
+    expect(result.positivePrompt).toContain("cinematic lighting");
   });
 
   it("deduplicates tags that appear in both model defaults and additionalTags", () => {
@@ -130,17 +130,19 @@ describe("buildGenerationPromptInput — quality tags", () => {
       ...BASE_CONFIG,
       additionalTags: ["highres", "cinematic lighting"],
     });
-    const tags = result.qualityTags.split(", ");
+    const qualityLine = result.positivePrompt.match(/"quality_tags": "([^"]+)"/)?.[1] ?? "";
+    const tags = qualityLine.split(", ");
     expect(tags.filter((t) => t === "highres").length).toBe(1);
   });
 });
 
 describe("buildGenerationPromptInput — backend prompt presets", () => {
-  it("returns promptTemplate and negativePrompt from the backend model preset", () => {
+  it("renders positivePrompt and negativePrompt from the backend model preset", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
-    expect(result.promptTemplate).toContain("{quality_prompt}");
-    expect(result.promptTemplate).toContain("{user_prompt}");
-    expect(result.promptTemplate).toContain("{caption}");
+    expect(result.positivePrompt).not.toContain("{quality_prompt}");
+    expect(result.positivePrompt).not.toContain("{user_prompt}");
+    expect(result.positivePrompt).not.toContain("{caption}");
+    expect(result.positivePrompt).toContain("You are a professional anime illustrator");
     expect(result.negativePrompt).toContain("cropped");
     expect(result.negativePrompt).toContain("upper body only");
   });
@@ -149,9 +151,9 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     const pony = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6" });
     const animagine = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "animagine-xl-v3" });
 
-    expect(pony.qualityTags).toContain("score_9");
+    expect(pony.positivePrompt).toContain("score_9");
     expect(pony.negativePrompt).toContain("pony");
-    expect(animagine.qualityTags).toContain("great score");
+    expect(animagine.positivePrompt).toContain("great score");
     expect(animagine.negativePrompt).toContain("bad score");
   });
 });
@@ -162,15 +164,15 @@ describe("buildGenerationPromptInput — caption", () => {
       ...BASE_CONFIG,
       additionalPrompt: "  dynamic pose  ",
     });
-    expect(result.caption).toContain("full-body illustration");
-    expect(result.caption).toContain("both feet visible");
-    expect(result.caption.endsWith("dynamic pose")).toBe(true);
+    expect(result.positivePrompt).toContain("full-body illustration");
+    expect(result.positivePrompt).toContain("both feet visible");
+    expect(result.positivePrompt).toContain("dynamic pose");
   });
 
   it("uses the backend full-body caption when additionalPrompt is empty", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, additionalPrompt: "" });
-    expect(result.caption).toContain("full-body illustration");
-    expect(result.caption).toContain("head to toe");
+    expect(result.positivePrompt).toContain("full-body illustration");
+    expect(result.positivePrompt).toContain("head to toe");
   });
 });
 

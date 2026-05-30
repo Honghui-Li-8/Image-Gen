@@ -16,11 +16,8 @@ export interface GenerationPromptInput {
   workflowFile: string;
   baseWidth: number;
   baseHeight: number;
-  promptTemplate: string;
-  qualityTags: string;
+  positivePrompt: string;
   negativePrompt: string;
-  customPromptXml: string;
-  caption: string;
 }
 
 interface XmlSectionConfig {
@@ -135,6 +132,23 @@ const buildCaption = (baseCaption: string, additionalPrompt: string): string => 
   return userCaption ? `${caption}\n${userCaption}` : caption;
 };
 
+const renderPositivePrompt = ({
+  template,
+  qualityPrompt,
+  userPrompt,
+  caption,
+}: {
+  template: string;
+  qualityPrompt: string;
+  userPrompt: string;
+  caption: string;
+}): string => {
+  return template
+    .replaceAll("{quality_prompt}", qualityPrompt)
+    .replaceAll("{user_prompt}", userPrompt)
+    .replaceAll("{caption}", caption);
+};
+
 const resolveSelectionTags = (
   selections: Record<string, string>,
   categories: Category[],
@@ -227,16 +241,21 @@ export const buildGenerationPromptInput = (
     ...config.additionalTags,
   ]);
   const negativeTagList = dedupeTags(promptPreset.negativeTags);
+  const qualityPrompt = qualityTagList.join(", ");
+  const customPromptXml = buildXml(XML_SECTIONS, config.selections, model.categories);
+  const caption = buildCaption(promptPreset.caption, config.additionalPrompt);
 
   return {
     seed,
     workflowFile: promptPreset.workflowFile,
     baseWidth: preset.width,
     baseHeight: preset.height,
-    promptTemplate: promptPreset.promptTemplate,
-    qualityTags: qualityTagList.join(", "),
+    positivePrompt: renderPositivePrompt({
+      template: promptPreset.promptTemplate,
+      qualityPrompt,
+      userPrompt: customPromptXml,
+      caption,
+    }),
     negativePrompt: negativeTagList.join(", "),
-    customPromptXml: buildXml(XML_SECTIONS, config.selections, model.categories),
-    caption: buildCaption(promptPreset.caption, config.additionalPrompt),
   };
 };

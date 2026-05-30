@@ -28,10 +28,7 @@
         "2",
         0
       ],
-      "text": [
-        "16",
-        0
-      ]
+      "text": "API_PATCHED_POSITIVE_PROMPT"
     },
     "_meta": {
       "title": "Positive Prompt (XML Tags + Scene Caption)"
@@ -148,67 +145,6 @@
       "title": "Lanczos Downscale to Size"
     }
   },
-  "12": {
-    "class_type": "PrimitiveStringMultiline",
-    "inputs": {
-      "value": "API_PATCHED_PROMPT_TEMPLATE\n{quality_prompt}\n{user_prompt}\n{caption}"
-    },
-    "_meta": {
-      "title": "Prompt Template - Professional XML Alignment"
-    }
-  },
-  "13": {
-    "class_type": "PrimitiveStringMultiline",
-    "inputs": {
-      "value": "<api_patched_custom_prompt />"
-    },
-    "_meta": {
-      "title": "Custom Prompt Config XML Tags"
-    }
-  },
-  "14": {
-    "class_type": "PrimitiveStringMultiline",
-    "inputs": {
-      "value": "API_PATCHED_CAPTION"
-    },
-    "_meta": {
-      "title": "Scene Caption - Fullbody Guard"
-    }
-  },
-  "15": {
-    "class_type": "StringReplace",
-    "inputs": {
-      "string": [
-        "22",
-        0
-      ],
-      "find": "{user_prompt}",
-      "replace": [
-        "13",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Insert Custom Tags"
-    }
-  },
-  "16": {
-    "class_type": "StringReplace",
-    "inputs": {
-      "string": [
-        "15",
-        0
-      ],
-      "find": "{caption}",
-      "replace": [
-        "14",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Insert Caption"
-    }
-  },
   "17": {
     "class_type": "VAEEncode",
     "inputs": {
@@ -282,32 +218,6 @@
     },
     "_meta": {
       "title": "Save Result"
-    }
-  },
-  "21": {
-    "class_type": "PrimitiveStringMultiline",
-    "inputs": {
-      "value": "API_PATCHED_QUALITY_TAGS"
-    },
-    "_meta": {
-      "title": "Always-On Model Quality + Anatomy Tags"
-    }
-  },
-  "22": {
-    "class_type": "StringReplace",
-    "inputs": {
-      "string": [
-        "12",
-        0
-      ],
-      "find": "{quality_prompt}",
-      "replace": [
-        "21",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "Insert Always-On Quality"
     }
   },
   "_meta": {
