@@ -90,11 +90,18 @@ server.on("upgrade", (req, socket, head) => {
   wsServer.handleUpgrade(req, socket, head, (clientWs) => {
     const upstreamWs = new WebSocket(buildComfyWsUrl());
 
+    const pingInterval = setInterval(() => {
+      if (clientWs.readyState === WebSocket.OPEN) clientWs.ping();
+    }, 30_000);
+
+    clientWs.on("close", () => clearInterval(pingInterval));
+
     upstreamWs.on("open", () => {
       pipeWebSockets(clientWs, upstreamWs);
     });
 
     upstreamWs.on("error", () => {
+      clearInterval(pingInterval);
       clientWs.close(1011, "ComfyUI WebSocket unreachable");
     });
   });
