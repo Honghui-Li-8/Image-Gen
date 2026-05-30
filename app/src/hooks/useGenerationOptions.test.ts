@@ -20,14 +20,14 @@ vi.mock("../utils/api", () => {
 const { apiFetch } = await import("../utils/api");
 const mockApiFetch = vi.mocked(apiFetch);
 
-const mockOptions = { models: { "m1": { id: "m1" } }, defaultModelId: "m1" };
+const mockOptions = { models: { m1: { id: "m1" } }, defaultModelId: "m1" };
 
-const makeWrapper = (queryClient: QueryClient) =>
+const makeWrapper =
+  (queryClient: QueryClient) =>
   ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children);
 
-const freshClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } });
+const freshClient = () => new QueryClient({ defaultOptions: { queries: { retryDelay: 0 } } });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,10 +35,9 @@ beforeEach(() => {
 
 describe("useGenerationOptions", () => {
   it("returns loading status when token is null", () => {
-    const { result } = renderHook(
-      () => useGenerationOptions("http://api", null, vi.fn()),
-      { wrapper: makeWrapper(freshClient()) },
-    );
+    const { result } = renderHook(() => useGenerationOptions("http://api", null, vi.fn()), {
+      wrapper: makeWrapper(freshClient()),
+    });
     expect(result.current.optionsStatus).toBe("loading");
     expect(result.current.options).toBeNull();
   });
@@ -48,10 +47,9 @@ describe("useGenerationOptions", () => {
       json: async () => mockOptions,
     } as Response);
 
-    const { result } = renderHook(
-      () => useGenerationOptions("http://api", "token123", vi.fn()),
-      { wrapper: makeWrapper(freshClient()) },
-    );
+    const { result } = renderHook(() => useGenerationOptions("http://api", "token123", vi.fn()), {
+      wrapper: makeWrapper(freshClient()),
+    });
 
     await waitFor(() => expect(result.current.optionsStatus).toBe("ready"));
     expect(result.current.options).toEqual(mockOptions);
@@ -60,15 +58,11 @@ describe("useGenerationOptions", () => {
   it("returns failed status when fetch throws a non-401 error", async () => {
     mockApiFetch.mockRejectedValue(new Error("network error"));
 
-    const { result } = renderHook(
-      () => useGenerationOptions("http://api", "token123", vi.fn()),
-      { wrapper: makeWrapper(freshClient()) },
-    );
+    const { result } = renderHook(() => useGenerationOptions("http://api", "token123", vi.fn()), {
+      wrapper: makeWrapper(freshClient()),
+    });
 
-    await waitFor(
-      () => expect(result.current.optionsStatus).toBe("failed"),
-      { timeout: 5000 },
-    );
+    await waitFor(() => expect(result.current.optionsStatus).toBe("failed"), { timeout: 5000 });
     expect(result.current.options).toBeNull();
   });
 
@@ -76,10 +70,9 @@ describe("useGenerationOptions", () => {
     mockApiFetch.mockRejectedValue(new ApiError(401, "Unauthorized"));
 
     const onUnauthorized = vi.fn();
-    renderHook(
-      () => useGenerationOptions("http://api", "token123", onUnauthorized),
-      { wrapper: makeWrapper(freshClient()) },
-    );
+    renderHook(() => useGenerationOptions("http://api", "token123", onUnauthorized), {
+      wrapper: makeWrapper(freshClient()),
+    });
 
     await waitFor(() => expect(onUnauthorized).toHaveBeenCalled(), { timeout: 5000 });
   });
@@ -87,10 +80,9 @@ describe("useGenerationOptions", () => {
   it("exposes refetchOptions as a callable function", async () => {
     mockApiFetch.mockResolvedValue({ json: async () => mockOptions } as Response);
 
-    const { result } = renderHook(
-      () => useGenerationOptions("http://api", "token123", vi.fn()),
-      { wrapper: makeWrapper(freshClient()) },
-    );
+    const { result } = renderHook(() => useGenerationOptions("http://api", "token123", vi.fn()), {
+      wrapper: makeWrapper(freshClient()),
+    });
 
     await waitFor(() => expect(result.current.optionsStatus).toBe("ready"));
     expect(typeof result.current.refetchOptions).toBe("function");
@@ -104,13 +96,13 @@ describe("useGenerationOptions", () => {
 
     const { result: r1 } = renderHook(
       () => useGenerationOptions("http://api", "token123", vi.fn()),
-      { wrapper },
+      { wrapper }
     );
     await waitFor(() => expect(r1.current.optionsStatus).toBe("ready"));
 
     const { result: r2 } = renderHook(
       () => useGenerationOptions("http://api", "token123", vi.fn()),
-      { wrapper },
+      { wrapper }
     );
     await waitFor(() => expect(r2.current.optionsStatus).toBe("ready"));
 

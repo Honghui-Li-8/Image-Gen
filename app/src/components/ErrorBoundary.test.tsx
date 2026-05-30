@@ -20,7 +20,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <span>content</span>
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
     expect(screen.getByText("content")).toBeDefined();
   });
@@ -29,7 +29,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowOnRender />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
     expect(screen.getByText("Something went wrong.")).toBeDefined();
   });
@@ -38,7 +38,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowOnRender />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
     expect(screen.getByRole("button", { name: /reload/i })).toBeDefined();
   });
@@ -50,7 +50,7 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary>
         <ThrowOnRender />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     await userEvent.click(screen.getByRole("button", { name: /reload/i }));
