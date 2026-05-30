@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { signProxyRequest } from "../lib/proxy-auth.js";
 
 export interface ComfyWorkflowPatch {
   seed: number;
@@ -36,7 +37,7 @@ const WORKFLOW_DIR = resolve(
 );
 
 export const getBaseUrl = (): string => {
-  const url = process.env.COMFYUI_BASE_URL ?? "http://localhost:8188";
+  const url = process.env.PROXY_URL ?? "http://localhost:3001";
   return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
@@ -46,10 +47,23 @@ export const getComfyTimeoutMs = (): number =>
 export const getComfyPollIntervalMs = (): number =>
   Number(process.env.COMFYUI_POLL_INTERVAL_MS ?? 1000);
 
-const getHeaders = (): Record<string, string> => {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = process.env.COMFYUI_AUTH_TOKEN;
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+const getProxySecret = (): string => {
+  const secret = process.env.PROXY_AUTH_SECRET;
+  if (!secret) {
+    throw new Error("PROXY_AUTH_SECRET is required");
+  }
+  return secret;
+};
+
+const getHeaders = (
+  method: string,
+  pathWithQuery: string,
+  contentType?: string
+): Record<string, string> => {
+  const headers: Record<string, string> = {
+    ...signProxyRequest(getProxySecret(), method, pathWithQuery),
+  };
+  if (contentType) headers["Content-Type"] = contentType;
   return headers;
 };
 
@@ -157,10 +171,11 @@ export const loadComfyWorkflow = async (filename?: string): Promise<Workflow> =>
 
 export const submitComfyWorkflow = async (workflow: Workflow): Promise<string> => {
   const stripped = stripWorkflowMetadata(workflow);
+  const path = "/comfy/prompt";
 
-  const response = await fetch(`${getBaseUrl()}/prompt`, {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: getHeaders("POST", path, "application/json"),
     body: JSON.stringify({ prompt: stripped }),
   });
 
@@ -180,8 +195,9 @@ export const submitComfyWorkflow = async (workflow: Workflow): Promise<string> =
 };
 
 export const fetchComfyHistory = async (promptId: string): Promise<unknown> => {
-  const response = await fetch(`${getBaseUrl()}/history/${promptId}`, {
-    headers: getHeaders(),
+  const path = `/comfy/history/${encodeURIComponent(promptId)}`;
+  const response = await fetch(`${getBaseUrl()}${path}`, {
+    headers: getHeaders("GET", path),
   });
 
   if (!response.ok) {
@@ -191,11 +207,6 @@ export const fetchComfyHistory = async (promptId: string): Promise<unknown> => {
   return response.json();
 };
 
-export const buildComfyImageUrl = (ref: ComfyImageRef): string => {
-  const params = new URLSearchParams({
-    filename: ref.filename,
-    type: ref.type ?? "output",
-  });
-  if (ref.subfolder) params.set("subfolder", ref.subfolder);
-  return `${getBaseUrl()}/view?${params.toString()}`;
+export const buildComfyImageFilename = (ref: ComfyImageRef): string => {
+  return ref.filename;
 };

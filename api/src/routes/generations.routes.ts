@@ -17,6 +17,10 @@ import type {
   GenerationRequestConfig,
   GenerationUpdateEvent,
 } from "../services/generation-job.service.js";
+import {
+  buildSignedImageUrl,
+  serializeGenerationImageUrl,
+} from "../services/image-url.service.js";
 import { logger } from "../utils/logger.js";
 
 const MAX_IN_FLIGHT_GENERATIONS = 10;
@@ -49,6 +53,16 @@ const writeSseEvent = (
   res.write(`event: ${eventName}\n`);
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
 };
+
+const serializeGenerationUpdate = (
+  event: GenerationUpdateEvent
+): GenerationUpdateEvent => ({
+  ...event,
+  imageUrl:
+    event.imageUrl === undefined
+      ? undefined
+      : serializeGenerationImageUrl(event.status, event.imageUrl),
+});
 
 const parseGenerationConfig = (value: unknown): GenerationRequestConfig | null => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -186,6 +200,31 @@ generationsRouter.delete(
 );
 
 generationsRouter.get(
+  "/generations/:generationId/image-token",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const generationId = req.params.generationId as string;
+
+    const [generation] = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.id, generationId));
+
+    if (!generation || generation.userId !== req.userId) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    if (generation.status !== "completed" || !generation.imageUrl) {
+      res.status(404).json({ error: "Image not found" });
+      return;
+    }
+
+    res.json({ url: buildSignedImageUrl(generation.imageUrl) });
+  }
+);
+
+generationsRouter.get(
   "/generations/:generationId/status",
   async (req: Request, res: Response) => {
     const generationId = req.params.generationId as string;
@@ -231,7 +270,7 @@ generationsRouter.get(
     writeSseEvent(res, "status", {
       generationId: generation.id,
       status: generation.status,
-      imageUrl: generation.imageUrl,
+      imageUrl: serializeGenerationImageUrl(generation.status, generation.imageUrl),
       error: generation.error,
     });
 
@@ -266,7 +305,7 @@ generationsRouter.get(
         return;
       }
 
-      writeSseEvent(res, "status", event);
+      writeSseEvent(res, "status", serializeGenerationUpdate(event));
       logger.debug("generation.sse.event_sent", {
         generationId: event.generationId,
         progress: event.progress,
