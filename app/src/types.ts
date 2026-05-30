@@ -53,10 +53,20 @@ export interface GenerationOptions {
   defaultModelId: string;
 }
 
+export interface WorkConfig {
+  selectedModel: string;
+  selections: Record<string, string>;
+  selectedPreset: string;
+  seed: string;
+  additionalTags: string[];
+  additionalPrompt: string;
+}
+
 export interface GeneratedImage {
   id?: string;
   url: string;
   alt?: string;
+  config?: WorkConfig;
 }
 
 export interface Work {
@@ -74,6 +84,7 @@ export interface Work {
   images: GeneratedImage[];
   activeImageIndex: number;
   savedAt: string | null;
+  viewingConfig: WorkConfig | null;
 }
 
 export type WorkUpdater = Partial<Work> | ((work: Work) => Work);

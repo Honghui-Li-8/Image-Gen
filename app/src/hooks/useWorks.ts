@@ -6,6 +6,7 @@ import type {
   GenerationOptions,
   ModelConfig,
   Work,
+  WorkConfig,
   WorkStatus,
   WorkUpdater,
 } from "../types";
@@ -25,6 +26,7 @@ interface BackendGeneration {
   id: string;
   status: Exclude<WorkStatus, "idle">;
   imageUrl: string | null;
+  config?: BackendWorkConfig;
 }
 
 interface GenerationCreateResponse {
@@ -58,6 +60,7 @@ interface UseWorksState {
   commitTag: () => void;
   confirmCancelGeneration: () => void;
   customTags: string[];
+  deleteImage: (generationId: string) => void;
   handleGenerationAction: () => void;
   isDirty: boolean;
   isGenerating: boolean;
@@ -65,14 +68,17 @@ interface UseWorksState {
   isSaving: boolean;
   canGenerate: boolean;
   missingFieldIds: string[];
-  showGenerationValidation: boolean;
   moveImage: (offset: number) => void;
   removeTag: (tagToRemove: string) => void;
+  restoreViewing: () => void;
   saveWorks: () => void;
+  selectDraft: () => void;
+  selectImage: (index: number) => void;
   selectedTags: string[];
   setActiveWorkId: (workId: string) => void;
   setShowCancelModal: (show: boolean) => void;
   showCancelModal: boolean;
+  showGenerationValidation: boolean;
   updateActiveWork: (updater: WorkUpdater) => void;
   works: Work[];
   worksError: string;
@@ -85,6 +91,16 @@ const generationToImage = (generation: BackendGeneration): GeneratedImage | null
     id: generation.id,
     url: generation.imageUrl,
     alt: "Generated anime character",
+    config: generation.config
+      ? {
+          selectedModel: generation.config.selectedModel,
+          selections: generation.config.selections,
+          selectedPreset: generation.config.selectedPreset,
+          seed: generation.config.seed,
+          additionalTags: generation.config.additionalTags,
+          additionalPrompt: generation.config.additionalPrompt,
+        }
+      : undefined,
   };
 };
 
@@ -112,6 +128,7 @@ const mapBackendWork = (backendWork: BackendWork): Work => {
     images,
     activeImageIndex: Math.max(0, images.length - 1),
     savedAt: backendWork.updatedAt,
+    viewingConfig: null,
   };
 };
 
@@ -341,17 +358,88 @@ export const useWorks = (
     void createBackendWork();
   }, [apiUrl, handleApiError, loadWorkDetails, token]);
 
+  const selectImage = useCallback(
+    (index: number) => {
+      updateActiveWork((work) => {
+        const clamped = Math.min(work.images.length - 1, Math.max(0, index));
+        return {
+          ...work,
+          activeImageIndex: clamped,
+          viewingConfig: work.images[clamped]?.config ?? null,
+        };
+      });
+    },
+    [updateActiveWork],
+  );
+
+  const selectDraft = useCallback(() => {
+    updateActiveWork((work) => ({ ...work, viewingConfig: null }));
+  }, [updateActiveWork]);
+
+  const restoreViewing = useCallback(() => {
+    updateActiveWork((work) => {
+      if (!work.viewingConfig) return work;
+      return {
+        ...work,
+        selectedModel: work.viewingConfig.selectedModel,
+        selections: work.viewingConfig.selections,
+        selectedPreset: work.viewingConfig.selectedPreset,
+        seed: work.viewingConfig.seed,
+        additionalTags: work.viewingConfig.additionalTags,
+        additionalPrompt: work.viewingConfig.additionalPrompt,
+        viewingConfig: null,
+      };
+    });
+  }, [updateActiveWork]);
+
+  const deleteImage = useCallback(
+    (generationId: string) => {
+      if (!activeWork) return;
+      const workId = activeWork.id;
+
+      const doDelete = async () => {
+        try {
+          await apiFetch(`${apiUrl}/generations/${generationId}`, {
+            method: "DELETE",
+            token,
+          });
+          setWorks((currentWorks) =>
+            currentWorks.map((work) => {
+              if (work.id !== workId) return work;
+              const nextImages = work.images.filter((img) => img.id !== generationId);
+              const nextIndex = Math.min(work.activeImageIndex, Math.max(0, nextImages.length - 1));
+              const wasViewing = work.viewingConfig && work.images[work.activeImageIndex]?.id === generationId;
+              return {
+                ...work,
+                images: nextImages,
+                activeImageIndex: nextIndex,
+                viewingConfig: wasViewing ? null : work.viewingConfig,
+              };
+            }),
+          );
+        } catch (error) {
+          handleApiError(error, "Could not delete image");
+        }
+      };
+
+      void doDelete();
+    },
+    [activeWork, apiUrl, handleApiError, token],
+  );
+
   const moveImage = useCallback(
     (offset: number) => {
       if (!activeWork?.images?.length) return;
-
       updateActiveWork((work) => {
-        const maxIndex = work.images.length - 1;
         const nextIndex = Math.min(
-          maxIndex,
+          work.images.length - 1,
           Math.max(0, work.activeImageIndex + offset),
         );
-        return { ...work, activeImageIndex: nextIndex };
+        return {
+          ...work,
+          activeImageIndex: nextIndex,
+          viewingConfig: work.images[nextIndex]?.config ?? null,
+        };
       });
     },
     [activeWork?.images?.length, updateActiveWork],
@@ -436,18 +524,21 @@ export const useWorks = (
             currentWorks.map((work) => {
               if (work.id !== workId) return work;
 
-              const nextImages =
+              const isNewImage =
                 payload.imageUrl &&
-                !work.images.some((image) => image.id === payload.generationId)
-                  ? [
-                      ...work.images,
-                      {
-                        id: payload.generationId,
-                        url: payload.imageUrl,
-                        alt: "Generated anime character",
-                      },
-                    ]
-                  : work.images;
+                !work.images.some((image) => image.id === payload.generationId);
+
+              const nextImages = isNewImage
+                ? [
+                    ...work.images,
+                    {
+                      id: payload.generationId,
+                      url: payload.imageUrl!,
+                      alt: "Generated anime character",
+                      config: generationConfig,
+                    },
+                  ]
+                : work.images;
 
               return {
                 ...work,
@@ -458,6 +549,7 @@ export const useWorks = (
                   nextImages.length > work.images.length
                     ? nextImages.length - 1
                     : work.activeImageIndex,
+                viewingConfig: null,
               };
             }),
           );
@@ -542,6 +634,7 @@ export const useWorks = (
     commitTag,
     confirmCancelGeneration,
     customTags,
+    deleteImage,
     handleGenerationAction,
     isDirty,
     isGenerating,
@@ -549,10 +642,13 @@ export const useWorks = (
     isSaving,
     canGenerate,
     missingFieldIds,
-    showGenerationValidation,
     moveImage,
     removeTag,
+    restoreViewing,
     saveWorks,
+    selectDraft,
+    selectImage,
+    showGenerationValidation,
     selectedTags,
     setActiveWorkId,
     setShowCancelModal,

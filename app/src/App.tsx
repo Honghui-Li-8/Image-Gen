@@ -75,10 +75,10 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
         <GalleryPanel
           activeImage={worksState.activeImage}
           activeWork={worksState.activeWork}
+          onDeleteImage={worksState.deleteImage}
           onMoveImage={worksState.moveImage}
-          onSelectImage={(activeImageIndex) =>
-            worksState.updateActiveWork({ activeImageIndex })
-          }
+          onSelectDraft={worksState.selectDraft}
+          onSelectImage={worksState.selectImage}
         />
 
         <ConfigSidebar
@@ -90,6 +90,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           isSaving={worksState.isSaving}
           missingFieldIds={worksState.missingFieldIds}
           models={options?.models ?? {}}
+          onRestoreViewing={worksState.restoreViewing}
           onSaveWork={worksState.saveWorks}
           optionsStatus={optionsStatus}
           removeTag={worksState.removeTag}

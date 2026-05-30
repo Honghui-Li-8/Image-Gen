@@ -5,6 +5,7 @@ import type {
   GenerationCategory,
   ModelConfig,
   Work,
+  WorkConfig,
   WorkUpdater,
 } from "../types";
 
@@ -19,6 +20,7 @@ interface ConfigSidebarProps {
   isSaving: boolean;
   missingFieldIds: string[];
   models: Record<string, ModelConfig>;
+  onRestoreViewing: () => void;
   onSaveWork: () => void;
   optionsStatus: OptionsStatus;
   removeTag: (tag: string) => void;
@@ -88,6 +90,7 @@ export const ConfigSidebar = ({
   isSaving,
   missingFieldIds,
   models,
+  onRestoreViewing,
   onSaveWork,
   optionsStatus,
   removeTag,
@@ -96,6 +99,8 @@ export const ConfigSidebar = ({
 }: ConfigSidebarProps) => {
   const modelEntries = Object.values(models);
   const missingFields = new Set(missingFieldIds);
+  const isViewing = activeWork?.viewingConfig !== null && activeWork?.viewingConfig !== undefined;
+  const displayConfig: WorkConfig | null = activeWork?.viewingConfig ?? null;
 
   return (
     <aside className="config-sidebar">
@@ -129,38 +134,54 @@ export const ConfigSidebar = ({
           ) : null}
         </div>
         <div className="config-header-actions">
-          <button
-            className="config-random-button"
-            aria-label="Randomize configuration"
-            type="button"
-            disabled={!activeWork || !activeModel}
-            onClick={() => {
-              if (!activeModel) return;
-              const selections = randomizeCategorySelections(activeModel);
-              updateActiveWork((work) => ({
-                ...work,
-                selections,
-              }));
-            }}
-          >
-            <svg aria-hidden="true" viewBox="0 -4 32 32">
-              <path d="m24.983 8.539v-2.485h-4.902l-3.672 5.945-2.099 3.414-3.24 5.256c-.326.51-.889.844-1.53.845h-9.54v-3.568h8.538l3.673-5.946 2.099-3.414 3.24-5.256c.325-.509.886-.843 1.525-.845h5.904v-2.485l7.417 4.27-7.417 4.27z" />
-              <path d="m12.902 6.316-.63 1.022-1.468 2.39-2.265-3.675h-8.538v-3.568h9.54c.641.001 1.204.335 1.526.838l.004.007 1.836 2.985z" />
-              <path d="m24.983 24v-2.485h-5.904c-.639-.002-1.201-.336-1.521-.838l-.004-.007-1.836-2.985.63-1.022 1.468-2.39 2.264 3.675h4.902v-2.485l7.417 4.27-7.417 4.27z" />
-            </svg>
-          </button>
-          <button
-            className="config-save-button"
-            type="button"
-            disabled={!isDirty || isSaving || !activeWork}
-            onClick={onSaveWork}
-          >
-            {isSaving ? "Saving" : "Save"}
-          </button>
+          {isViewing ? (
+            <>
+              <span className="config-viewing-hint">Viewing past generation</span>
+              <button
+                className="config-save-button"
+                type="button"
+                onClick={onRestoreViewing}
+              >
+                Restore
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="config-random-button"
+                aria-label="Randomize configuration"
+                type="button"
+                disabled={!activeWork || !activeModel}
+                onClick={() => {
+                  if (!activeModel) return;
+                  const selections = randomizeCategorySelections(activeModel);
+                  updateActiveWork((work) => ({
+                    ...work,
+                    selections,
+                  }));
+                }}
+              >
+                <svg aria-hidden="true" viewBox="0 -4 32 32">
+                  <path d="m24.983 8.539v-2.485h-4.902l-3.672 5.945-2.099 3.414-3.24 5.256c-.326.51-.889.844-1.53.845h-9.54v-3.568h8.538l3.673-5.946 2.099-3.414 3.24-5.256c.325-.509.886-.843 1.525-.845h5.904v-2.485l7.417 4.27-7.417 4.27z" />
+                  <path d="m12.902 6.316-.63 1.022-1.468 2.39-2.265-3.675h-8.538v-3.568h9.54c.641.001 1.204.335 1.526.838l.004.007 1.836 2.985z" />
+                  <path d="m24.983 24v-2.485h-5.904c-.639-.002-1.201-.336-1.521-.838l-.004-.007-1.836-2.985.63-1.022 1.468-2.39 2.264 3.675h4.902v-2.485l7.417 4.27-7.417 4.27z" />
+                </svg>
+              </button>
+              <button
+                className="config-save-button"
+                type="button"
+                disabled={!isDirty || isSaving || !activeWork}
+                onClick={onSaveWork}
+              >
+                {isSaving ? "Saving" : "Save"}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       <div className="options-scroll">
+
         {optionsStatus === "failed" ? (
           <p className="error-text">
             Could not load generation options from the API.
@@ -174,13 +195,16 @@ export const ConfigSidebar = ({
                 groupCategories(activeModel.categories),
               );
 
+              const selectionValue = (categoryId: string) =>
+                (displayConfig?.selections ?? activeWork?.selections)?.[categoryId] ?? "";
+
               const renderGroups = (groups: Array<[string, GenerationCategory[]]>) =>
                 groups.map(([group, categories]) => (
                   <ConfigGroup key={group} title={group}>
                     {categories.map((category) => (
                       <label
                         className={`field ${
-                          showGenerationValidation && missingFields.has(category.id)
+                          !isViewing && showGenerationValidation && missingFields.has(category.id)
                             ? "field--error"
                             : ""
                         }`}
@@ -188,12 +212,9 @@ export const ConfigSidebar = ({
                       >
                         <span>{category.label}</span>
                         <select
-                          className={
-                            activeWork?.selections?.[category.id]
-                              ? ""
-                              : "select-placeholder"
-                          }
-                          value={activeWork?.selections?.[category.id] || ""}
+                          className={selectionValue(category.id) ? "" : "select-placeholder"}
+                          value={selectionValue(category.id)}
+                          disabled={isViewing}
                           onChange={(event) =>
                             updateActiveWork((work) => ({
                               ...work,
@@ -228,20 +249,31 @@ export const ConfigSidebar = ({
 
             <ConfigGroup
               className="tag-group tag-editor--options"
-              title={`Additional Tags [ ${customTags.length} ]`}
+              title={`Additional Tags [ ${(displayConfig?.additionalTags ?? customTags).length} ]`}
             >
-              <TagInput
-                customTags={customTags}
-                onCommitTag={commitTag}
-                onRemoveTag={removeTag}
-                onUpdateDraft={(tagDraft) => updateActiveWork({ tagDraft })}
-                tagDraft={activeWork?.tagDraft}
-              />
+              {isViewing ? (
+                <div className="tag-list--readonly">
+                  {(displayConfig?.additionalTags ?? []).map((tag) => (
+                    <span key={tag} className="tag-chip">{tag}</span>
+                  ))}
+                  {!(displayConfig?.additionalTags?.length) && (
+                    <span className="tag-empty">No additional tags</span>
+                  )}
+                </div>
+              ) : (
+                <TagInput
+                  customTags={customTags}
+                  onCommitTag={commitTag}
+                  onRemoveTag={removeTag}
+                  onUpdateDraft={(tagDraft) => updateActiveWork({ tagDraft })}
+                  tagDraft={activeWork?.tagDraft}
+                />
+              )}
             </ConfigGroup>
 
             <label
               className={`field ${
-                showGenerationValidation && missingFields.has("selectedPreset")
+                !isViewing && showGenerationValidation && missingFields.has("selectedPreset")
                   ? "field--error"
                   : ""
               }`}
@@ -249,9 +281,10 @@ export const ConfigSidebar = ({
               <span>Output Size</span>
               <select
                 className={
-                  activeWork?.selectedPreset ? "" : "select-placeholder"
+                  (displayConfig?.selectedPreset ?? activeWork?.selectedPreset) ? "" : "select-placeholder"
                 }
-                value={activeWork?.selectedPreset || ""}
+                value={displayConfig?.selectedPreset ?? activeWork?.selectedPreset ?? ""}
+                disabled={isViewing}
                 onChange={(event) =>
                   updateActiveWork({ selectedPreset: event.target.value })
                 }
@@ -271,15 +304,16 @@ export const ConfigSidebar = ({
       <div className="prompt-dock">
         <label
           className={`field seed-dock-row ${
-            showGenerationValidation && missingFields.has("seed")
+            !isViewing && showGenerationValidation && missingFields.has("seed")
               ? "field--error"
               : ""
           }`}
         >
           <span>Seed</span>
           <SeedControl
-            seed={activeWork?.seed}
+            seed={displayConfig?.seed ?? activeWork?.seed}
             onChange={(seed) => updateActiveWork({ seed })}
+            disabled={isViewing}
           />
         </label>
 
@@ -288,7 +322,8 @@ export const ConfigSidebar = ({
             <h3>Prompt</h3>
           </div>
           <textarea
-            value={activeWork?.additionalPrompt || ""}
+            value={displayConfig?.additionalPrompt ?? activeWork?.additionalPrompt ?? ""}
+            disabled={isViewing}
             onChange={(event) =>
               updateActiveWork({ additionalPrompt: event.target.value })
             }

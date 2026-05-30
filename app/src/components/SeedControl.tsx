@@ -3,9 +3,10 @@ import { generateSeed, stepSeed } from "../utils/seeds";
 interface SeedControlProps {
   seed: string | undefined;
   onChange: (seed: string) => void;
+  disabled?: boolean;
 }
 
-export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
+export const SeedControl = ({ seed, onChange, disabled = false }: SeedControlProps) => {
   return (
     <div className="seed-control">
       <input
@@ -13,6 +14,7 @@ export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
         min="0"
         type="number"
         value={seed || ""}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Required"
       />
@@ -20,6 +22,7 @@ export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
         <button
           aria-label="Increase seed by 1"
           type="button"
+          disabled={disabled}
           onClick={() => onChange(stepSeed(seed, 1))}
         >
           <svg aria-hidden="true" viewBox="0 0 12 12">
@@ -29,6 +32,7 @@ export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
         <button
           aria-label="Decrease seed by 1"
           type="button"
+          disabled={disabled}
           onClick={() => onChange(stepSeed(seed, -1))}
         >
           <svg aria-hidden="true" viewBox="0 0 12 12">
@@ -40,6 +44,7 @@ export const SeedControl = ({ seed, onChange }: SeedControlProps) => {
         aria-label="Generate random seed"
         className="seed-button"
         type="button"
+        disabled={disabled}
         onClick={() => onChange(generateSeed())}
       >
         <svg aria-hidden="true" viewBox="0 -4 32 32">

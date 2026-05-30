@@ -163,6 +163,28 @@ generationsRouter.post(
   }
 );
 
+generationsRouter.delete(
+  "/generations/:generationId",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const generationId = req.params.generationId as string;
+
+    const [generation] = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.id, generationId));
+
+    if (!generation || generation.userId !== req.userId) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    await db.delete(generations).where(eq(generations.id, generationId));
+    logger.info("generation.deleted", { generationId, userId: req.userId });
+    res.status(204).send();
+  }
+);
+
 generationsRouter.get(
   "/generations/:generationId/status",
   async (req: Request, res: Response) => {

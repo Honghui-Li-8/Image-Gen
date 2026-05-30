@@ -28,5 +28,6 @@ export const createWork = (
     images: [],
     activeImageIndex: 0,
     savedAt: null,
+    viewingConfig: null,
   };
 };
