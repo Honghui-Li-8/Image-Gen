@@ -6,7 +6,6 @@ import type {
   GenerationOptions,
   ModelConfig,
   Work,
-  WorkConfig,
   WorkStatus,
   WorkUpdater,
 } from "../types";
@@ -22,11 +21,21 @@ interface BackendWorkConfig {
   additionalPrompt: string;
 }
 
+// Generation config uses "modelId" (matches the POST body field name stored in the DB)
+interface BackendGenerationConfig {
+  modelId: string;
+  selections: Record<string, string>;
+  selectedPreset: string;
+  seed: string;
+  additionalTags: string[];
+  additionalPrompt: string;
+}
+
 interface BackendGeneration {
   id: string;
   status: Exclude<WorkStatus, "idle">;
   imageUrl: string | null;
-  config?: BackendWorkConfig;
+  config?: BackendGenerationConfig;
 }
 
 interface GenerationCreateResponse {
@@ -93,7 +102,7 @@ const generationToImage = (generation: BackendGeneration): GeneratedImage | null
     alt: "Generated anime character",
     config: generation.config
       ? {
-          selectedModel: generation.config.selectedModel,
+          selectedModel: generation.config.modelId,
           selections: generation.config.selections,
           selectedPreset: generation.config.selectedPreset,
           seed: generation.config.seed,
@@ -161,9 +170,12 @@ export const useWorks = (
   const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
   const activeModel = useMemo((): ModelConfig | null => {
     if (!options) return null;
-    const modelId = activeWork?.selectedModel || options.defaultModelId;
+    const viewingModelId = activeWork?.viewingConfig?.selectedModel;
+    const modelId = (viewingModelId && options.models[viewingModelId])
+      ? viewingModelId
+      : (activeWork?.selectedModel || options.defaultModelId);
     return options.models[modelId] ?? null;
-  }, [options, activeWork?.selectedModel]);
+  }, [options, activeWork?.selectedModel, activeWork?.viewingConfig?.selectedModel]);
   const selectedTags = useMemo(
     () => getSelectedTags(activeModel?.categories ?? [], activeWork?.selections || {}),
     [activeModel?.categories, activeWork?.selections],
@@ -292,6 +304,22 @@ export const useWorks = (
     );
   }, []);
 
+  const patchWork = useCallback(
+    async (work: Work) => {
+      try {
+        await apiFetch(`${apiUrl}/works/${work.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ name: work.name, config: buildWorkConfig(work) }),
+          token,
+        });
+        setIsDirty(false);
+      } catch (error) {
+        handleApiError(error, "Could not save work");
+      }
+    },
+    [apiUrl, handleApiError, token],
+  );
+
   const saveWorks = useCallback(() => {
     if (!activeWork || isSaving) return;
 
@@ -377,20 +405,24 @@ export const useWorks = (
   }, [updateActiveWork]);
 
   const restoreViewing = useCallback(() => {
-    updateActiveWork((work) => {
-      if (!work.viewingConfig) return work;
-      return {
-        ...work,
-        selectedModel: work.viewingConfig.selectedModel,
-        selections: work.viewingConfig.selections,
-        selectedPreset: work.viewingConfig.selectedPreset,
-        seed: work.viewingConfig.seed,
-        additionalTags: work.viewingConfig.additionalTags,
-        additionalPrompt: work.viewingConfig.additionalPrompt,
-        viewingConfig: null,
-      };
-    });
-  }, [updateActiveWork]);
+    if (!activeWork?.viewingConfig) return;
+    const vc = activeWork.viewingConfig;
+    const restored: Work = {
+      ...activeWork,
+      selectedModel: vc.selectedModel,
+      selections: vc.selections,
+      selectedPreset: vc.selectedPreset,
+      seed: vc.seed,
+      additionalTags: vc.additionalTags,
+      additionalPrompt: vc.additionalPrompt,
+      viewingConfig: null,
+    };
+    setWorks((currentWorks) =>
+      currentWorks.map((work) => (work.id === activeWork.id ? restored : work)),
+    );
+    setIsDirty(false);
+    void patchWork(restored);
+  }, [activeWork, patchWork]);
 
   const deleteImage = useCallback(
     (generationId: string) => {
@@ -491,6 +523,7 @@ export const useWorks = (
       setShowGenerationValidation(false);
       setWorksError("");
       updateWorkById(workId, { status: "queued", progress: 0 });
+      void patchWork(activeWork);
 
       try {
         const response = await apiFetch(`${apiUrl}/works/${workId}/generations`, {
@@ -583,6 +616,7 @@ export const useWorks = (
     canGenerate,
     closeGenerationStream,
     handleApiError,
+    patchWork,
     token,
     updateWorkById,
   ]);

@@ -110,7 +110,8 @@ export const ConfigSidebar = ({
           {modelEntries.length > 0 ? (
             <select
               className="model-select"
-              value={activeWork?.selectedModel || ""}
+              value={(displayConfig?.selectedModel ?? activeWork?.selectedModel) || ""}
+              disabled={isViewing}
               onChange={(event) => {
                 const newModel = models[event.target.value];
                 if (!newModel) return;
