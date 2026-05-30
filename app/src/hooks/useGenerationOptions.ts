@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import type { GenerationOptions } from "../types";
+import type { GenerationOptions, OptionsStatus } from "../types";
 import { ApiError, apiFetch } from "../utils/api";
-
-type OptionsStatus = "loading" | "ready" | "failed";
 
 export const useGenerationOptions = (
   apiUrl: string,

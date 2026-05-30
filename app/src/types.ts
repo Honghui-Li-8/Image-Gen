@@ -1,4 +1,5 @@
 export type HealthStatus = "checking" | "healthy" | "unhealthy" | "offline";
+export type OptionsStatus = "loading" | "ready" | "failed";
 export type ServerStatus = HealthStatus | "working";
 export type WorkStatus = "idle" | "queued" | "running" | "completed" | "failed";
 export type Theme = "dark" | "light";

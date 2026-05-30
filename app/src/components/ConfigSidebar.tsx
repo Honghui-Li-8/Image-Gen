@@ -4,12 +4,11 @@ import { TagInput } from "./TagInput";
 import type {
   GenerationCategory,
   ModelConfig,
+  OptionsStatus,
   Work,
   WorkConfig,
   WorkUpdater,
 } from "../types";
-
-type OptionsStatus = "loading" | "ready" | "failed";
 
 interface ConfigSidebarProps {
   activeModel: ModelConfig | null;

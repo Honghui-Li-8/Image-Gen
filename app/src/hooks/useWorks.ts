@@ -5,12 +5,11 @@ import type {
   GeneratedImage,
   GenerationOptions,
   ModelConfig,
+  OptionsStatus,
   Work,
   WorkStatus,
   WorkUpdater,
 } from "../types";
-
-type OptionsStatus = "loading" | "ready" | "failed";
 
 interface BackendWorkConfig {
   selectedModel: string;
