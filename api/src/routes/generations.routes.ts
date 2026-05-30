@@ -8,6 +8,7 @@ import { generations, works } from "../db/schema.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
   GENERATION_UPDATE_EVENT,
+  countAllInFlightGenerations,
   countInFlightGenerations,
   createQueuedGeneration,
   isTerminalGenerationStatus,
@@ -23,7 +24,8 @@ import {
 } from "../services/image-url.service.js";
 import { logger } from "../utils/logger.js";
 
-const MAX_IN_FLIGHT_GENERATIONS = Number(process.env.COMFYUI_MAX_ACTIVE_JOBS ?? "1");
+const getMaxInFlightPerUser = () => Number(process.env.COMFYUI_MAX_ACTIVE_JOBS ?? "1");
+const getMaxInFlightGlobal = () => Number(process.env.COMFYUI_MAX_GLOBAL_ACTIVE_JOBS ?? "10");
 
 export const generationsRouter = Router();
 
@@ -128,11 +130,23 @@ generationsRouter.post(
       return;
     }
 
-    const inFlightCount = await countInFlightGenerations(req.userId);
-    if (inFlightCount >= MAX_IN_FLIGHT_GENERATIONS) {
+    const userInFlightCount = await countInFlightGenerations(req.userId);
+    if (userInFlightCount >= getMaxInFlightPerUser()) {
       logger.warn("generation.create.rejected", {
-        inFlightCount,
-        reason: "queue_limit",
+        inFlightCount: userInFlightCount,
+        reason: "user_queue_limit",
+        userId: req.userId,
+        workId: work.id,
+      });
+      res.status(429).json({ error: "You already have an active generation, wait for it to finish" });
+      return;
+    }
+
+    const globalInFlightCount = await countAllInFlightGenerations();
+    if (globalInFlightCount >= getMaxInFlightGlobal()) {
+      logger.warn("generation.create.rejected", {
+        inFlightCount: globalInFlightCount,
+        reason: "global_queue_limit",
         userId: req.userId,
         workId: work.id,
       });

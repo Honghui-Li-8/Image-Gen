@@ -68,6 +68,15 @@ export const countInFlightGenerations = async (userId: string): Promise<number> 
   return rows.length;
 };
 
+export const countAllInFlightGenerations = async (): Promise<number> => {
+  const rows = await db
+    .select({ id: generations.id })
+    .from(generations)
+    .where(inArray(generations.status, IN_FLIGHT_STATUSES));
+
+  return rows.length;
+};
+
 export const failInterruptedGenerations = async (): Promise<number> => {
   const interrupted = await db
     .select({ id: generations.id })
