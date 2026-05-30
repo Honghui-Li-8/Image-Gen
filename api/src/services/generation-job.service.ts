@@ -6,19 +6,13 @@ import { generations } from "../db/schema.js";
 import type { Generation, GenerationStatus } from "../db/schema.js";
 import { logger } from "../utils/logger.js";
 
+import type { GenerationRequestConfig } from "./prompt-builder.service.js";
+export type { GenerationRequestConfig } from "./prompt-builder.service.js";
+
 export const GENERATION_UPDATE_EVENT = "generation:update";
 
 const IN_FLIGHT_STATUSES: GenerationStatus[] = ["queued", "running"];
 const TERMINAL_STATUSES: GenerationStatus[] = ["completed", "failed"];
-
-export interface GenerationRequestConfig {
-  modelId: string;
-  selections: Record<string, string>;
-  selectedPreset: string;
-  seed: string;
-  additionalTags: string[];
-  additionalPrompt: string;
-}
 
 export interface GenerationUpdateEvent {
   generationId: string;
