@@ -6,7 +6,7 @@ import { generations } from "../db/schema.js";
 import type { Generation, GenerationStatus } from "../db/schema.js";
 import { logger } from "../utils/logger.js";
 import {
-  buildComfyImageUrl,
+  buildComfyImageFilename,
   fetchComfyHistory,
   getComfyPollIntervalMs,
   getComfyTimeoutMs,
@@ -236,7 +236,7 @@ const updateGenerationComfyFields = async ({
   await db.update(generations).set(patch).where(eq(generations.id, generationId));
 };
 
-const extractComfyImageUrl = (history: unknown, promptId: string): string | null => {
+const extractComfyImageFilename = (history: unknown, promptId: string): string | null => {
   if (typeof history !== "object" || history === null) return null;
   const entry = (history as Record<string, unknown>)[promptId];
   if (typeof entry !== "object" || entry === null) return null;
@@ -249,7 +249,7 @@ const extractComfyImageUrl = (history: unknown, promptId: string): string | null
     if (!Array.isArray(images) || images.length === 0) continue;
     const ref = images[0] as Record<string, unknown>;
     if (typeof ref.filename !== "string") continue;
-    return buildComfyImageUrl({
+    return buildComfyImageFilename({
       filename: ref.filename,
       subfolder: typeof ref.subfolder === "string" ? ref.subfolder : undefined,
       type: typeof ref.type === "string" ? ref.type : undefined,
@@ -288,7 +288,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     while (Date.now() - startedAt < timeoutMs) {
       await delay(getComfyPollIntervalMs());
       const history = await fetchComfyHistory(promptId);
-      const imageUrl = extractComfyImageUrl(history, promptId);
+      const imageUrl = extractComfyImageFilename(history, promptId);
 
       if (imageUrl !== null) {
         await updateGenerationStatus({ generationId, status: "completed", progress: 100, imageUrl });

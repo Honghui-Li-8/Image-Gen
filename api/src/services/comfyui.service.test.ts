@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildComfyImageUrl,
+  buildComfyImageFilename,
   isWorkflowNode,
   patchComfyWorkflow,
+  submitComfyWorkflow,
   stripWorkflowMetadata,
   WORKFLOW_NODE_IDS,
 } from "./comfyui.service.js";
@@ -41,6 +42,12 @@ const makeWorkflow = (): Workflow => ({
     _meta: { title: "KSampler refine" },
   },
   "_meta": { title: "test_workflow" },
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("patchComfyWorkflow — seed", () => {
@@ -133,21 +140,34 @@ describe("stripWorkflowMetadata", () => {
   });
 });
 
-describe("buildComfyImageUrl", () => {
-  it("builds a /view URL with filename and default type=output", () => {
-    const url = buildComfyImageUrl({ filename: "image.png" });
-    expect(url).toContain("/view?");
-    expect(url).toContain("filename=image.png");
-    expect(url).toContain("type=output");
+describe("buildComfyImageFilename", () => {
+  it("returns the bare filename from a ComfyUI image ref", () => {
+    expect(buildComfyImageFilename({ filename: "image.png" })).toBe("image.png");
   });
+});
 
-  it("includes subfolder when provided", () => {
-    const url = buildComfyImageUrl({ filename: "img.png", subfolder: "api_workflow" });
-    expect(url).toContain("subfolder=api_workflow");
-  });
+describe("submitComfyWorkflow", () => {
+  it("submits through the proxy with HMAC headers", async () => {
+    vi.stubEnv("PROXY_URL", "http://proxy.test");
+    vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ prompt_id: "prompt-1" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-  it("uses the provided type instead of the default", () => {
-    const url = buildComfyImageUrl({ filename: "img.png", type: "temp" });
-    expect(url).toContain("type=temp");
+    await expect(submitComfyWorkflow(makeWorkflow())).resolves.toBe("prompt-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://proxy.test/comfy/prompt",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "X-Proxy-Signature": expect.any(String),
+          "X-Proxy-Timestamp": expect.any(String),
+        }),
+      })
+    );
   });
 });
