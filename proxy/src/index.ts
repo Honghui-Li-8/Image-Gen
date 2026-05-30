@@ -47,10 +47,11 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
+const port = getProxyPort(); // validates and rejects invalid or blocked ports at startup
+
 const app = createApp();
 const server = createServer(app);
 const wsServer = new WebSocketServer({ noServer: true });
-const port = getProxyPort();
 
 const pipeWebSockets = (clientWs: WebSocket, upstreamWs: WebSocket): void => {
   clientWs.on("message", (data, isBinary) => {
