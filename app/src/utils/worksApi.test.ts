@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapBackendWork } from "./worksApi";
+import { mapBackendWork, buildWorkConfig } from "./worksApi";
 import { distributeGroups as distributeGroupsFromSidebar } from "../components/ConfigSidebar";
 import type { BackendWork } from "./worksApi";
 import type { GenerationCategory } from "../types";
@@ -101,11 +101,11 @@ describe("mapBackendWork", () => {
     expect(work.images[0].id).toBe("g2");
   });
 
-  it("initialises viewingConfig as null", () => {
+  it("initializes viewingConfig as null", () => {
     expect(mapBackendWork(base).viewingConfig).toBeNull();
   });
 
-  it("initialises tagDraft as empty string", () => {
+  it("initializes tagDraft as empty string", () => {
     expect(mapBackendWork(base).tagDraft).toBe("");
   });
 });
@@ -150,5 +150,56 @@ describe("distributeGroups", () => {
     const firstIdx = allNames.indexOf("First");
     const secondIdx = allNames.indexOf("Second");
     expect(firstIdx).toBeLessThan(secondIdx);
+  });
+});
+
+describe("buildWorkConfig", () => {
+  const baseWork = {
+    id: "w1",
+    name: "Work 1",
+    status: "idle" as const,
+    progress: 0,
+    selectedModel: "model-a",
+    selections: { hair: "long", eyes: "blue" },
+    selectedPreset: "portrait",
+    seed: "42",
+    additionalTags: ["tag1", "tag2"],
+    tagDraft: "",
+    additionalPrompt: "rooftop",
+    images: [],
+    activeImageIndex: 0,
+    savedAt: null,
+    viewingConfig: null,
+  };
+
+  it("maps all fields to the correct BackendWorkConfig keys", () => {
+    const config = buildWorkConfig(baseWork);
+    expect(config.selectedModel).toBe("model-a");
+    expect(config.selections).toEqual({ hair: "long", eyes: "blue" });
+    expect(config.selectedPreset).toBe("portrait");
+    expect(config.seed).toBe("42");
+    expect(config.additionalPrompt).toBe("rooftop");
+  });
+
+  it("passes array additionalTags through normalizeTags unchanged", () => {
+    const config = buildWorkConfig(baseWork);
+    expect(config.additionalTags).toEqual(["tag1", "tag2"]);
+  });
+
+  it("normalizes comma-string additionalTags into an array", () => {
+    const config = buildWorkConfig({ ...baseWork, additionalTags: "a, b, c" });
+    expect(config.additionalTags).toEqual(["a", "b", "c"]);
+  });
+
+  it("produces empty array for empty additionalTags", () => {
+    expect(buildWorkConfig({ ...baseWork, additionalTags: [] }).additionalTags).toEqual([]);
+    expect(buildWorkConfig({ ...baseWork, additionalTags: "" }).additionalTags).toEqual([]);
+  });
+
+  it("does not include tagDraft, status, or other Work-only fields", () => {
+    const config = buildWorkConfig(baseWork) as unknown as Record<string, unknown>;
+    expect(config.tagDraft).toBeUndefined();
+    expect(config.status).toBeUndefined();
+    expect(config.id).toBeUndefined();
   });
 });
