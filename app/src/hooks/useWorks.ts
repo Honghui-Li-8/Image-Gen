@@ -1,64 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ApiError, apiFetch } from "../utils/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../utils/api";
 import { getSelectedTags, normalizeTags } from "../utils/tags";
+import { buildWorkConfig } from "../utils/worksApi";
+import { getMissingFieldIds } from "../utils/works";
+import { useWorksData } from "./useWorksData";
+import { useGeneration } from "./useGeneration";
 import type {
   GeneratedImage,
   GenerationOptions,
   ModelConfig,
+  OptionsStatus,
   Work,
-  WorkStatus,
   WorkUpdater,
 } from "../types";
-
-type OptionsStatus = "loading" | "ready" | "failed";
-
-interface BackendWorkConfig {
-  selectedModel: string;
-  selections: Record<string, string>;
-  selectedPreset: string;
-  seed: string;
-  additionalTags: string[];
-  additionalPrompt: string;
-}
-
-// Generation config uses "modelId" (matches the POST body field name stored in the DB)
-interface BackendGenerationConfig {
-  modelId: string;
-  selections: Record<string, string>;
-  selectedPreset: string;
-  seed: string;
-  additionalTags: string[];
-  additionalPrompt: string;
-}
-
-interface BackendGeneration {
-  id: string;
-  status: Exclude<WorkStatus, "idle">;
-  imageUrl: string | null;
-  config?: BackendGenerationConfig;
-}
-
-interface GenerationCreateResponse {
-  generationId: string;
-  status: Exclude<WorkStatus, "idle">;
-}
-
-interface GenerationStatusEvent {
-  generationId: string;
-  status: Exclude<WorkStatus, "idle">;
-  progress?: number;
-  imageUrl?: string | null;
-  error?: string | null;
-}
-
-interface BackendWork {
-  id: string;
-  name: string;
-  config: BackendWorkConfig;
-  activeGenerationId: string | null;
-  updatedAt: string;
-  generations?: BackendGeneration[];
-}
 
 interface UseWorksState {
   activeImage: GeneratedImage | undefined;
@@ -93,65 +47,8 @@ interface UseWorksState {
   showGenerationValidation: boolean;
   updateActiveWork: (updater: WorkUpdater) => void;
   works: Work[];
-  worksError: string;
+  workErrors: Record<string, string>;
 }
-
-const generationToImage = (generation: BackendGeneration): GeneratedImage | null => {
-  if (!generation.imageUrl) return null;
-
-  return {
-    id: generation.id,
-    url: generation.imageUrl,
-    alt: "Generated anime character",
-    config: generation.config
-      ? {
-          selectedModel: generation.config.modelId,
-          selections: generation.config.selections,
-          selectedPreset: generation.config.selectedPreset,
-          seed: generation.config.seed,
-          additionalTags: generation.config.additionalTags,
-          additionalPrompt: generation.config.additionalPrompt,
-        }
-      : undefined,
-  };
-};
-
-const mapBackendWork = (backendWork: BackendWork): Work => {
-  const generations = backendWork.generations ?? [];
-  const activeGeneration = generations.find(
-    (generation) => generation.id === backendWork.activeGenerationId,
-  );
-  const images = generations
-    .map(generationToImage)
-    .filter((image): image is GeneratedImage => image !== null);
-
-  return {
-    id: backendWork.id,
-    name: backendWork.name,
-    status: activeGeneration?.status ?? "idle",
-    progress: activeGeneration?.status === "completed" ? 100 : 0,
-    selectedModel: backendWork.config.selectedModel,
-    selections: backendWork.config.selections,
-    selectedPreset: backendWork.config.selectedPreset,
-    seed: backendWork.config.seed,
-    additionalTags: backendWork.config.additionalTags,
-    tagDraft: "",
-    additionalPrompt: backendWork.config.additionalPrompt,
-    images,
-    activeImageIndex: Math.max(0, images.length - 1),
-    savedAt: backendWork.updatedAt,
-    viewingConfig: null,
-  };
-};
-
-const buildWorkConfig = (work: Work): BackendWorkConfig => ({
-  selectedModel: work.selectedModel,
-  selections: work.selections,
-  selectedPreset: work.selectedPreset,
-  seed: work.seed,
-  additionalTags: normalizeTags(work.additionalTags),
-  additionalPrompt: work.additionalPrompt,
-});
 
 export const useWorks = (
   apiUrl: string,
@@ -161,138 +58,63 @@ export const useWorks = (
   onUnauthorized: () => void,
   onGenerationFailed?: () => void,
 ): UseWorksState => {
-  const [works, setWorks] = useState<Work[]>([]);
-  const [activeWorkId, setActiveWorkId] = useState("");
   const [isDirty, setIsDirty] = useState(false);
-  const [isLoadingWorks, setIsLoadingWorks] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showGenerationValidation, setShowGenerationValidation] = useState(false);
-  const [worksError, setWorksError] = useState("");
-  const generationSourceRef = useRef<EventSource | null>(null);
 
-  const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
+  const {
+    works,
+    setWorks,
+    activeWorkId,
+    setActiveWorkId,
+    isLoadingWorks,
+    workErrors,
+    setWorkErrors,
+    handleApiError,
+    addWork,
+    renameWork,
+    duplicateWork,
+    deleteWork,
+  } = useWorksData(apiUrl, token, optionsStatus, onUnauthorized);
+
+  // --- Derived state ---
+
+  const activeWork = useMemo(
+    () => works.find((w) => w.id === activeWorkId) ?? works[0],
+    [works, activeWorkId],
+  );
+
   const activeModel = useMemo((): ModelConfig | null => {
     if (!options) return null;
     const viewingModelId = activeWork?.viewingConfig?.selectedModel;
-    const modelId = (viewingModelId && options.models[viewingModelId])
-      ? viewingModelId
-      : (activeWork?.selectedModel || options.defaultModelId);
+    const modelId =
+      viewingModelId && options.models[viewingModelId]
+        ? viewingModelId
+        : activeWork?.selectedModel || options.defaultModelId;
     return options.models[modelId] ?? null;
   }, [options, activeWork?.selectedModel, activeWork?.viewingConfig?.selectedModel]);
+
   const selectedTags = useMemo(
     () => getSelectedTags(activeModel?.categories ?? [], activeWork?.selections || {}),
     [activeModel?.categories, activeWork?.selections],
   );
+
   const customTags = useMemo(
     () => normalizeTags(activeWork?.additionalTags),
     [activeWork?.additionalTags],
   );
+
   const activeImage = activeWork?.images?.[activeWork.activeImageIndex];
   const isGenerating =
     activeWork?.status === "queued" || activeWork?.status === "running";
-  const missingFieldIds = useMemo(() => {
-    if (!activeWork || !activeModel) return [];
 
-    const invalidCategoryIds = activeModel.categories
-      .filter((category) => {
-        const selectedValue = activeWork.selections[category.id];
-        return (
-          !selectedValue ||
-          !category.options.some((option) => option.value === selectedValue)
-        );
-      })
-      .map((category) => category.id);
-    const isPresetValid = activeModel.outputPresets.some(
-      (preset) => preset.id === activeWork.selectedPreset,
-    );
-
-    return [
-      ...invalidCategoryIds,
-      ...(isPresetValid ? [] : ["selectedPreset"]),
-      ...(activeWork.seed.trim() ? [] : ["seed"]),
-    ];
-  }, [activeModel, activeWork]);
-  const canGenerate = Boolean(
-    activeWork && activeModel && missingFieldIds.length === 0,
+  const missingFieldIds = useMemo(
+    () => (activeWork && activeModel ? getMissingFieldIds(activeWork, activeModel) : []),
+    [activeWork, activeModel],
   );
 
-  const handleApiError = useCallback(
-    (error: unknown, fallbackMessage: string) => {
-      if (error instanceof ApiError && error.status === 401) {
-        onUnauthorized();
-        return;
-      }
+  const canGenerate = Boolean(activeWork && activeModel && missingFieldIds.length === 0);
 
-      setWorksError(error instanceof Error ? error.message : fallbackMessage);
-    },
-    [onUnauthorized],
-  );
-
-  const loadWorkDetails = useCallback(
-    async (workList: BackendWork[]) => {
-      const detailedWorks = await Promise.all(
-        workList.map(async (work) => {
-          const response = await apiFetch(`${apiUrl}/works/${work.id}`, { token });
-          return (await response.json()) as BackendWork;
-        }),
-      );
-
-      return detailedWorks.map(mapBackendWork);
-    },
-    [apiUrl, token],
-  );
-
-  useEffect(() => {
-    if (optionsStatus === "loading") return undefined;
-
-    let ignore = false;
-
-    const loadWorks = async () => {
-      setIsLoadingWorks(true);
-      setWorksError("");
-
-      try {
-        const response = await apiFetch(`${apiUrl}/works`, { token });
-        const backendWorks = (await response.json()) as BackendWork[];
-
-        const sourceWorks =
-          backendWorks.length > 0
-            ? backendWorks
-            : [
-                (await (
-                  await apiFetch(`${apiUrl}/works`, {
-                    method: "POST",
-                    body: JSON.stringify({}),
-                    token,
-                  })
-                ).json()) as BackendWork,
-              ];
-
-        const mappedWorks = await loadWorkDetails(sourceWorks);
-
-        if (!ignore) {
-          setWorks(mappedWorks);
-          setActiveWorkId(mappedWorks[0]?.id || "");
-          setIsDirty(false);
-        }
-      } catch (error) {
-        if (!ignore) {
-          handleApiError(error, "Could not load works");
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoadingWorks(false);
-        }
-      }
-    };
-
-    void loadWorks();
-
-    return () => {
-      ignore = true;
-    };
-  }, [apiUrl, handleApiError, loadWorkDetails, optionsStatus, token]);
+  // --- Shared state mutators ---
 
   const updateActiveWork = useCallback(
     (updater: WorkUpdater) => {
@@ -306,16 +128,19 @@ export const useWorks = (
       );
       setIsDirty(true);
     },
-    [activeWork?.id],
+    [activeWork?.id, setWorks],
   );
 
-  const updateWorkById = useCallback((workId: string, patch: Partial<Work>) => {
-    setWorks((currentWorks) =>
-      currentWorks.map((work) =>
-        work.id === workId ? { ...work, ...patch } : work,
-      ),
-    );
-  }, []);
+  const updateWorkById = useCallback(
+    (workId: string, patch: Partial<Work>) => {
+      setWorks((currentWorks) =>
+        currentWorks.map((work) =>
+          work.id === workId ? { ...work, ...patch } : work,
+        ),
+      );
+    },
+    [setWorks],
+  );
 
   const patchWork = useCallback(
     async (work: Work) => {
@@ -327,182 +152,50 @@ export const useWorks = (
         });
         setIsDirty(false);
       } catch (error) {
-        handleApiError(error, "Could not save work");
+        handleApiError("save", error, "Could not save work");
       }
     },
     [apiUrl, handleApiError, token],
   );
 
+  // --- Generation sub-hook ---
+
+  const generation = useGeneration({
+    apiUrl,
+    token,
+    activeWork,
+    canGenerate,
+    isGenerating,
+    setWorks,
+    updateWorkById,
+    updateActiveWork,
+    patchWork,
+    setWorkErrors,
+    handleApiError,
+    onGenerationFailed,
+  });
+
+  // --- Save ---
+
   const saveWorks = useCallback(() => {
     if (!activeWork || isSaving) return;
+    setIsSaving(true);
+    setWorkErrors((prev) => ({ ...prev, save: "" }));
+    void patchWork(activeWork).finally(() => setIsSaving(false));
+  }, [activeWork, isSaving, patchWork, setWorkErrors]);
 
-    const saveActiveWork = async () => {
-      setIsSaving(true);
-      setWorksError("");
-
-      try {
-        const response = await apiFetch(`${apiUrl}/works/${activeWork.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({
-            name: activeWork.name,
-            config: buildWorkConfig(activeWork),
-          }),
-          token,
-        });
-        const savedWork = mapBackendWork((await response.json()) as BackendWork);
-
-        setWorks((currentWorks) =>
-          currentWorks.map((work) =>
-            work.id === savedWork.id
-              ? {
-                  ...savedWork,
-                  status: work.status,
-                  progress: work.progress,
-                  images: work.images,
-                  activeImageIndex: work.activeImageIndex,
-                }
-              : work,
-          ),
-        );
-        setIsDirty(false);
-      } catch (error) {
-        handleApiError(error, "Could not save work");
-      } finally {
-        setIsSaving(false);
+  useEffect(() => {
+    const handleSaveShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        saveWorks();
       }
     };
+    window.addEventListener("keydown", handleSaveShortcut);
+    return () => window.removeEventListener("keydown", handleSaveShortcut);
+  }, [saveWorks]);
 
-    void saveActiveWork();
-  }, [activeWork, apiUrl, handleApiError, isSaving, token]);
-
-  const addWork = useCallback(() => {
-    const createBackendWork = async () => {
-      setWorksError("");
-
-      try {
-        const response = await apiFetch(`${apiUrl}/works`, {
-          method: "POST",
-          body: JSON.stringify({}),
-          token,
-        });
-        const backendWork = (await response.json()) as BackendWork;
-        const [nextWork] = await loadWorkDetails([backendWork]);
-
-        setWorks((currentWorks) => [...currentWorks, nextWork]);
-        setActiveWorkId(nextWork.id);
-        setIsDirty(false);
-      } catch (error) {
-        handleApiError(error, "Could not create work");
-      }
-    };
-
-    void createBackendWork();
-  }, [apiUrl, handleApiError, loadWorkDetails, token]);
-
-  const renameWork = useCallback(
-    (workId: string, name: string) => {
-      const nextName = name.trim();
-      const work = works.find((item) => item.id === workId);
-      if (!work || !nextName || work.name === nextName) return;
-
-      const doRename = async () => {
-        setWorksError("");
-
-        try {
-          const response = await apiFetch(`${apiUrl}/works/${workId}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              name: nextName,
-              config: buildWorkConfig(work),
-            }),
-            token,
-          });
-          const savedWork = mapBackendWork((await response.json()) as BackendWork);
-
-          setWorks((currentWorks) =>
-            currentWorks.map((currentWork) =>
-              currentWork.id === workId
-                ? {
-                    ...currentWork,
-                    name: savedWork.name,
-                    savedAt: savedWork.savedAt,
-                  }
-                : currentWork,
-            ),
-          );
-        } catch (error) {
-          handleApiError(error, "Could not rename work");
-        }
-      };
-
-      void doRename();
-    },
-    [apiUrl, handleApiError, token, works],
-  );
-
-  const duplicateWork = useCallback(
-    (workId: string) => {
-      const source = works.find((work) => work.id === workId);
-      if (!source) return;
-
-      const doDuplicate = async () => {
-        setWorksError("");
-
-        try {
-          const response = await apiFetch(`${apiUrl}/works`, {
-            method: "POST",
-            body: JSON.stringify({
-              duplicateFromId: workId,
-              name: `${source.name} (copy)`,
-            }),
-            token,
-          });
-          const backendWork = (await response.json()) as BackendWork;
-          const [nextWork] = await loadWorkDetails([backendWork]);
-
-          setWorks((currentWorks) => [...currentWorks, nextWork]);
-          setActiveWorkId(nextWork.id);
-          setIsDirty(false);
-        } catch (error) {
-          handleApiError(error, "Could not duplicate work");
-        }
-      };
-
-      void doDuplicate();
-    },
-    [apiUrl, handleApiError, loadWorkDetails, token, works],
-  );
-
-  const deleteWork = useCallback(
-    (workId: string) => {
-      const nextActiveWorkId =
-        activeWorkId === workId
-          ? (works.find((work) => work.id !== workId)?.id ?? "")
-          : activeWorkId;
-
-      const doDelete = async () => {
-        setWorksError("");
-
-        try {
-          await apiFetch(`${apiUrl}/works/${workId}`, {
-            method: "DELETE",
-            token,
-          });
-
-          setWorks((currentWorks) => currentWorks.filter((work) => work.id !== workId));
-          setActiveWorkId(nextActiveWorkId);
-          if (activeWorkId === workId) {
-            setIsDirty(false);
-          }
-        } catch (error) {
-          handleApiError(error, "Could not delete work");
-        }
-      };
-
-      void doDelete();
-    },
-    [activeWorkId, apiUrl, handleApiError, token, works],
-  );
+  // --- Image operations ---
 
   const selectImage = useCallback(
     (index: number) => {
@@ -540,14 +233,14 @@ export const useWorks = (
     );
     setIsDirty(false);
     void patchWork(restored);
-  }, [activeWork, patchWork]);
+  }, [activeWork, patchWork, setWorks]);
 
   const deleteImage = useCallback(
     (generationId: string) => {
       if (!activeWork) return;
       const workId = activeWork.id;
 
-      const doDelete = async () => {
+      void (async () => {
         try {
           await apiFetch(`${apiUrl}/generations/${generationId}`, {
             method: "DELETE",
@@ -557,8 +250,13 @@ export const useWorks = (
             currentWorks.map((work) => {
               if (work.id !== workId) return work;
               const nextImages = work.images.filter((img) => img.id !== generationId);
-              const nextIndex = Math.min(work.activeImageIndex, Math.max(0, nextImages.length - 1));
-              const wasViewing = work.viewingConfig && work.images[work.activeImageIndex]?.id === generationId;
+              const nextIndex = Math.min(
+                work.activeImageIndex,
+                Math.max(0, nextImages.length - 1),
+              );
+              const wasViewing =
+                work.viewingConfig &&
+                work.images[work.activeImageIndex]?.id === generationId;
               return {
                 ...work,
                 images: nextImages,
@@ -568,13 +266,11 @@ export const useWorks = (
             }),
           );
         } catch (error) {
-          handleApiError(error, "Could not delete image");
+          handleApiError("deleteImage", error, "Could not delete image");
         }
-      };
-
-      void doDelete();
+      })();
     },
-    [activeWork, apiUrl, handleApiError, token],
+    [activeWork, apiUrl, handleApiError, setWorks, token],
   );
 
   const moveImage = useCallback(
@@ -595,21 +291,15 @@ export const useWorks = (
     [activeWork?.images?.length, updateActiveWork],
   );
 
+  // --- Tag operations ---
+
   const commitTag = useCallback(() => {
     const tag = (activeWork?.tagDraft || "").trim();
     if (!tag) return;
-
     updateActiveWork((work) => {
       const currentTags = normalizeTags(work.additionalTags);
-      if (currentTags.includes(tag)) {
-        return { ...work, tagDraft: "" };
-      }
-
-      return {
-        ...work,
-        additionalTags: [...currentTags, tag],
-        tagDraft: "",
-      };
+      if (currentTags.includes(tag)) return { ...work, tagDraft: "" };
+      return { ...work, additionalTags: [...currentTags, tag], tagDraft: "" };
     });
   }, [activeWork?.tagDraft, updateActiveWork]);
 
@@ -625,162 +315,6 @@ export const useWorks = (
     [updateActiveWork],
   );
 
-  const closeGenerationStream = useCallback(() => {
-    generationSourceRef.current?.close();
-    generationSourceRef.current = null;
-  }, []);
-
-  const startGeneration = useCallback(() => {
-    if (!activeWork || !canGenerate) return;
-
-    const workId = activeWork.id;
-    const generationConfig = buildWorkConfig(activeWork);
-
-    const runGeneration = async () => {
-      closeGenerationStream();
-      setShowGenerationValidation(false);
-      setWorksError("");
-      updateWorkById(workId, { status: "queued", progress: 0 });
-      void patchWork(activeWork);
-
-      try {
-        const response = await apiFetch(`${apiUrl}/works/${workId}/generations`, {
-          method: "POST",
-          body: JSON.stringify({
-            modelId: generationConfig.selectedModel,
-            selections: generationConfig.selections,
-            selectedPreset: generationConfig.selectedPreset,
-            seed: generationConfig.seed,
-            additionalTags: generationConfig.additionalTags,
-            additionalPrompt: generationConfig.additionalPrompt,
-          }),
-          token,
-        });
-        const result = (await response.json()) as GenerationCreateResponse;
-
-        updateWorkById(workId, { status: result.status, progress: 0 });
-
-        const source = new EventSource(
-          `${apiUrl}/generations/${result.generationId}/status?token=${encodeURIComponent(token)}`,
-        );
-        generationSourceRef.current = source;
-
-        source.addEventListener("status", (event) => {
-          const payload = JSON.parse(event.data) as GenerationStatusEvent;
-          const nextProgress =
-            payload.progress ??
-            (payload.status === "completed" || payload.status === "failed" ? 100 : 0);
-
-          setWorks((currentWorks) =>
-            currentWorks.map((work) => {
-              if (work.id !== workId) return work;
-
-              const isNewImage =
-                payload.imageUrl &&
-                !work.images.some((image) => image.id === payload.generationId);
-
-              const nextImages = isNewImage
-                ? [
-                    ...work.images,
-                    {
-                      id: payload.generationId,
-                      url: payload.imageUrl!,
-                      alt: "Generated anime character",
-                      config: generationConfig,
-                    },
-                  ]
-                : work.images;
-              const shouldAutoSelectNewImage = Boolean(isNewImage);
-
-              return {
-                ...work,
-                status: payload.status,
-                progress: nextProgress,
-                images: nextImages,
-                activeImageIndex: shouldAutoSelectNewImage
-                  ? nextImages.length - 1
-                  : work.activeImageIndex,
-                viewingConfig: shouldAutoSelectNewImage
-                  ? generationConfig
-                  : work.viewingConfig,
-              };
-            }),
-          );
-
-          if (payload.status === "completed" || payload.status === "failed") {
-            source.close();
-            if (generationSourceRef.current === source) {
-              generationSourceRef.current = null;
-            }
-          }
-        });
-
-        source.onerror = () => {
-          source.close();
-          if (generationSourceRef.current === source) {
-            generationSourceRef.current = null;
-          }
-          updateWorkById(workId, { status: "failed", progress: 100 });
-          setWorksError("Generation status stream disconnected");
-        };
-      } catch (error) {
-        updateWorkById(workId, { status: "failed", progress: 100 });
-        handleApiError(error, "Could not start generation");
-        onGenerationFailed?.();
-      }
-    };
-
-    void runGeneration();
-  }, [
-    activeWork,
-    apiUrl,
-    canGenerate,
-    closeGenerationStream,
-    handleApiError,
-    onGenerationFailed,
-    patchWork,
-    token,
-    updateWorkById,
-  ]);
-
-  const handleGenerationAction = useCallback(() => {
-    if (isGenerating) {
-      setShowCancelModal(true);
-      return;
-    }
-
-    if (!canGenerate) {
-      setShowGenerationValidation(true);
-      return;
-    }
-    startGeneration();
-  }, [canGenerate, isGenerating, startGeneration]);
-
-  const confirmCancelGeneration = useCallback(() => {
-    closeGenerationStream();
-    updateActiveWork({
-      status: "idle",
-      progress: 0,
-    });
-    setShowCancelModal(false);
-  }, [closeGenerationStream, updateActiveWork]);
-
-  useEffect(() => {
-    return () => closeGenerationStream();
-  }, [closeGenerationStream]);
-
-  useEffect(() => {
-    const handleSaveShortcut = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        saveWorks();
-      }
-    };
-
-    window.addEventListener("keydown", handleSaveShortcut);
-    return () => window.removeEventListener("keydown", handleSaveShortcut);
-  }, [saveWorks]);
-
   return {
     activeImage,
     activeModel,
@@ -788,12 +322,12 @@ export const useWorks = (
     activeWorkId,
     addWork,
     commitTag,
-    confirmCancelGeneration,
+    confirmCancelGeneration: generation.confirmCancelGeneration,
     customTags,
-    deleteWork,
     deleteImage,
+    deleteWork,
     duplicateWork,
-    handleGenerationAction,
+    handleGenerationAction: generation.handleGenerationAction,
     isDirty,
     isGenerating,
     isLoadingWorks,
@@ -807,13 +341,13 @@ export const useWorks = (
     saveWorks,
     selectDraft,
     selectImage,
-    showGenerationValidation,
     selectedTags,
     setActiveWorkId,
-    setShowCancelModal,
-    showCancelModal,
+    setShowCancelModal: generation.setShowCancelModal,
+    showCancelModal: generation.showCancelModal,
+    showGenerationValidation: generation.showGenerationValidation,
     updateActiveWork,
     works,
-    worksError,
+    workErrors,
   };
 };

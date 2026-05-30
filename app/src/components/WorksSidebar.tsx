@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Work } from "../types";
 
 interface WorksSidebarProps {
@@ -16,7 +16,7 @@ interface WorksSidebarProps {
   onToggleCollapse: () => void;
   username: string;
   works: Work[];
-  worksError: string;
+  workErrors: Record<string, string>;
 }
 
 export const WorksSidebar = ({
@@ -34,8 +34,9 @@ export const WorksSidebar = ({
   onToggleCollapse,
   username,
   works,
-  worksError,
+  workErrors,
 }: WorksSidebarProps) => {
+  const worksError = Object.values(workErrors).find(Boolean) ?? "";
   const [openMenuWorkId, setOpenMenuWorkId] = useState<string | null>(null);
   const [renameWork, setRenameWork] = useState<Work | null>(null);
   const [deleteWork, setDeleteWork] = useState<Work | null>(null);
@@ -53,24 +54,24 @@ export const WorksSidebar = ({
     return () => document.removeEventListener("mousedown", closeMenu);
   }, []);
 
-  const beginRename = (work: Work) => {
+  const beginRename = useCallback((work: Work) => {
     setOpenMenuWorkId(null);
     setRenameWork(work);
     setRenameDraft(work.name);
-  };
+  }, []);
 
-  const confirmRename = () => {
+  const confirmRename = useCallback(() => {
     if (!renameWork) return;
     onRenameWork(renameWork.id, renameDraft);
     setRenameWork(null);
     setRenameDraft("");
-  };
+  }, [renameWork, renameDraft, onRenameWork]);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (!deleteWork) return;
     onDeleteWork(deleteWork.id);
     setDeleteWork(null);
-  };
+  }, [deleteWork, onDeleteWork]);
 
   return (
     <aside className={`works-sidebar ${isCollapsed ? "works-sidebar--collapsed" : ""}`}>

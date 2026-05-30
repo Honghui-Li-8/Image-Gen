@@ -1,9 +1,31 @@
-import type { GenerationCategory, GenerationOptions, Work } from "../types";
+import type { GenerationCategory, GenerationOptions, ModelConfig, Work } from "../types";
 
 export const buildInitialSelections = (
   _categories: GenerationCategory[] = [],
 ): Record<string, string> => {
   return {};
+};
+
+export const getMissingFieldIds = (work: Work, model: ModelConfig): string[] => {
+  const invalidCategoryIds = model.categories
+    .filter((category) => {
+      const selectedValue = work.selections[category.id];
+      return (
+        !selectedValue ||
+        !category.options.some((option) => option.value === selectedValue)
+      );
+    })
+    .map((category) => category.id);
+
+  const isPresetValid = model.outputPresets.some(
+    (preset) => preset.id === work.selectedPreset,
+  );
+
+  return [
+    ...invalidCategoryIds,
+    ...(isPresetValid ? [] : ["selectedPreset"]),
+    ...(work.seed.trim() ? [] : ["seed"]),
+  ];
 };
 
 export const createWork = (
