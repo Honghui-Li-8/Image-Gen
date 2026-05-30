@@ -145,8 +145,8 @@ export const generationOptions: GenerationOptions = {
   models: {
     "illustrious-xl": {
       id: "illustrious-xl",
-      label: "Illustrious XL",
-      tags: ["anime style", "high quality illustration"],
+      label: "Amanatsu Illustrious v2",
+      tags: ["anime style", "amanatsu illustrious", "high quality illustration"],
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS

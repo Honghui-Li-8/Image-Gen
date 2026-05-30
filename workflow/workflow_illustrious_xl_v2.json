@@ -2,10 +2,10 @@
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {
-      "ckpt_name": "Illustrious-XL-v2.0.safetensors"
+      "ckpt_name": "amanatsuIllustrious_v2.safetensors"
     },
     "_meta": {
-      "title": "Illustrious XL checkpoint"
+      "title": "Amanatsu Illustrious v2 checkpoint"
     }
   },
   "2": {
@@ -214,13 +214,13 @@
         "19",
         0
       ],
-      "filename_prefix": "api_workflow/workflow_illustrious_xl_v2"
+      "filename_prefix": "api_workflow/amanatsu_illustrious_v2_fullbody_v16_updated"
     },
     "_meta": {
       "title": "Save Result"
     }
   },
   "_meta": {
-    "title": "workflow_illustrious_xl_v2"
+    "title": "workflow_amanatsu_illustrious_v2"
   }
 }
