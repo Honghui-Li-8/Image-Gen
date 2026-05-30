@@ -170,7 +170,10 @@ export const useWorks = (
   const [worksError, setWorksError] = useState("");
   const generationSourceRef = useRef<EventSource | null>(null);
 
-  const activeWork = works.find((work) => work.id === activeWorkId) || works[0];
+  const activeWork = useMemo(
+    () => works.find((w) => w.id === activeWorkId) ?? works[0],
+    [works, activeWorkId],
+  );
   const activeModel = useMemo((): ModelConfig | null => {
     if (!options) return null;
     const viewingModelId = activeWork?.viewingConfig?.selectedModel;

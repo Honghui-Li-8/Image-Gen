@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Work } from "../types";
 
 interface WorksSidebarProps {
@@ -53,24 +53,24 @@ export const WorksSidebar = ({
     return () => document.removeEventListener("mousedown", closeMenu);
   }, []);
 
-  const beginRename = (work: Work) => {
+  const beginRename = useCallback((work: Work) => {
     setOpenMenuWorkId(null);
     setRenameWork(work);
     setRenameDraft(work.name);
-  };
+  }, []);
 
-  const confirmRename = () => {
+  const confirmRename = useCallback(() => {
     if (!renameWork) return;
     onRenameWork(renameWork.id, renameDraft);
     setRenameWork(null);
     setRenameDraft("");
-  };
+  }, [renameWork, renameDraft, onRenameWork]);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (!deleteWork) return;
     onDeleteWork(deleteWork.id);
     setDeleteWork(null);
-  };
+  }, [deleteWork, onDeleteWork]);
 
   return (
     <aside className={`works-sidebar ${isCollapsed ? "works-sidebar--collapsed" : ""}`}>
