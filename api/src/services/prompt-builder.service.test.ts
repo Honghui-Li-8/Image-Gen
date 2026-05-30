@@ -90,14 +90,14 @@ describe("buildGenerationPromptInput — XML prompt", () => {
   it("places appearance selections in the appearance_tags section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
     expect(result.customPromptXml).toContain("<appearance_tags>");
-    expect(result.customPromptXml).toContain("slender body");
+    expect(result.customPromptXml).toContain("slim");
     expect(result.customPromptXml).toContain("blue hair");
   });
 
   it("places clothing selection in the outfit_tags section", () => {
     const result = buildGenerationPromptInput(BASE_CONFIG);
     expect(result.customPromptXml).toContain("<outfit_tags>");
-    expect(result.customPromptXml).toContain("casual outfit");
+    expect(result.customPromptXml).toContain("casual");
   });
 
   it("always includes ordered_custom_tags and composition_tags", () => {

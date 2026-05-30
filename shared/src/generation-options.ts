@@ -48,10 +48,10 @@ export const baseCategories: Category[] = [
     group: "Form",
     control: "single-select",
     options: [
-      { value: "slender", label: "Slender", tags: ["slender body", "slim figure"] },
-      { value: "athletic", label: "Athletic", tags: ["athletic body", "toned body"] },
-      { value: "average", label: "Average", tags: ["average body"] },
-      { value: "plump", label: "Plump", tags: ["plump body", "soft body"] }
+      { value: "slender", label: "Slender", tags: ["slim"] },
+      { value: "athletic", label: "Athletic", tags: ["toned"] },
+      { value: "average", label: "Average", tags: [] },
+      { value: "plump", label: "Plump", tags: ["chubby"] }
     ]
   },
   {
@@ -60,11 +60,11 @@ export const baseCategories: Category[] = [
     group: "Form",
     control: "single-select",
     options: [
-      { value: "subtle", label: "Subtle", tags: ["subtle bust"] },
+      { value: "subtle", label: "Subtle", tags: ["flat chest"] },
       { value: "small", label: "Small", tags: ["small breasts"] },
       { value: "medium", label: "Medium", tags: ["medium breasts"] },
       { value: "large", label: "Large", tags: ["large breasts"] },
-      { value: "prominent", label: "Prominent", tags: ["prominent breasts"] }
+      { value: "prominent", label: "Prominent", tags: ["huge breasts"] }
     ]
   },
   {
@@ -74,10 +74,10 @@ export const baseCategories: Category[] = [
     control: "single-select",
     options: [
       { value: "subtle", label: "Subtle", tags: ["narrow hips"] },
-      { value: "small", label: "Small", tags: ["small hips"] },
-      { value: "medium", label: "Medium", tags: ["medium hips"] },
+      { value: "small", label: "Small", tags: ["narrow hips"] },
+      { value: "medium", label: "Medium", tags: [] },
       { value: "large", label: "Large", tags: ["wide hips"] },
-      { value: "prominent", label: "Prominent", tags: ["prominent hips"] }
+      { value: "prominent", label: "Prominent", tags: ["wide hips", "thick thighs"] }
     ]
   },
   {
@@ -126,11 +126,11 @@ export const baseCategories: Category[] = [
     group: "Wardrobe",
     control: "single-select",
     options: [
-      { value: "academy-uniform", label: "Academy Uniform", tags: ["academy uniform", "pleated skirt"] },
-      { value: "cyberpunk", label: "Cyberpunk", tags: ["cyberpunk outfit", "neon accents", "techwear"] },
-      { value: "fantasy-armor", label: "Fantasy Armor", tags: ["fantasy armor", "ornate armor"] },
-      { value: "casual", label: "Casual", tags: ["casual outfit"] },
-      { value: "sci-fi", label: "Sci-Fi", tags: ["sci-fi outfit", "futuristic clothing"] }
+      { value: "academy-uniform", label: "Academy Uniform", tags: ["school uniform", "pleated skirt"] },
+      { value: "cyberpunk", label: "Cyberpunk", tags: ["cyberpunk", "neon lights", "bodysuit"] },
+      { value: "fantasy-armor", label: "Fantasy Armor", tags: ["armor", "full armor", "pauldrons"] },
+      { value: "casual", label: "Casual", tags: ["casual"] },
+      { value: "sci-fi", label: "Sci-Fi", tags: ["science fiction", "futuristic", "bodysuit"] }
     ]
   }
 ];
