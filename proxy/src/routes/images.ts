@@ -47,8 +47,9 @@ export const imageHandler: RequestHandler = async (req, res) => {
     return;
   }
 
+  let file;
   try {
-    const file = await stat(absPath);
+    file = await stat(absPath);
     if (!file.isFile()) {
       res.status(404).json({ error: "Image file not found" });
       return;
@@ -62,5 +63,11 @@ export const imageHandler: RequestHandler = async (req, res) => {
     "Content-Type",
     CONTENT_TYPES[path.extname(filename).toLowerCase()] ?? "application/octet-stream"
   );
-  createReadStream(absPath).pipe(res);
+  res.setHeader("Content-Length", file.size);
+  createReadStream(absPath)
+    .on("error", () => {
+      if (!res.headersSent) res.status(500).end();
+      else res.end();
+    })
+    .pipe(res);
 };
