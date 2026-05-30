@@ -73,7 +73,6 @@ export const baseCategories: Category[] = [
     group: "Form",
     control: "single-select",
     options: [
-      { value: "subtle", label: "Subtle", tags: ["narrow hips"] },
       { value: "small", label: "Small", tags: ["narrow hips"] },
       { value: "medium", label: "Medium", tags: [] },
       { value: "large", label: "Large", tags: ["wide hips"] },
