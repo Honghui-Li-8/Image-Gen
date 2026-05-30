@@ -152,7 +152,8 @@ const renderPositivePrompt = ({
 const resolveSelectionTags = (
   selections: Record<string, string>,
   categories: Category[],
-  categoryIds: string[]
+  categoryIds: string[],
+  selectionTagOverrides: Record<string, Record<string, string[]>> = {}
 ): string[] => {
   const tags: string[] = [];
   for (const catId of categoryIds) {
@@ -163,6 +164,7 @@ const resolveSelectionTags = (
     const option = category.options.find((o) => o.value === selectedValue);
     if (!option) continue;
     tags.push(...option.tags);
+    tags.push(...(selectionTagOverrides[catId]?.[selectedValue] ?? []));
   }
   return tags;
 };
@@ -170,11 +172,17 @@ const resolveSelectionTags = (
 const renderSection = (
   section: XmlSectionConfig,
   selections: Record<string, string>,
-  categories: Category[]
+  categories: Category[],
+  selectionTagOverrides: Record<string, Record<string, string[]>>
 ): string | null => {
   const tags = [
     ...section.alwaysOn,
-    ...resolveSelectionTags(selections, categories, section.categoryIds),
+    ...resolveSelectionTags(
+      selections,
+      categories,
+      section.categoryIds,
+      selectionTagOverrides
+    ),
   ];
   if (tags.length === 0) return null;
   return `<${section.tag}>\n${tags.join(", ")}\n</${section.tag}>`;
@@ -183,12 +191,13 @@ const renderSection = (
 export const buildXml = (
   sections: XmlSectionConfig[],
   selections: Record<string, string>,
-  categories: Category[]
+  categories: Category[],
+  selectionTagOverrides: Record<string, Record<string, string[]>> = {}
 ): string => {
   // character_1 block — always present (always has <n> anchor)
   const characterSections = sections
     .filter((s) => s.group === "character")
-    .map((s) => renderSection(s, selections, categories))
+    .map((s) => renderSection(s, selections, categories, selectionTagOverrides))
     .filter((s): s is string => s !== null);
 
   const characterBlock = [
@@ -201,7 +210,7 @@ export const buildXml = (
   // general_tags block — omitted when all sections are empty
   const generalSections = sections
     .filter((s) => s.group === "general")
-    .map((s) => renderSection(s, selections, categories))
+    .map((s) => renderSection(s, selections, categories, selectionTagOverrides))
     .filter((s): s is string => s !== null);
 
   if (generalSections.length === 0) return characterBlock;
@@ -242,7 +251,12 @@ export const buildGenerationPromptInput = (
   ]);
   const negativeTagList = dedupeTags(promptPreset.negativeTags);
   const qualityPrompt = qualityTagList.join(", ");
-  const customPromptXml = buildXml(XML_SECTIONS, config.selections, model.categories);
+  const customPromptXml = buildXml(
+    XML_SECTIONS,
+    config.selections,
+    model.categories,
+    promptPreset.selectionTagOverrides
+  );
   const caption = buildCaption(promptPreset.caption, config.additionalPrompt);
 
   return {

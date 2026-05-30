@@ -160,6 +160,29 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(animagine.positivePrompt).toContain("high score");
     expect(animagine.negativePrompt).toContain("bad score");
   });
+
+  it("adds Pony-specific neutral hip tags for medium hip selection", () => {
+    const pony = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "pony-v6",
+      selections: {
+        ...BASE_CONFIG.selections,
+        hipSize: "medium",
+      },
+    });
+    const illustrious = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      selections: {
+        ...BASE_CONFIG.selections,
+        hipSize: "medium",
+      },
+    });
+
+    expect(pony.positivePrompt).toContain("average hips");
+    expect(pony.positivePrompt).toContain("proportional hips");
+    expect(illustrious.positivePrompt).not.toContain("average hips");
+    expect(illustrious.positivePrompt).not.toContain("proportional hips");
+  });
 });
 
 describe("buildGenerationPromptInput — caption", () => {

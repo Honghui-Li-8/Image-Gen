@@ -68,6 +68,32 @@ export const countInFlightGenerations = async (userId: string): Promise<number> 
   return rows.length;
 };
 
+export const failInterruptedGenerations = async (): Promise<number> => {
+  const interrupted = await db
+    .select({ id: generations.id })
+    .from(generations)
+    .where(inArray(generations.status, IN_FLIGHT_STATUSES));
+
+  if (interrupted.length === 0) {
+    return 0;
+  }
+
+  await db
+    .update(generations)
+    .set({
+      status: "failed",
+      error: "Generation interrupted by API restart",
+      completedAt: new Date(),
+    })
+    .where(inArray(generations.status, IN_FLIGHT_STATUSES));
+
+  logger.warn("generation.interrupted.failed", {
+    count: interrupted.length,
+  });
+
+  return interrupted.length;
+};
+
 export const createQueuedGeneration = async ({
   workId,
   userId,

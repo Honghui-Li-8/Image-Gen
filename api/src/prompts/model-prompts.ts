@@ -4,6 +4,7 @@ export interface ModelPromptPreset {
   caption: string;
   qualityTags: string[];
   negativeTags: string[];
+  selectionTagOverrides?: Record<string, Record<string, string[]>>;
 }
 
 const COMMON_QUALITY_TAGS = [
@@ -226,6 +227,11 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       "furry",
       ...COMMON_NEGATIVE_TAGS,
     ],
+    selectionTagOverrides: {
+      hipSize: {
+        medium: ["average hips", "proportional hips"],
+      },
+    },
   },
   "animagine-xl-v3": {
     workflowFile: "workflow_animagine_xl.json",

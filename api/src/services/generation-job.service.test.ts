@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
 import Database from "better-sqlite3";
 import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { generationEmitter } from "../db/emitter.js";
 import { generations, users, works } from "../db/schema.js";
+import type { Generation } from "../db/schema.js";
 import { tokenStore } from "../db/token-store.js";
 import type { GenerationRequestConfig, GenerationUpdateEvent } from "./generation-job.service.js";
 
@@ -23,6 +24,7 @@ const {
   GENERATION_UPDATE_EVENT,
   countInFlightGenerations,
   createQueuedGeneration,
+  failInterruptedGenerations,
   runStubGeneration,
   updateGenerationStatus,
 } = await import("./generation-job.service.js");
@@ -118,6 +120,37 @@ describe("generation job service", () => {
 
     expect(queued.status).toBe("queued");
     expect(await countInFlightGenerations(userId)).toBe(2);
+  });
+
+  it("fails queued and running generations after an API restart", async () => {
+    const queued = await createQueuedGeneration({ workId, userId, config: TEST_CONFIG });
+    const running = await createQueuedGeneration({ workId, userId, config: TEST_CONFIG });
+    const completed = await createQueuedGeneration({ workId, userId, config: TEST_CONFIG });
+
+    await updateGenerationStatus({
+      generationId: running.id,
+      status: "running",
+      progress: 10,
+    });
+    await updateGenerationStatus({
+      generationId: completed.id,
+      status: "completed",
+      progress: 100,
+    });
+
+    await expect(failInterruptedGenerations()).resolves.toBe(2);
+    await expect(countInFlightGenerations(userId)).resolves.toBe(0);
+
+    const rows = (await db
+      .select()
+      .from(generations)
+      .where(inArray(generations.id, [queued.id, running.id, completed.id]))) as Generation[];
+    const byId = new Map(rows.map((row) => [row.id, row]));
+
+    expect(byId.get(queued.id)?.status).toBe("failed");
+    expect(byId.get(running.id)?.status).toBe("failed");
+    expect(byId.get(completed.id)?.status).toBe("completed");
+    expect(byId.get(queued.id)?.error).toBe("Generation interrupted by API restart");
   });
 
   it("updates the database before emitting status events", async () => {

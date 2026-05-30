@@ -19,7 +19,7 @@ import type {
 } from "../services/generation-job.service.js";
 import { logger } from "../utils/logger.js";
 
-const MAX_IN_FLIGHT_GENERATIONS = 3;
+const MAX_IN_FLIGHT_GENERATIONS = 10;
 
 export const generationsRouter = Router();
 

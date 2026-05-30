@@ -197,11 +197,11 @@ describe("POST /works/:workId/generations", () => {
     expect(work.activeGenerationId).toBe(res.body.generationId);
   });
 
-  it("rejects a fourth in-flight generation", async () => {
+  it("rejects an eleventh in-flight generation", async () => {
     const workId = await seedWork(aliceId);
-    await seedGeneration(workId, aliceId, "queued");
-    await seedGeneration(workId, aliceId, "running");
-    await seedGeneration(workId, aliceId, "queued");
+    for (let i = 0; i < 10; i++) {
+      await seedGeneration(workId, aliceId, i % 2 === 0 ? "queued" : "running");
+    }
 
     const res = await request(app)
       .post(`/works/${workId}/generations`)
