@@ -20,7 +20,8 @@ const isValidFilename = (filename: string): boolean => {
 };
 
 export const imageHandler: RequestHandler = async (req, res) => {
-  const filename = req.params.filename;
+  const param = req.params.filename;
+  const filename = Array.isArray(param) ? param[0] : param;
   if (!filename || !isValidFilename(filename)) {
     res.status(400).json({ error: "Malformed filename" });
     return;

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createServer } from "http";
 import express from "express";
 import type { IncomingMessage } from "http";
+import type { Duplex } from "stream";
 import { WebSocket, WebSocketServer } from "ws";
 import { getProxyAuthSecret, getProxyPort, buildComfyWsUrl } from "./config.js";
 import { verifyBackendSignature } from "./lib/hmac.js";
@@ -34,7 +35,7 @@ const verifyUpgradeAuth = (req: IncomingMessage): boolean => {
   );
 };
 
-const writeUpgradeError = (socket: import("net").Socket, statusCode: number): void => {
+const writeUpgradeError = (socket: Duplex, statusCode: number): void => {
   socket.write(`HTTP/1.1 ${statusCode} Unauthorized\r\nConnection: close\r\n\r\n`);
   socket.destroy();
 };
