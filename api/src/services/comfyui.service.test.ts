@@ -211,6 +211,22 @@ describe("ComfyUI websocket helpers", () => {
 });
 
 describe("parseComfyWsMessage", () => {
+  it("extracts sid from status messages", () => {
+    expect(
+      parseComfyWsMessage(
+        JSON.stringify({
+          type: "status",
+          data: { sid: "server-client-id", status: { exec_info: { queue_remaining: 0 } } },
+        })
+      )
+    ).toEqual({
+      type: "status",
+      promptId: undefined,
+      sid: "server-client-id",
+      raw: { sid: "server-client-id", status: { exec_info: { queue_remaining: 0 } } },
+    });
+  });
+
   it("normalizes progress messages", () => {
     expect(
       parseComfyWsMessage(
@@ -234,7 +250,9 @@ describe("parseComfyWsMessage", () => {
     ).toEqual({ type: "execution_success", promptId: "p" });
 
     expect(
-      parseComfyWsMessage(JSON.stringify({ type: "executing", data: { prompt_id: "p", node: null } }))
+      parseComfyWsMessage(
+        JSON.stringify({ type: "executing", data: { prompt_id: "p", node: null } })
+      )
     ).toEqual({ type: "executing", promptId: "p", nodeId: null });
   });
 

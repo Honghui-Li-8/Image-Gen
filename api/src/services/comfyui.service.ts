@@ -27,18 +27,14 @@ export interface WorkflowNode {
 export type Workflow = Record<string, unknown>;
 
 export type ComfyWsEvent =
+  | { type: "status"; promptId?: string; sid?: string; raw: unknown }
   | { type: "progress"; promptId?: string; nodeId?: string; value: number; max: number }
   | { type: "executing"; promptId?: string; nodeId: string | null }
   | { type: "execution_success"; promptId?: string }
   | { type: "execution_error"; promptId?: string; message: string; nodeId?: string }
   | { type: "execution_interrupted"; promptId?: string; message: string }
   | {
-      type:
-        | "status"
-        | "execution_start"
-        | "executed"
-        | "execution_cached"
-        | "progress_state";
+      type: "execution_start" | "executed" | "execution_cached" | "progress_state";
       promptId?: string;
       raw: unknown;
     };
@@ -49,8 +45,9 @@ export const WORKFLOW_NODE_IDS = {
   latentImage: "5",
 } as const;
 
-const WORKFLOW_DIR = process.env.COMFYUI_WORKFLOW_DIR
-  ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../../workflow");
+const WORKFLOW_DIR =
+  process.env.COMFYUI_WORKFLOW_DIR ??
+  resolve(dirname(fileURLToPath(import.meta.url)), "../../../workflow");
 
 export const getBaseUrl = (): string => {
   const url = process.env.PROXY_URL ?? "http://localhost:3001";
@@ -309,6 +306,12 @@ export const parseComfyWsMessage = (data: unknown, isBinary = false): ComfyWsEve
         message: getMessage(eventData, "ComfyUI execution interrupted"),
       };
     case "status":
+      return {
+        type: "status",
+        promptId,
+        sid: typeof eventData.sid === "string" ? eventData.sid : undefined,
+        raw: eventData,
+      };
     case "execution_start":
     case "executed":
     case "execution_cached":

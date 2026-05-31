@@ -27,6 +27,8 @@ export const GENERATION_UPDATE_EVENT = "generation:update";
 
 const IN_FLIGHT_STATUSES: GenerationStatus[] = ["queued", "running"];
 const TERMINAL_STATUSES: GenerationStatus[] = ["completed", "failed"];
+const MAX_WS_DEBUG_PAYLOAD_CHARS = 2000;
+const COMFY_WORKFLOW_PROGRESS_MAX = 90;
 
 export interface GenerationUpdateEvent {
   generationId: string;
@@ -65,6 +67,14 @@ const delay = (ms: number) =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
+
+const shouldLogComfyWsPayloads = (): boolean => process.env.COMFYUI_WS_DEBUG_PAYLOADS === "true";
+
+const getDebugPayloadText = (data: unknown): string | null => {
+  if (typeof data === "string") return data;
+  if (Buffer.isBuffer(data)) return data.toString();
+  return null;
+};
 
 export const isTerminalGenerationStatus = (status: GenerationStatus): boolean =>
   TERMINAL_STATUSES.includes(status);
@@ -352,9 +362,11 @@ const computeWorkflowProgress = ({
       ? Math.min(Math.max(value / max, 0), 1)
       : 0;
   const nodeWeight = nodes[index]?.weight ?? 1;
-  const progress = Math.round(15 + ((completedWeight + fraction * nodeWeight) / totalWeight) * 80);
+  const progress = Math.round(
+    ((completedWeight + fraction * nodeWeight) / totalWeight) * COMFY_WORKFLOW_PROGRESS_MAX
+  );
 
-  return Math.max(previous, Math.min(progress, 95));
+  return Math.max(previous, Math.min(progress, COMFY_WORKFLOW_PROGRESS_MAX));
 };
 
 const getWorkflowNode = (
@@ -368,6 +380,24 @@ type ComfyTerminalEvent =
 
 const isMatchingPromptEvent = (event: ComfyWsEvent, promptId: string): boolean =>
   event.promptId === undefined || event.promptId === promptId;
+
+const waitForComfySid = async ({
+  clientId,
+  fallbackMs,
+  getSid,
+}: {
+  clientId: string;
+  fallbackMs: number;
+  getSid: () => string | null;
+}): Promise<string> => {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < fallbackMs) {
+    const sid = getSid();
+    if (sid) return sid;
+    await delay(25);
+  }
+  return clientId;
+};
 
 const waitForImageFromHistory = async ({
   generationId,
@@ -391,7 +421,7 @@ const waitForImageFromHistory = async ({
     await updateGenerationStatus({
       generationId,
       status: "running",
-      progress: 95,
+      progress: COMFY_WORKFLOW_PROGRESS_MAX,
       detail: { stage: "finalizing", message: "Finalizing" },
     });
     await delay(getComfyPollIntervalMs());
@@ -415,7 +445,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     await updateGenerationStatus({
       generationId,
       status: "running",
-      progress: 10,
+      progress: 0,
       detail: { stage: "queued", message: "Starting" },
     });
 
@@ -433,7 +463,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
 
     const clientId = randomUUID();
     const workflowNodes = buildWorkflowProgressNodes(patched);
-    logger.info("generation.comfy.websocket.prepared", {
+    logger.info("[comfy-ws] generation.comfy.websocket.prepared", {
       clientId,
       generationId,
       workflowNodeCount: workflowNodes.length,
@@ -444,7 +474,8 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       })),
     });
     let promptId: string | null = null;
-    let progress = 15;
+    let progress = 0;
+    let comfySid: string | null = null;
     let websocketDisconnected = false;
     let resolveTerminal: (event: ComfyTerminalEvent) => void = () => undefined;
     let terminalPromise = new Promise<ComfyTerminalEvent>((resolve) => {
@@ -464,7 +495,8 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     };
 
     const handleComfyEvent = (event: ComfyWsEvent) => {
-      logger.info("generation.comfy.ws.event", {
+      logger.info("[comfy-ws] generation.comfy.ws.event", {
+        comfySid,
         eventPromptId: event.promptId,
         eventType: event.type,
         generationId,
@@ -472,8 +504,25 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
         promptId,
       });
 
+      if (event.type === "status" && event.sid) {
+        comfySid = event.sid;
+        if (event.sid !== clientId) {
+          logger.warn("[comfy-ws] generation.comfy.websocket.sid_mismatch", {
+            clientId,
+            generationId,
+            sid: event.sid,
+          });
+        } else {
+          logger.info("[comfy-ws] generation.comfy.websocket.sid_matched", {
+            clientId,
+            generationId,
+          });
+        }
+        return;
+      }
+
       if (!promptId) {
-        logger.debug("generation.comfy.ws.event_ignored", {
+        logger.debug("[comfy-ws] generation.comfy.ws.event_ignored", {
           eventPromptId: event.promptId,
           eventType: event.type,
           generationId,
@@ -483,7 +532,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (!isMatchingPromptEvent(event, promptId)) {
-        logger.debug("generation.comfy.ws.event_ignored", {
+        logger.debug("[comfy-ws] generation.comfy.ws.event_ignored", {
           eventPromptId: event.promptId,
           eventType: event.type,
           generationId,
@@ -503,7 +552,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
           max: event.max,
           previous: progress,
         });
-        logger.info("generation.comfy.ws.progress_mapped", {
+        logger.info("[comfy-ws] generation.comfy.ws.progress_mapped", {
           generationId,
           nodeId: event.nodeId,
           nodeLabel: node?.label,
@@ -530,14 +579,14 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
 
       if (event.type === "executing") {
         if (event.nodeId === null) {
-          logger.info("generation.comfy.ws.finalizing", {
+          logger.info("[comfy-ws] generation.comfy.ws.finalizing", {
             generationId,
-            progress: Math.max(progress, 95),
+            progress: Math.max(progress, COMFY_WORKFLOW_PROGRESS_MAX),
           });
           emitGenerationUpdate({
             generationId,
             status: "running",
-            progress: Math.max(progress, 95),
+            progress: Math.max(progress, COMFY_WORKFLOW_PROGRESS_MAX),
             detail: { stage: "finalizing", message: "Finalizing" },
           });
           return;
@@ -550,7 +599,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
           nodeId: event.nodeId,
           previous: progress,
         });
-        logger.info("generation.comfy.ws.executing_mapped", {
+        logger.info("[comfy-ws] generation.comfy.ws.executing_mapped", {
           generationId,
           nodeId: event.nodeId,
           nodeLabel: node?.label,
@@ -572,7 +621,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (event.type === "execution_success") {
-        logger.info("generation.comfy.ws.execution_success", {
+        logger.info("[comfy-ws] generation.comfy.ws.execution_success", {
           generationId,
           promptId,
         });
@@ -581,7 +630,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (event.type === "execution_error" || event.type === "execution_interrupted") {
-        logger.warn("generation.comfy.ws.execution_failed", {
+        logger.warn("[comfy-ws] generation.comfy.ws.execution_failed", {
           eventType: event.type,
           generationId,
           message: event.message,
@@ -603,14 +652,14 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     const connectWebSocket = () => {
       websocketDisconnected = false;
       try {
-        logger.info("generation.comfy.websocket.connecting", {
+        logger.info("[comfy-ws] generation.comfy.websocket.connecting", {
           clientId,
           generationId,
         });
         websocket = connectComfyWebSocket(clientId);
       } catch (error) {
         websocketDisconnected = true;
-        logger.warn("generation.comfy.websocket_unavailable", {
+        logger.warn("[comfy-ws] generation.comfy.websocket_unavailable", {
           error: error instanceof Error ? error.message : "WebSocket unavailable",
           generationId,
         });
@@ -618,25 +667,44 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       websocket.on("open", () => {
-        logger.info("generation.comfy.websocket.open", {
+        logger.info("[comfy-ws] generation.comfy.websocket.open", {
           clientId,
           generationId,
           promptId,
         });
       });
       websocket.on("message", (data, isBinary) => {
-        logger.debug("generation.comfy.websocket.message", {
+        logger.debug("[comfy-ws] generation.comfy.websocket.message", {
           clientId,
           generationId,
           isBinary,
           promptId,
         });
+        if (shouldLogComfyWsPayloads() && !isBinary) {
+          const payload = getDebugPayloadText(data);
+          if (payload !== null) {
+            logger.debug("[comfy-ws] generation.comfy.websocket.raw_message", {
+              byteLength: Buffer.byteLength(payload),
+              clientId,
+              generationId,
+              payload: payload.slice(0, MAX_WS_DEBUG_PAYLOAD_CHARS),
+              promptId,
+              truncated: payload.length > MAX_WS_DEBUG_PAYLOAD_CHARS,
+            });
+          }
+        } else if (shouldLogComfyWsPayloads() && isBinary) {
+          logger.debug("[comfy-ws] generation.comfy.websocket.raw_binary_skipped", {
+            clientId,
+            generationId,
+            promptId,
+          });
+        }
         const event = parseComfyWsMessage(data, isBinary);
         if (event) {
           handleComfyEvent(event);
           return;
         }
-        logger.debug("generation.comfy.websocket.message_ignored", {
+        logger.debug("[comfy-ws] generation.comfy.websocket.message_ignored", {
           clientId,
           generationId,
           isBinary,
@@ -645,7 +713,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       });
       websocket.on("close", () => {
         websocketDisconnected = !terminalResolved;
-        logger.warn("generation.comfy.websocket.closed", {
+        logger.warn("[comfy-ws] generation.comfy.websocket.closed", {
           clientId,
           generationId,
           promptId,
@@ -654,7 +722,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       });
       websocket.on("error", (error) => {
         websocketDisconnected = true;
-        logger.warn("generation.comfy.websocket_error", {
+        logger.warn("[comfy-ws] generation.comfy.websocket_error", {
           error: error instanceof Error ? error.message : "WebSocket error",
           generationId,
         });
@@ -663,16 +731,34 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
 
     connectWebSocket();
 
-    const promptIdValue = await submitComfyWorkflow(patched, { clientId });
+    const promptClientId = await waitForComfySid({
+      clientId,
+      fallbackMs: 1000,
+      getSid: () => comfySid,
+    });
+    if (promptClientId !== clientId) {
+      logger.warn("[comfy-ws] generation.comfy.prompt.client_id_using_sid", {
+        clientId,
+        generationId,
+        sid: promptClientId,
+      });
+    }
+
+    const promptIdValue = await submitComfyWorkflow(patched, { clientId: promptClientId });
     promptId = promptIdValue;
     await updateGenerationComfyFields({ generationId, promptId });
     await updateGenerationStatus({
       generationId,
       status: "running",
-      progress: 15,
+      progress: 0,
       detail: { stage: "queued", message: "Queued" },
     });
-    logger.info("generation.comfy.submitted", { clientId, generationId, promptId });
+    logger.info("generation.comfy.submitted", {
+      clientId,
+      generationId,
+      promptClientId,
+      promptId,
+    });
 
     const startedAt = Date.now();
     const timeoutMs = getComfyTimeoutMs();
@@ -691,7 +777,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
         await updateGenerationStatus({
           generationId,
           status: "running",
-          progress: Math.max(progress, 95),
+          progress: Math.max(progress, COMFY_WORKFLOW_PROGRESS_MAX),
           detail: { stage: "finalizing", message: "Finalizing" },
         });
         const imageUrl = await waitForImageFromHistory({
@@ -714,7 +800,7 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (websocketDisconnected && !terminalResolved) {
-        logger.info("generation.comfy.websocket.reconnecting", {
+        logger.info("[comfy-ws] generation.comfy.websocket.reconnecting", {
           clientId,
           generationId,
           promptId,

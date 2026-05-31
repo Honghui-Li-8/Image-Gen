@@ -237,11 +237,7 @@ describe("generation job service", () => {
     vi.mocked(comfyui.patchComfyWorkflow).mockReturnValue(TEST_WORKFLOW);
     vi.mocked(comfyui.submitComfyWorkflow).mockResolvedValue("prompt-1");
     vi.mocked(comfyui.fetchComfyHistory).mockResolvedValue({
-      "prompt-1": {
-        outputs: {
-          "9": { images: [{ filename: "ComfyUI_00001_.png", type: "output" }] },
-        },
-      },
+      "prompt-1": { outputs: {} },
     });
 
     generationEmitter.on(GENERATION_UPDATE_EVENT, (event: GenerationUpdateEvent) => {
@@ -249,7 +245,19 @@ describe("generation job service", () => {
     });
 
     const worker = runComfyGeneration(generation.id);
+    await vi.waitFor(() => expect(comfyui.connectComfyWebSocket).toHaveBeenCalled());
+    socket.emit(
+      "message",
+      JSON.stringify({
+        type: "status",
+        data: { sid: "server-client-id", status: { exec_info: { queue_remaining: 0 } } },
+      }),
+      false
+    );
     await vi.waitFor(() => expect(comfyui.submitComfyWorkflow).toHaveBeenCalled());
+    expect(comfyui.submitComfyWorkflow).toHaveBeenCalledWith(TEST_WORKFLOW, {
+      clientId: "server-client-id",
+    });
 
     socket.emit(
       "message",
@@ -259,6 +267,16 @@ describe("generation job service", () => {
       }),
       false
     );
+    await vi.waitFor(() =>
+      expect(events.find((event) => event.detail?.stage === "sampling")).toBeDefined()
+    );
+    vi.mocked(comfyui.fetchComfyHistory).mockResolvedValue({
+      "prompt-1": {
+        outputs: {
+          "9": { images: [{ filename: "ComfyUI_00001_.png", type: "output" }] },
+        },
+      },
+    });
     socket.emit(
       "message",
       JSON.stringify({ type: "execution_success", data: { prompt_id: "prompt-1" } }),
@@ -293,6 +311,15 @@ describe("generation job service", () => {
     vi.mocked(comfyui.fetchComfyHistory).mockResolvedValue({});
 
     const worker = runComfyGeneration(generation.id);
+    await vi.waitFor(() => expect(comfyui.connectComfyWebSocket).toHaveBeenCalled());
+    socket.emit(
+      "message",
+      JSON.stringify({
+        type: "status",
+        data: { sid: "server-client-id", status: { exec_info: { queue_remaining: 0 } } },
+      }),
+      false
+    );
     await vi.waitFor(() => expect(comfyui.submitComfyWorkflow).toHaveBeenCalled());
 
     socket.emit(
