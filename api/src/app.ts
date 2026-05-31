@@ -4,6 +4,7 @@ import { router } from "./routes/index.js";
 
 export const createApp = () => {
   const app = express();
+  app.set("trust proxy", 3);
   const corsOrigin = process.env.NODE_ENV === "production" ? process.env.ALLOWED_ORIGIN : "*";
   app.use(cors({ origin: corsOrigin }));
   app.use(express.json());

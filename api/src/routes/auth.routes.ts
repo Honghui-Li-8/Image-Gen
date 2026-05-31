@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { Router } from "express";
+import rateLimit, { MemoryStore } from "express-rate-limit";
 import { createId } from "@paralleldrive/cuid2";
 import { db } from "../db/index.js";
 import { users } from "../db/schema.js";
@@ -8,7 +9,18 @@ import { tokenStore } from "../db/token-store.js";
 
 export const authRouter = Router();
 
-authRouter.post("/auth/login", async (req, res) => {
+export const loginRateLimitStore = new MemoryStore();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  store: loginRateLimitStore,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: "Too many login attempts, please try again later" },
+});
+
+authRouter.post("/auth/login", loginLimiter, async (req, res) => {
   const { name, password } = req.body as { name?: string; password?: string };
 
   if (!name || !password) {

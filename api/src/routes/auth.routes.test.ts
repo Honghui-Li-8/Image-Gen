@@ -6,6 +6,7 @@ import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createId } from "@paralleldrive/cuid2";
 import { tokenStore } from "../db/token-store.js";
+import { loginRateLimitStore } from "./auth.routes.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -48,6 +49,7 @@ describe("POST /auth/login", () => {
     db = testDb as ReturnType<typeof drizzle>;
     app = buildApp();
     tokenStore.clear();
+    loginRateLimitStore.resetAll();
   });
 
   afterEach(async () => {
@@ -100,5 +102,30 @@ describe("POST /auth/login", () => {
     await request(app).post("/auth/login").send({ name: "alice", password: "pass123" });
     const after = await db.select().from(users).where(eq(users.id, id));
     expect(after[0].lastLoginAt.getTime()).toBeGreaterThanOrEqual(before[0].lastLoginAt.getTime());
+  });
+});
+
+describe("POST /auth/login rate limiting", () => {
+  let app: ReturnType<typeof buildApp>;
+
+  beforeEach(() => {
+    loginRateLimitStore.resetAll();
+    app = buildApp();
+  });
+
+  it("allows up to 20 requests within the window", async () => {
+    for (let i = 0; i < 20; i++) {
+      const res = await request(app).post("/auth/login").send({ name: "nobody", password: "x" });
+      expect(res.status).toBe(401);
+    }
+  });
+
+  it("rejects the 21st request with 429", async () => {
+    for (let i = 0; i < 20; i++) {
+      await request(app).post("/auth/login").send({ name: "nobody", password: "x" });
+    }
+    const res = await request(app).post("/auth/login").send({ name: "nobody", password: "x" });
+    expect(res.status).toBe(429);
+    expect(res.body.error).toBe("Too many login attempts, please try again later");
   });
 });
