@@ -4,6 +4,15 @@ export type ServerStatus = HealthStatus | "working";
 export type WorkStatus = "idle" | "queued" | "running" | "completed" | "failed";
 export type Theme = "dark" | "light";
 
+export interface GenerationProgressDetail {
+  stage?: "queued" | "executing" | "sampling" | "finalizing" | "completed" | "failed";
+  nodeId?: string;
+  nodeLabel?: string;
+  step?: number;
+  totalSteps?: number;
+  message?: string;
+}
+
 export interface ApiHealth {
   status: HealthStatus;
   message: string;
@@ -67,6 +76,7 @@ export interface Work {
   name: string;
   status: WorkStatus;
   progress: number;
+  generationDetail?: GenerationProgressDetail | null;
   selectedModel: string;
   selections: Record<string, string>;
   selectedPreset: string;

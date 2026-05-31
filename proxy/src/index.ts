@@ -17,10 +17,14 @@ export const createApp = () => {
   app.use(requestLogger);
   app.get("/health", healthHandler);
   app.use("/comfy", requireBackendAuth, comfyProxyHandler);
-  app.get("/images/:filename", (req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin());
-    next();
-  }, imageHandler);
+  app.get(
+    "/images/:filename",
+    (req, res, next) => {
+      res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin());
+      next();
+    },
+    imageHandler
+  );
   return app;
 };
 
@@ -79,7 +83,8 @@ const pipeWebSockets = (clientWs: WebSocket, upstreamWs: WebSocket): void => {
 };
 
 server.on("upgrade", (req, socket, head) => {
-  const pathname = req.url ? new URL(req.url, "http://localhost").pathname : "";
+  const url = req.url ? new URL(req.url, "http://localhost") : null;
+  const pathname = url?.pathname ?? "";
   if (pathname !== "/comfy/ws") {
     socket.destroy();
     return;
@@ -93,7 +98,7 @@ server.on("upgrade", (req, socket, head) => {
 
   wsServer.handleUpgrade(req, socket, head, (clientWs) => {
     logWsEvent("connect", pathname);
-    const upstreamWs = new WebSocket(buildComfyWsUrl());
+    const upstreamWs = new WebSocket(buildComfyWsUrl(url?.search ?? ""));
 
     const pingInterval = setInterval(() => {
       if (clientWs.readyState === WebSocket.OPEN) clientWs.ping();

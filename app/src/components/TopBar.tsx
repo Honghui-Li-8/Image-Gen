@@ -14,6 +14,39 @@ interface TopBarProps {
   theme: Theme;
 }
 
+const truncateReason = (message: string): string =>
+  message.length > 30 ? `${message.slice(0, 30)}...` : message;
+
+const getGenerationDetailLabel = (work: Work | undefined): string | null => {
+  if (
+    !work ||
+    (work.status !== "queued" && work.status !== "running" && work.status !== "failed")
+  ) {
+    return null;
+  }
+
+  const detail = work.generationDetail;
+  if (work.status === "failed") {
+    return detail?.message
+      ? `Generation failed: ${truncateReason(detail.message)}`
+      : "Generation failed";
+  }
+  if (!detail) return work.status === "queued" ? "Queued" : null;
+  if (detail.stage === "sampling" && detail.step !== undefined && detail.totalSteps !== undefined) {
+    return `Sampling ${detail.step}/${detail.totalSteps}`;
+  }
+  if (detail.stage === "finalizing") return "Finalizing";
+  if (detail.stage === "queued") return detail.message ?? "Queued";
+  if (detail.stage === "executing") {
+    return detail.nodeLabel
+      ? `Running ${detail.nodeLabel}`
+      : detail.nodeId
+        ? `Running node ${detail.nodeId}`
+        : "Running";
+  }
+  return detail.message ?? null;
+};
+
 export const TopBar = ({
   activeWork,
   comfyReachable,
@@ -26,6 +59,8 @@ export const TopBar = ({
   serverStatus,
   theme,
 }: TopBarProps) => {
+  const generationDetailLabel = getGenerationDetailLabel(activeWork);
+
   return (
     <header className="top-status-bar">
       <div className="brand-block">
@@ -42,6 +77,11 @@ export const TopBar = ({
           <div className="progress-fill" style={{ width: `${activeWork?.progress || 0}%` }} />
         </div>
         <span className="progress-value">{activeWork?.progress || 0}%</span>
+        {generationDetailLabel && (
+          <span className="generation-detail-label" title={generationDetailLabel}>
+            {generationDetailLabel}
+          </span>
+        )}
         {comfyReachable === false && <span className="gpu-offline-label">GPU offline</span>}
         <button
           className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}

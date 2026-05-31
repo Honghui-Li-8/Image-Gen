@@ -175,10 +175,11 @@ button:disabled {
 
 .work-status {
   display: grid;
-  grid-template-columns: auto minmax(120px, 260px) 38px auto;
+  grid-template-columns: auto minmax(120px, 260px) 38px minmax(96px, 180px) auto auto;
   gap: 12px;
   align-items: center;
   justify-self: start;
+  min-width: 0;
 }
 
 .work-status-copy {
@@ -188,9 +189,17 @@ button:disabled {
 }
 
 .work-status-copy span,
-.progress-value {
+.progress-value,
+.generation-detail-label {
   color: var(--text-muted);
   font-size: 0.78rem;
+}
+
+.generation-detail-label {
+  overflow: hidden;
+  max-width: 180px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .work-status-copy strong {
@@ -1334,6 +1343,16 @@ button:focus-visible {
     grid-template-rows: auto auto auto;
     height: auto;
     padding: 14px;
+  }
+
+  .work-status {
+    grid-template-columns: auto minmax(120px, 1fr) 38px auto;
+    width: 100%;
+  }
+
+  .generation-detail-label {
+    grid-column: 1 / -1;
+    max-width: 100%;
   }
 
   .workspace-layout {

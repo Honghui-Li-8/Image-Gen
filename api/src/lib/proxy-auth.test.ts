@@ -9,6 +9,7 @@ import {
 
 const SECRET = "test-secret";
 const NOW = 1_700_000_000_000;
+const IMAGE_URL_BUCKET_SECS = 2 * 3600;
 
 describe("signProxyRequest", () => {
   it("signs the method, path, and timestamp", () => {
@@ -40,7 +41,9 @@ describe("signImageUrl", () => {
     const token = url.searchParams.get("token");
 
     expect(url.pathname).toBe("/images/abc.png");
-    expect(exp).toBe(String(Math.floor(NOW / 1000) + 60));
+    expect(exp).toBe(
+      String(Math.floor(NOW / 1000 / IMAGE_URL_BUCKET_SECS) * IMAGE_URL_BUCKET_SECS + 60)
+    );
     expect(token).toBe(signPayload(SECRET, canonicalImagePayload("abc.png", exp!)));
   });
 

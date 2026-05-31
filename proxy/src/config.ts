@@ -50,7 +50,7 @@ export const getAllowedOrigin = (): string => process.env.ALLOWED_ORIGIN ?? "*";
 export const buildComfyHttpUrl = (pathWithQuery: string): URL =>
   new URL(pathWithQuery, `${getComfyUrl()}/`);
 
-export const buildComfyWsUrl = (): string => {
+export const buildComfyWsUrl = (search = ""): string => {
   const url = new URL(getComfyUrl());
   if (url.protocol === "http:") {
     url.protocol = "ws:";
@@ -58,6 +58,6 @@ export const buildComfyWsUrl = (): string => {
     url.protocol = "wss:";
   }
   url.pathname = "/ws";
-  url.search = "";
+  url.search = search;
   return url.toString();
 };

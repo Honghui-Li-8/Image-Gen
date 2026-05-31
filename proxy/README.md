@@ -115,7 +115,7 @@ The proxy recomputes the signature and rejects requests with an invalid signatur
 |---|---|---|
 | `GET /health` | None | Reports proxy status and whether ComfyUI is reachable. |
 | `ALL /comfy/*` | HMAC | Forwards ComfyUI HTTP API calls, stripping the `/comfy` prefix before forwarding. |
-| `GET /comfy/ws` | HMAC | Tunnels ComfyUI WebSocket progress messages. |
+| `GET /comfy/ws?clientId=...` | HMAC | Tunnels ComfyUI WebSocket progress messages, preserving `clientId` for prompt-scoped events. |
 | `GET /images/:filename?token=...&exp=...` | Signed URL | Streams a generated image from `COMFYUI_IMAGE_ROOT`. |
 
 ## Image Serving Trade-Off

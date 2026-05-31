@@ -47,6 +47,18 @@ describe("verifyBackendSignature", () => {
     ).toBe(false);
   });
 
+  it("verifies signatures for websocket paths with query strings", () => {
+    const timestamp = String(NOW);
+    const signature = signPayload(
+      SECRET,
+      canonicalRequestPayload("GET", "/comfy/ws?clientId=abc", timestamp)
+    );
+
+    expect(
+      verifyBackendSignature(SECRET, "GET", "/comfy/ws?clientId=abc", timestamp, signature, NOW)
+    ).toBe(true);
+  });
+
   it("rejects timestamps outside the replay window", () => {
     const timestamp = String(NOW - 31_000);
     const signature = signPayload(
