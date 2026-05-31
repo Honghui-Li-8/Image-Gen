@@ -65,7 +65,8 @@ const TEST_WORKFLOW = {
 };
 
 class FakeWebSocket extends EventEmitter {
-  close = vi.fn(() => {
+  close = vi.fn();
+  terminate = vi.fn(() => {
     this.emit("close");
   });
 }
@@ -295,7 +296,7 @@ describe("generation job service", () => {
         detail: expect.objectContaining({ step: 14, totalSteps: 28 }),
       })
     );
-    expect(socket.close).toHaveBeenCalled();
+    expect(socket.terminate).toHaveBeenCalled();
   });
 
   it("fails promptly when ComfyUI emits an execution error", async () => {
@@ -336,6 +337,6 @@ describe("generation job service", () => {
 
     expect(row.status).toBe("failed");
     expect(row.error).toBe("CUDA out of memory");
-    expect(socket.close).toHaveBeenCalled();
+    expect(socket.terminate).toHaveBeenCalled();
   });
 });

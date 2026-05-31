@@ -494,8 +494,11 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
   let terminalResolved = false;
 
   const closeWebSocket = () => {
-    websocket?.removeAllListeners();
-    websocket?.close();
+    if (!websocket) return;
+    websocket.removeAllListeners();
+    // Guard: ws emits an unhandled 'error' when terminate() is called while still CONNECTING.
+    websocket.on("error", () => undefined);
+    websocket.terminate();
     websocket = null;
   };
 
