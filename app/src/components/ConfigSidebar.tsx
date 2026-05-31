@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { ConfigGroup } from "./ConfigGroup";
 import { SeedControl } from "./SeedControl";
 import { TagInput } from "./TagInput";
@@ -148,6 +148,9 @@ const CategoryColumns = memo(
   }
 );
 
+const PROMPT_EXAMPLE =
+  "She stands quietly outside a small neighborhood cafe, one hand lightly resting near the strap of her bag while the other hangs relaxed at her side. The street is calm, with soft afternoon light reflecting off the cafe windows and a few fallen leaves moving gently across the sidewalk.\n\nHer eyes look warm and slightly thoughtful, like she just noticed someone familiar approaching. The mood is casual and peaceful, with a small friendly smile and a relaxed posture that feels natural rather than posed.";
+
 export const ConfigSidebar = ({
   activeModel,
   activeWork,
@@ -166,6 +169,7 @@ export const ConfigSidebar = ({
   showGenerationValidation,
   updateActiveWork,
 }: ConfigSidebarProps) => {
+  const [showPromptExample, setShowPromptExample] = useState(false);
   const modelEntries = Object.values(models);
   const missingFields = useMemo(() => new Set(missingFieldIds), [missingFieldIds]);
   const isViewing = activeWork?.viewingConfig !== null && activeWork?.viewingConfig !== undefined;
@@ -347,6 +351,18 @@ export const ConfigSidebar = ({
         <section className="prompt-editor">
           <div className="dock-heading">
             <h3>Prompt</h3>
+            <button
+              className="prompt-example-trigger"
+              type="button"
+              title="Show example prompt"
+              onClick={() => setShowPromptExample((v) => !v)}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="7" cy="7" r="6.5" stroke="currentColor" />
+                <rect x="6.3" y="6" width="1.4" height="4.5" rx="0.7" fill="currentColor" />
+                <rect x="6.3" y="3.5" width="1.4" height="1.4" rx="0.7" fill="currentColor" />
+              </svg>
+            </button>
           </div>
           <textarea
             value={displayConfig?.additionalPrompt ?? activeWork?.additionalPrompt ?? ""}
@@ -356,6 +372,47 @@ export const ConfigSidebar = ({
           />
         </section>
       </div>
+      {showPromptExample && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setShowPromptExample(false)}>
+          <section
+            className="prompt-example-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prompt-example-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="prompt-example-modal-header">
+              <div>
+                <p className="prompt-example-modal-eyebrow">Prompt example</p>
+                <p className="prompt-example-modal-title" id="prompt-example-title">
+                  Scene &amp; mood reference
+                </p>
+              </div>
+              <button
+                className="prompt-example-modal-close"
+                type="button"
+                aria-label="Close"
+                onClick={() => setShowPromptExample(false)}
+              >
+                ×
+              </button>
+            </div>
+            <pre className="prompt-example-text">{PROMPT_EXAMPLE}</pre>
+            <div className="modal-actions">
+              <button
+                className="prompt-example-copy-btn"
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(PROMPT_EXAMPLE);
+                  setShowPromptExample(false);
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </aside>
   );
 };
