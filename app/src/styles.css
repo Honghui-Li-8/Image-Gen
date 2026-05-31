@@ -928,8 +928,9 @@ p {
 
 .generate-menu-hint {
   padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  /* border: 1px solid var(--border);
+  border-radius: 6px; */
+  font-size: 0.62rem;
   background: var(--panel-soft);
 }
 
