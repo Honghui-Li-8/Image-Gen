@@ -10,7 +10,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 # shellcheck source=/dev/null
+set -a
 source "$ENV_FILE"
+set +a
 
 REQUIRED_VARS=(
   AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
@@ -31,7 +33,7 @@ read -rp "> " TARGET
 
 deploy_app() {
   echo "==> Building app..."
-  VITE_API_URL="$VITE_API_URL" npx --prefix "$SCRIPT_DIR/app" vite build --outDir dist
+  VITE_API_URL="$VITE_API_URL" pnpm --filter image-gen-app build
 
   echo "==> Syncing to S3..."
   aws s3 sync "$SCRIPT_DIR/app/dist/" "s3://$APP_S3_BUCKET" --delete
@@ -53,14 +55,21 @@ deploy_api() {
   fi
 
   echo "==> Building API..."
-  (cd "$SCRIPT_DIR/api" && npm run build)
+  pnpm --filter image-gen-api build
 
-  echo "==> Syncing files to Lightsail..."
-  rsync -avz --delete \
+  echo "==> Bundling dependencies (pnpm deploy)..."
+  local deploy_dir="/tmp/image-gen-api-deploy"
+  rm -rf "$deploy_dir"
+  pnpm --filter image-gen-api deploy --prod --legacy "$deploy_dir"
+  cp -r "$SCRIPT_DIR/api/dist/." "$deploy_dir/"
+  cp -r "$SCRIPT_DIR/api/drizzle" "$deploy_dir/"
+
+  echo "==> Syncing bundle to Lightsail..."
+  rsync -avz \
+    --exclude 'data/' \
+    --exclude '.env' \
     -e "ssh -i $API_SSH_KEY -o StrictHostKeyChecking=accept-new" \
-    "$SCRIPT_DIR/api/dist/" \
-    "$SCRIPT_DIR/api/package.json" \
-    "$SCRIPT_DIR/api/package-lock.json" \
+    "$deploy_dir/" \
     "$API_USER@$API_HOST:$API_REMOTE_DIR/"
 
   echo "==> Copying .env.production..."
@@ -68,10 +77,10 @@ deploy_api() {
     "$env_prod" \
     "$API_USER@$API_HOST:$API_REMOTE_DIR/.env"
 
-  echo "==> Installing dependencies and restarting..."
+  echo "==> Restarting..."
   ssh -i "$API_SSH_KEY" -o StrictHostKeyChecking=accept-new \
     "$API_USER@$API_HOST" \
-    "cd $API_REMOTE_DIR && npm ci --production && pm2 restart image-gen-api"
+    "cd $API_REMOTE_DIR && (pm2 restart image-gen-api 2>/dev/null || pm2 start server.js --name image-gen-api) && pm2 save"
 
   echo "==> API deployed."
 }
