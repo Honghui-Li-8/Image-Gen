@@ -82,7 +82,7 @@ const SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES = {
     prominent: ["flat chest", "small breasts"],
   },
   hipSize: {
-    small: ["wide hips", "thick thighs", "big thighs", "heavy thighs", "curvy"],
+    small: ["wide hips", "thick thighs", "big thighs", "heavy thighs"],
     medium: ["narrow hips", "wide hips", "thick thighs", "curvy"],
     large: ["narrow hips"],
     prominent: ["narrow hips"],
