@@ -14,7 +14,6 @@ import {
   patchComfyWorkflow,
   submitComfyWorkflow,
 } from "./comfyui.service.js";
-import type { ComfyImageRef } from "./comfyui.service.js";
 import { buildGenerationPromptInput } from "./prompt-builder.service.js";
 import type { GenerationRequestConfig } from "./prompt-builder.service.js";
 export type { GenerationRequestConfig } from "./prompt-builder.service.js";
@@ -248,7 +247,7 @@ const extractComfyImageFilename = (history: unknown, promptId: string): string |
       filename: ref.filename,
       subfolder: typeof ref.subfolder === "string" ? ref.subfolder : undefined,
       type: typeof ref.type === "string" ? ref.type : undefined,
-    } satisfies ComfyImageRef);
+    });
   }
 
   return null;

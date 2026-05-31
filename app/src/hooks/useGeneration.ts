@@ -129,6 +129,12 @@ export const useGeneration = ({
             if (generationSourceRef.current === source) {
               generationSourceRef.current = null;
             }
+            if (payload.status === "failed") {
+              setWorkErrors((prev) => ({
+                ...prev,
+                generation: payload.error ?? "Generation failed",
+              }));
+            }
           }
         });
 

@@ -66,6 +66,7 @@ deploy_api() {
   pnpm --filter image-gen-api deploy --prod --legacy "$deploy_dir"
   cp -r "$SCRIPT_DIR/api/dist/." "$deploy_dir/"
   cp -r "$SCRIPT_DIR/api/drizzle" "$deploy_dir/"
+  cp -r "$SCRIPT_DIR/workflow" "$deploy_dir/"
 
   echo "==> Syncing bundle to Lightsail..."
   rsync -avz \
