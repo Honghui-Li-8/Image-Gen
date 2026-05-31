@@ -124,21 +124,18 @@ export const useGeneration = ({
     generationSourceRef.current = null;
   }, []);
 
-  const updateBatchItem = useCallback(
-    (itemId: string, patch: Partial<BatchGenerationItem>) => {
-      setBatchState((current) => {
-        const nextItems = current.items.map((item) =>
-          item.id === itemId ? { ...item, ...patch } : item
-        );
-        return {
-          ...current,
-          items: nextItems,
-          progress: computeAggregateProgress(nextItems),
-        };
-      });
-    },
-    []
-  );
+  const updateBatchItem = useCallback((itemId: string, patch: Partial<BatchGenerationItem>) => {
+    setBatchState((current) => {
+      const nextItems = current.items.map((item) =>
+        item.id === itemId ? { ...item, ...patch } : item
+      );
+      return {
+        ...current,
+        items: nextItems,
+        progress: computeAggregateProgress(nextItems),
+      };
+    });
+  }, []);
 
   const runGenerationConfig = useCallback(
     async (workId: string, generationConfig: WorkConfig, itemId?: string): Promise<void> => {
@@ -318,7 +315,8 @@ export const useGeneration = ({
 
       const workId = activeWork.id;
       const baseConfig = buildWorkConfig(activeWork);
-      const modelPlan = mode === "model" ? buildModelBatchConfigs(baseConfig, options.models) : null;
+      const modelPlan =
+        mode === "model" ? buildModelBatchConfigs(baseConfig, options.models) : null;
       const planItems =
         mode === "model"
           ? (modelPlan?.items ?? [])

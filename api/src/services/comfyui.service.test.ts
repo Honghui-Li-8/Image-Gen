@@ -140,7 +140,11 @@ describe("computeOutputDimensions", () => {
   });
 
   it("output dimensions are multiples of 64", () => {
-    for (const [w, h] of [[832, 1216], [896, 1152], [768, 1344]] as [number, number][]) {
+    for (const [w, h] of [
+      [832, 1216],
+      [896, 1152],
+      [768, 1344],
+    ] as [number, number][]) {
       const { width, height } = computeOutputDimensions(w, h);
       expect(width % 64).toBe(0);
       expect(height % 64).toBe(0);

@@ -7,10 +7,7 @@ import {
   randomizeCategorySelections,
 } from "./batchGeneration";
 
-const makeModel = (
-  id: string,
-  overrides: Partial<ModelConfig> = {}
-): ModelConfig => ({
+const makeModel = (id: string, overrides: Partial<ModelConfig> = {}): ModelConfig => ({
   id,
   label: `Model ${id}`,
   tags: [],

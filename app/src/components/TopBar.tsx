@@ -89,7 +89,12 @@ export const TopBar = ({
   const generationDetailLabel = getGenerationDetailLabel(activeWork);
   const isQueueFull = isGenerating && singleQueueCount >= singleQueueMax;
   const isGenerationDisabled =
-    isLoadingWorks || isSaving || !options || comfyReachable === false || batchState.active || isQueueFull;
+    isLoadingWorks ||
+    isSaving ||
+    !options ||
+    comfyReachable === false ||
+    batchState.active ||
+    isQueueFull;
   const isBatchDisabled = isGenerationDisabled || isGenerating || batchState.active;
   const batchProgressLabel = batchState.active
     ? `Generating ${Math.min(batchState.currentIndex + 1, batchState.total)}/${batchState.total}`

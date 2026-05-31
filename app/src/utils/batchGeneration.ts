@@ -20,7 +20,7 @@ export interface ModelBatchPlan {
 
 const MODEL_COUNT_WARNING_THRESHOLD = 8;
 
-const pickRandom = <T,>(items: T[]): T | undefined => {
+const pickRandom = <T>(items: T[]): T | undefined => {
   return items[Math.floor(Math.random() * items.length)];
 };
 

@@ -110,8 +110,8 @@ const computeBaseGenDimensions = (
   ratioW: number,
   ratioH: number
 ): { baseWidth: number; baseHeight: number } => ({
-  baseWidth: snap64(Math.sqrt(basePixels * ratioW / ratioH)),
-  baseHeight: snap64(Math.sqrt(basePixels * ratioH / ratioW)),
+  baseWidth: snap64(Math.sqrt((basePixels * ratioW) / ratioH)),
+  baseHeight: snap64(Math.sqrt((basePixels * ratioH) / ratioW)),
 });
 
 const parseSeed = (seedStr: string): number => {

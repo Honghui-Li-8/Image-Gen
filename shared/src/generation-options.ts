@@ -128,7 +128,15 @@ export const baseCategories: Category[] = [
         value: "jk-uniform",
         label: "JK Uniform",
         tags: ["seifuku", "sailor collar", "pleated skirt", "knee-highs", "loafers", "hair ribbon"],
-        negativeTags: ["micro skirt", "suggestive", "pantyshot", "revealing clothes", "mask", "face mask", "covered face"],
+        negativeTags: [
+          "micro skirt",
+          "suggestive",
+          "pantyshot",
+          "revealing clothes",
+          "mask",
+          "face mask",
+          "covered face",
+        ],
       },
       {
         value: "cyberpunk",
@@ -140,7 +148,15 @@ export const baseCategories: Category[] = [
         value: "fantasy-armor",
         label: "Fantasy Armor",
         tags: ["armor", "breastplate", "pauldrons", "greaves"],
-        negativeTags: ["helmet", "closed helmet", "full helmet", "face mask", "covered face", "gauntlets", "armored gloves"],
+        negativeTags: [
+          "helmet",
+          "closed helmet",
+          "full helmet",
+          "face mask",
+          "covered face",
+          "gauntlets",
+          "armored gloves",
+        ],
       },
       {
         value: "casual",
