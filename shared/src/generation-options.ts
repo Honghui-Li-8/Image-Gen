@@ -232,8 +232,17 @@ const BASE_ADDITIONAL_TAG_GROUPS: Record<string, string[]> = {
 const BASE_ADDITIONAL_TAGS = Object.values(BASE_ADDITIONAL_TAG_GROUPS).flat();
 
 export const generationOptions: GenerationOptions = {
-  defaultModelId: "illustrious-xl",
+  defaultModelId: "animagine-xl-v3",
   models: {
+    "animagine-xl-v3": {
+      id: "animagine-xl-v3",
+      label: "Animagine XL v3",
+      tags: ["anime style", "animagine"],
+      categories: baseCategories,
+      additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
+      outputPresets: BASE_OUTPUT_PRESETS,
+      basePixels: 1024 * 1536,
+    },
     "illustrious-xl": {
       id: "illustrious-xl",
       label: "Amanatsu Illustrious v2",
@@ -251,15 +260,6 @@ export const generationOptions: GenerationOptions = {
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS,
       basePixels: 832 * 1216,
-    },
-    "animagine-xl-v3": {
-      id: "animagine-xl-v3",
-      label: "Animagine XL v3",
-      tags: ["anime style", "animagine"],
-      categories: baseCategories,
-      additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
-      outputPresets: BASE_OUTPUT_PRESETS,
-      basePixels: 1024 * 1536,
     },
   },
 };
