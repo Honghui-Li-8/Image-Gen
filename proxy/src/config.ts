@@ -45,6 +45,8 @@ export const getComfyImageRoot = (): string => {
   return root;
 };
 
+export const getAllowedOrigin = (): string => process.env.ALLOWED_ORIGIN ?? "*";
+
 export const buildComfyHttpUrl = (pathWithQuery: string): URL =>
   new URL(pathWithQuery, `${getComfyUrl()}/`);
 

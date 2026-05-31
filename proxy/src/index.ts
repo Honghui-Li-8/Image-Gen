@@ -4,7 +4,7 @@ import express from "express";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
 import { WebSocket, WebSocketServer } from "ws";
-import { getProxyAuthSecret, getProxyPort, buildComfyWsUrl } from "./config.js";
+import { getProxyAuthSecret, getProxyPort, buildComfyWsUrl, getAllowedOrigin } from "./config.js";
 import { verifyBackendSignature } from "./lib/hmac.js";
 import { requireBackendAuth } from "./middleware/require-backend-auth.js";
 import { requestLogger, logWsEvent } from "./middleware/request-logger.js";
@@ -17,7 +17,10 @@ export const createApp = () => {
   app.use(requestLogger);
   app.get("/health", healthHandler);
   app.use("/comfy", requireBackendAuth, comfyProxyHandler);
-  app.get("/images/:filename", imageHandler);
+  app.get("/images/:filename", (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin());
+    next();
+  }, imageHandler);
   return app;
 };
 
