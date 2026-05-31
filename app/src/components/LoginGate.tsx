@@ -10,7 +10,7 @@ export const LoginGate = ({ isLoggingIn, loginError, onLogin }: LoginGateProps) 
   const credentialsFromUrl = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return {
-      name: params.get("name") || params.get("username") || "user0",
+      name: params.get("name") || params.get("username") || "",
       password: params.get("password") || params.get("pwd") || "",
     };
   }, []);
