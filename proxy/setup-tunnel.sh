@@ -16,6 +16,12 @@ if [[ -f "${ENV_FILE}" ]]; then
 fi
 
 PROXY_PORT="${PROXY_PORT:-3001}"
+PUBLIC_HOSTNAME="${PUBLIC_HOSTNAME:-}"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  SERVICE_CONFIG_DIR="/usr/local/etc/cloudflared"
+else
+  SERVICE_CONFIG_DIR="/etc/cloudflared"
+fi
 
 port_pids() {
   lsof -ti tcp:"${PROXY_PORT}" 2>/dev/null || true
@@ -81,6 +87,31 @@ install_cloudflared() {
   fi
 }
 
+install_service() {
+  sudo mkdir -p "${SERVICE_CONFIG_DIR}"
+  sudo cp "${CONFIG_FILE}" "${SERVICE_CONFIG_DIR}/config.yml"
+  sudo cp "${CREDENTIALS_FILE}" "${SERVICE_CONFIG_DIR}/${TUNNEL_ID}.json"
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    if ! launchctl print system/com.cloudflare.cloudflared &>/dev/null; then
+      sudo cloudflared service install
+    else
+      echo "  cloudflared service already installed — updating config and restarting."
+    fi
+    sudo launchctl stop com.cloudflare.cloudflared 2>/dev/null || true
+    sudo launchctl start com.cloudflare.cloudflared
+    return 0
+  fi
+
+  if [[ ! -f /etc/systemd/system/cloudflared.service ]]; then
+    sudo cloudflared service install
+  else
+    echo "  cloudflared service already installed — updating config and restarting."
+  fi
+  sudo systemctl restart cloudflared
+  sudo systemctl enable cloudflared
+}
+
 mkdir -p "${LOG_DIR}"
 require_proxy_running
 install_cloudflared
@@ -103,6 +134,7 @@ fi
 
 TUNNEL_ID="$(cloudflared tunnel list --output json 2>/dev/null \
   | python3 -c "import sys,json; ts=json.load(sys.stdin); print(next(t['id'] for t in ts if t['name']=='${TUNNEL_NAME}'))")"
+CREDENTIALS_FILE="${HOME}/.cloudflared/${TUNNEL_ID}.json"
 echo "  Tunnel ID: ${TUNNEL_ID}"
 
 CONFIG_DIR="${HOME}/.cloudflared"
@@ -111,7 +143,7 @@ CONFIG_FILE="${CONFIG_DIR}/config.yml"
 
 cat > "${CONFIG_FILE}" <<YAML
 tunnel: ${TUNNEL_ID}
-credentials-file: ${CONFIG_DIR}/${TUNNEL_ID}.json
+credentials-file: ${SERVICE_CONFIG_DIR}/${TUNNEL_ID}.json
 
 ingress:
   - service: http://localhost:${PROXY_PORT}
@@ -123,24 +155,35 @@ cat "${CONFIG_FILE}"
 
 echo ""
 echo "Step 4: Installing system service..."
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  sudo cloudflared service install
-  sudo launchctl start com.cloudflare.cloudflared
-else
-  sudo cloudflared service install
-  sudo systemctl start cloudflared
-  sudo systemctl enable cloudflared
-fi
+install_service
 
 echo "  Service started."
 
-TUNNEL_URL="https://${TUNNEL_ID}.cfargotunnel.com"
+if [[ -n "${PUBLIC_HOSTNAME}" ]]; then
+  echo ""
+  echo "Step 5: Routing ${PUBLIC_HOSTNAME} to '${TUNNEL_NAME}'..."
+  cloudflared tunnel route dns "${TUNNEL_NAME}" "${PUBLIC_HOSTNAME}"
+  TUNNEL_URL="https://${PUBLIC_HOSTNAME}"
+else
+  TUNNEL_URL=""
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Tunnel URL: ${TUNNEL_URL}"
+if [[ -n "${TUNNEL_URL}" ]]; then
+  echo "  Tunnel URL: ${TUNNEL_URL}"
+else
+  echo "  Named tunnel service is running, but no public hostname was routed."
+  echo "  To create a stable URL, set PUBLIC_HOSTNAME in proxy/.env and rerun."
+  echo "  Example: PUBLIC_HOSTNAME=proxy.example.com"
+fi
 echo ""
 echo "  Next steps:"
-echo "  1. Set in api/.env.production:  PROXY_URL=${TUNNEL_URL}"
-echo "  2. Verify:                      curl ${TUNNEL_URL}/health"
+if [[ -n "${TUNNEL_URL}" ]]; then
+  echo "  1. Set in api/.env.production:  PROXY_URL=${TUNNEL_URL}"
+  echo "  2. Verify:                      curl ${TUNNEL_URL}/health"
+else
+  echo "  1. Use a domain hostname, or use: ./proxy/setup-temp-tunnel.sh"
+  echo "  2. Stop the tunnel service:      ./proxy/stop-tunnel.sh"
+fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
