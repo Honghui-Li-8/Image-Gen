@@ -79,8 +79,18 @@ export const baseCategories: Category[] = [
     group: "Appearance",
     control: "single-select",
     options: [
-      { value: "long-hair", label: "Long Hair", tags: ["long hair"] },
-      { value: "short-hair", label: "Short Hair", tags: ["short hair"] },
+      {
+        value: "long-hair",
+        label: "Long Hair",
+        tags: ["long hair"],
+        negativeTags: ["ponytail", "twintails"],
+      },
+      {
+        value: "short-hair",
+        label: "Short Hair",
+        tags: ["short hair"],
+        negativeTags: ["ponytail", "twintails"],
+      },
       { value: "twintails", label: "Twintails", tags: ["twintails"] },
       { value: "ponytail", label: "Ponytail", tags: ["ponytail"] },
       { value: "bob-cut", label: "Bob Cut", tags: ["bob cut"] },
