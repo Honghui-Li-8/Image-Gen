@@ -186,7 +186,7 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     });
 
     expect(pony.positivePrompt).toContain("bodysuit");
-    expect(pony.positivePrompt).toContain("jacket");
+    expect(pony.positivePrompt).toContain("long coat");
     expect(pony.positivePrompt).toContain("covered outfit");
   });
 
