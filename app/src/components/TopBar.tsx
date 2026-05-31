@@ -171,9 +171,9 @@ export const TopBar = ({
                   value={batchMode}
                   onChange={(event) => setBatchMode(event.target.value as BatchGenerationMode)}
                 >
-                  <option value="model">Mode: model</option>
-                  <option value="seed">Mode: seed</option>
-                  <option value="config">Mode: config selections</option>
+                  <option value="model">Per model</option>
+                  <option value="seed">Random seed</option>
+                  <option value="config">Random config selections</option>
                 </select>
               </label>
               {batchMode !== "model" && (
