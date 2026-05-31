@@ -19,6 +19,7 @@ const COMMON_QUALITY_TAGS = [
   "full body",
   "head to toe",
   "both feet visible",
+  "one person only",
 ];
 
 const COMMON_NEGATIVE_TAGS = [
@@ -60,6 +61,9 @@ const COMMON_NEGATIVE_TAGS = [
   "extra limbs",
   "duplicate person",
   "multiple people",
+  "2girls",
+  "multiple girls",
+  "group",
   "multiple views",
   "reference sheet",
   "character sheet",
