@@ -34,15 +34,27 @@ The HMAC signature provides a second layer: even if the tunnel URL is discovered
 | `COMFYUI_URL` | No | ComfyUI URL reachable from the proxy. Defaults to `http://localhost:8188`. |
 | `COMFYUI_IMAGE_ROOT` | Yes | Absolute path to ComfyUI's output directory. Only files in this directory are served. |
 
-## First-Time Setup (Cloudflare Tunnel)
+## Cloudflare Tunnel
 
-Run once on the GPU machine to install `cloudflared`, create a named tunnel, and register it as a system service:
+For a temporary random Cloudflare URL that does not require a spare domain, run:
+
+```bash
+./setup-temp-tunnel.sh
+```
+
+It prints a `https://*.trycloudflare.com` URL. Set that as `PROXY_URL` in `api/.env.production`. The temporary URL can change each time you restart the tunnel.
+
+If you later have a Cloudflare account/domain ready for a named tunnel, run:
 
 ```bash
 ./setup-tunnel.sh
 ```
 
-The script prints the tunnel URL at the end. Set it as `PROXY_URL` in `api/.env.production`.
+Both setup scripts read `PROXY_PORT` from `proxy/.env` and require the proxy to already be running and healthy on that port. Stop either tunnel style with:
+
+```bash
+./stop-tunnel.sh
+```
 
 ## Running the Proxy
 
@@ -65,7 +77,7 @@ The script:
   - If occupied by a different process: prints a warning and exits without touching anything
 - Launches `pnpm start` in the background via `nohup`
 - Appends all output to `logs/proxy-YYYYMMDD-HHMMSS.log` (each launch gets its own file)
-- Saves the PID to `proxy.pid`
+- Saves the PID to `logs/proxy.pid`
 
 After launch the terminal is free — the proxy keeps running in the background.
 

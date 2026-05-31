@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Named Cloudflare Tunnel setup for machines with a Cloudflare account/domain.
-# If you do not have a domain available, use setup-temp-tunnel.sh instead.
+# Temporary Cloudflare Tunnel using a random trycloudflare.com URL.
+# This does not require a Cloudflare account or domain.
 set -euo pipefail
 
-TUNNEL_NAME="image-gen-proxy"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 LOG_DIR="${SCRIPT_DIR}/logs"
+LOG_FILE="${LOG_DIR}/cloudflared-temp-$(date +%Y%m%d-%H%M%S).log"
+PID_FILE="${LOG_DIR}/cloudflared-temp.pid"
+URL_FILE="${LOG_DIR}/cloudflared-temp.url"
 
 if [[ -f "${ENV_FILE}" ]]; then
   set -a
@@ -81,66 +83,74 @@ install_cloudflared() {
   fi
 }
 
+existing_temp_tunnel_pid() {
+  if [[ ! -f "${PID_FILE}" ]]; then
+    return 0
+  fi
+
+  local pid
+  pid=$(tr -d '[:space:]' < "${PID_FILE}")
+  if [[ -n "${pid}" ]] && kill -0 "${pid}" 2>/dev/null; then
+    echo "${pid}"
+  else
+    rm -f "${PID_FILE}" "${URL_FILE}"
+  fi
+}
+
 mkdir -p "${LOG_DIR}"
 require_proxy_running
 install_cloudflared
 
+EXISTING_PID=$(existing_temp_tunnel_pid)
+if [[ -n "${EXISTING_PID}" ]]; then
+  echo "ERROR: temporary Cloudflare tunnel is already running."
+  echo "       PID: ${EXISTING_PID}"
+  echo "       Stop it first: ./proxy/stop-tunnel.sh"
+  exit 1
+fi
+
 echo "cloudflared $(cloudflared --version)"
 echo "Using PROXY_PORT=${PROXY_PORT} from proxy/.env or default"
 echo "Forwarding to proxy on http://localhost:${PROXY_PORT}"
+echo "Starting temporary Cloudflare tunnel..."
 
-echo ""
-echo "Step 1: Authenticating with Cloudflare (opens browser)..."
-cloudflared tunnel login
+nohup cloudflared tunnel --url "http://localhost:${PROXY_PORT}" >> "${LOG_FILE}" 2>&1 &
+TUNNEL_PID=$!
+echo "${TUNNEL_PID}" > "${PID_FILE}"
 
-echo ""
-echo "Step 2: Creating tunnel '${TUNNEL_NAME}'..."
-if cloudflared tunnel list 2>/dev/null | grep -q "${TUNNEL_NAME}"; then
-  echo "  Tunnel '${TUNNEL_NAME}' already exists — skipping create."
-else
-  cloudflared tunnel create "${TUNNEL_NAME}"
+TUNNEL_URL=""
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  if ! kill -0 "${TUNNEL_PID}" 2>/dev/null; then
+    echo "ERROR: cloudflared exited before publishing a temporary URL."
+    echo "       Log: ${LOG_FILE}"
+    rm -f "${PID_FILE}"
+    exit 1
+  fi
+
+  TUNNEL_URL=$(grep -Eo 'https://[-a-zA-Z0-9]+\.trycloudflare\.com' "${LOG_FILE}" | tail -1 || true)
+  if [[ -n "${TUNNEL_URL}" ]]; then
+    break
+  fi
+  sleep 1
+done
+
+if [[ -z "${TUNNEL_URL}" ]]; then
+  echo "ERROR: timed out waiting for Cloudflare temporary URL."
+  echo "       PID: ${TUNNEL_PID}"
+  echo "       Log: ${LOG_FILE}"
+  exit 1
 fi
 
-TUNNEL_ID="$(cloudflared tunnel list --output json 2>/dev/null \
-  | python3 -c "import sys,json; ts=json.load(sys.stdin); print(next(t['id'] for t in ts if t['name']=='${TUNNEL_NAME}'))")"
-echo "  Tunnel ID: ${TUNNEL_ID}"
-
-CONFIG_DIR="${HOME}/.cloudflared"
-mkdir -p "${CONFIG_DIR}"
-CONFIG_FILE="${CONFIG_DIR}/config.yml"
-
-cat > "${CONFIG_FILE}" <<YAML
-tunnel: ${TUNNEL_ID}
-credentials-file: ${CONFIG_DIR}/${TUNNEL_ID}.json
-
-ingress:
-  - service: http://localhost:${PROXY_PORT}
-YAML
-
-echo ""
-echo "Step 3: Wrote ${CONFIG_FILE}"
-cat "${CONFIG_FILE}"
-
-echo ""
-echo "Step 4: Installing system service..."
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  sudo cloudflared service install
-  sudo launchctl start com.cloudflare.cloudflared
-else
-  sudo cloudflared service install
-  sudo systemctl start cloudflared
-  sudo systemctl enable cloudflared
-fi
-
-echo "  Service started."
-
-TUNNEL_URL="https://${TUNNEL_ID}.cfargotunnel.com"
+echo "${TUNNEL_URL}" > "${URL_FILE}"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Tunnel URL: ${TUNNEL_URL}"
+echo "  Temporary Tunnel URL: ${TUNNEL_URL}"
+echo "  PID:                  ${TUNNEL_PID}"
+echo "  Log:                  ${LOG_FILE}"
 echo ""
 echo "  Next steps:"
 echo "  1. Set in api/.env.production:  PROXY_URL=${TUNNEL_URL}"
 echo "  2. Verify:                      curl ${TUNNEL_URL}/health"
+echo "  3. Stop the tunnel:             ./proxy/stop-tunnel.sh"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
