@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { ConfigGroup } from "./ConfigGroup";
 import { SeedControl } from "./SeedControl";
 import { TagInput } from "./TagInput";
+import { randomizeCategorySelections } from "../utils/batchGeneration";
 import type {
   GenerationCategory,
   ModelConfig,
@@ -66,23 +67,6 @@ export const distributeGroups = (
   cols[1].sort((a, b) => a.idx - b.idx);
 
   return [cols[0].map((i) => i.entry), cols[1].map((i) => i.entry)];
-};
-
-const pickRandom = <T,>(items: T[]): T | undefined => {
-  return items[Math.floor(Math.random() * items.length)];
-};
-
-const randomizeCategorySelections = (model: ModelConfig) => {
-  return model.categories.reduce(
-    (nextSelections, category) => {
-      const option = pickRandom(category.options);
-      if (option) {
-        nextSelections[category.id] = option.value;
-      }
-      return nextSelections;
-    },
-    {} as Record<string, string>
-  );
 };
 
 interface CategoryColumnsProps {
