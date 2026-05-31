@@ -17,10 +17,14 @@ export const createApp = () => {
   app.use(requestLogger);
   app.get("/health", healthHandler);
   app.use("/comfy", requireBackendAuth, comfyProxyHandler);
-  app.get("/images/:filename", (req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin());
-    next();
-  }, imageHandler);
+  app.get(
+    "/images/:filename",
+    (req, res, next) => {
+      res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin());
+      next();
+    },
+    imageHandler
+  );
   return app;
 };
 

@@ -21,7 +21,7 @@ vi.mock("../db/index.js", async () => {
 });
 
 const { worksRouter } = await import("./works.routes.js");
-const { authRouter } = await import("./auth.routes.js");
+const { authRouter, loginRateLimitStore } = await import("./auth.routes.js");
 const { authMiddleware } = await import("../middleware/auth.js");
 
 function buildApp() {
@@ -107,6 +107,7 @@ beforeEach(async () => {
   vi.stubEnv("PROXY_URL", "http://proxy.test");
   vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
   tokenStore.clear();
+  loginRateLimitStore.resetAll();
 
   aliceId = await seedUser("alice", "alice123");
   await seedUser("bob", "bob123");

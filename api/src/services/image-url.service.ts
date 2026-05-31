@@ -19,7 +19,9 @@ const isLegacyComfyUrl = (imageUrl: string): boolean =>
 
 export const buildSignedImageUrl = (filename: string): string => {
   const url = signImageUrl(getProxyUrl(), getProxySecret(), filename);
-  console.log(JSON.stringify({ type: "image_url_built", filename, proxyUrl: getProxyUrl(), signedUrl: url }));
+  console.log(
+    JSON.stringify({ type: "image_url_built", filename, proxyUrl: getProxyUrl(), signedUrl: url })
+  );
   return url;
 };
 

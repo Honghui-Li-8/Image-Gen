@@ -20,9 +20,6 @@ export const requestLogger: RequestHandler = (req, res, next) => {
   next();
 };
 
-export const logWsEvent = (
-  event: "connect" | "disconnect" | "auth_fail",
-  path: string,
-): void => {
+export const logWsEvent = (event: "connect" | "disconnect" | "auth_fail", path: string): void => {
   log({ type: "ws", event, path });
 };
