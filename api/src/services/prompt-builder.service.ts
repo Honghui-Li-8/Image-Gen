@@ -138,6 +138,21 @@ const resolveSelectionOverrideTags = (
   return tags;
 };
 
+const resolveSelectionNegativeTags = (
+  selections: Record<string, string>,
+  categories: Category[]
+): string[] => {
+  const tags: string[] = [];
+  for (const [catId, selectedValue] of Object.entries(selections)) {
+    const category = categories.find((c) => c.id === catId);
+    if (!category) continue;
+    const option = category.options.find((o) => o.value === selectedValue);
+    if (!option?.negativeTags) continue;
+    tags.push(...option.negativeTags);
+  }
+  return tags;
+};
+
 const renderPositivePrompt = ({
   template,
   qualityPrompt,
@@ -246,6 +261,7 @@ export const buildGenerationPromptInput = (
   const negativeTagList = dedupeTags([
     ...promptPreset.negativeTags,
     ...resolveSelectionOverrideTags(config.selections, promptPreset.selectionNegativeTagOverrides),
+    ...resolveSelectionNegativeTags(config.selections, model.categories),
   ]);
   const qualityPrompt = qualityTagList.join(", ");
   const customPromptXml = buildXml(

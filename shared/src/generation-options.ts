@@ -2,6 +2,7 @@ export interface CategoryOption {
   value: string;
   label: string;
   tags: string[];
+  negativeTags?: string[];
 }
 
 export interface Category {
@@ -123,14 +124,22 @@ export const baseCategories: Category[] = [
         tags: ["school uniform", "pleated skirt", "modest clothing"],
       },
       {
+        value: "jk-uniform",
+        label: "JK Uniform",
+        tags: ["seifuku", "sailor collar", "pleated skirt", "knee-highs", "loafers", "hair ribbon"],
+        negativeTags: ["micro skirt", "suggestive", "pantyshot", "revealing clothes", "mask", "face mask", "covered face"],
+      },
+      {
         value: "cyberpunk",
         label: "Cyberpunk",
-        tags: ["cyberpunk", "neon lights", "bodysuit", "jacket", "covered outfit"],
+        tags: ["cyberpunk", "neon lights", "bodysuit", "jacket", "open jacket", "exposed midriff"],
+        negativeTags: ["mask", "face mask", "covered face", "visor", "gas mask"],
       },
       {
         value: "fantasy-armor",
         label: "Fantasy Armor",
         tags: ["armor", "full armor", "pauldrons"],
+        negativeTags: ["helmet", "closed helmet", "full helmet", "face mask", "covered face", "gauntlets", "armored gloves"],
       },
       {
         value: "casual",
@@ -140,7 +149,8 @@ export const baseCategories: Category[] = [
       {
         value: "sci-fi",
         label: "Sci-Fi",
-        tags: ["science fiction", "futuristic", "bodysuit", "jacket", "covered outfit"],
+        tags: ["science fiction", "futuristic outfit", "bodysuit", "jacket", "open jacket"],
+        negativeTags: ["mask", "face mask", "covered face", "visor", "gas mask", "space suit"],
       },
     ],
   },
@@ -152,13 +162,72 @@ const BASE_OUTPUT_PRESETS: OutputPreset[] = [
   { id: "vertical-9-16", label: "9:16 Vertical", width: 768, height: 1344 },
 ];
 
-const BASE_ADDITIONAL_TAGS = [
-  "cinematic lighting",
-  "detailed background",
-  "depth of field",
-  "dramatic shadows",
-  "vibrant colors",
-];
+const BASE_ADDITIONAL_TAG_GROUPS: Record<string, string[]> = {
+  Lighting: [
+    "golden hour",
+    "sunlight",
+    "backlighting",
+    "rim lighting",
+    "soft lighting",
+    "dappled light",
+    "light rays",
+    "moonlight",
+    "candlelight",
+    "neon lighting",
+    "glowing",
+    "lens flare",
+    "cinematic lighting",
+    "dramatic shadows",
+  ],
+  Atmosphere: ["dreamy", "ethereal", "atmospheric", "mysterious", "serene", "cozy"],
+  Background: [
+    "cherry blossoms",
+    "sakura petals",
+    "flower field",
+    "starry sky",
+    "night sky",
+    "sunset",
+    "rain",
+    "snow",
+    "forest background",
+    "cityscape",
+    "rooftop",
+    "garden",
+    "classroom",
+    "street",
+    "beach",
+  ],
+  "Particles & Effects": [
+    "sparkles",
+    "fireflies",
+    "falling leaves",
+    "snowflakes",
+    "petals falling",
+    "magic particles",
+    "bokeh",
+    "depth of field",
+    "blurry background",
+  ],
+  "Color Palette": ["pastel colors", "vivid colors", "warm color palette", "cool color palette"],
+  Accessories: [
+    "earrings",
+    "necklace",
+    "choker",
+    "hair bow",
+    "hair flower",
+    "hair clip",
+    "hair ornament",
+    "bracelet",
+    "ribbon",
+    "scrunchie",
+  ],
+  Eyewear: ["glasses", "sunglasses"],
+  "Clothing Details": ["scarf", "belt", "open jacket", "hoodie", "thighhighs", "stockings"],
+  "Season & Time": ["spring", "summer", "autumn", "winter", "dawn", "dusk", "midnight"],
+  Weather: ["cloudy sky", "clear sky", "foggy", "windy"],
+};
+
+const BASE_ADDITIONAL_TAGS = Object.values(BASE_ADDITIONAL_TAG_GROUPS).flat();
 
 export const generationOptions: GenerationOptions = {
   defaultModelId: "illustrious-xl",
