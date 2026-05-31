@@ -109,7 +109,7 @@ export const WorksSidebar = ({
               title={work.name}
             >
               {isCollapsed ? (
-                <span>{work.name.slice(0, 1)}</span>
+                <span>{work.name.slice(0, 1)}{work.name.length > 1 ? work.name.slice(-1) : ""}</span>
               ) : (
                 <>
                   <span>{work.name}</span>
