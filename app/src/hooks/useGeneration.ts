@@ -28,6 +28,14 @@ export interface UseGenerationState {
   confirmCancelGeneration: () => void;
 }
 
+const formatGenerationFailure = (error: string | null | undefined): string => {
+  if (!error) return "Generation failed";
+  const firstLine = error.split("\n")[0]?.trim() ?? "";
+  if (!firstLine) return "Generation failed";
+  const snippet = firstLine.length > 30 ? `${firstLine.slice(0, 30)}...` : firstLine;
+  return `Generation failed: ${snippet}`;
+};
+
 export const useGeneration = ({
   apiUrl,
   token,
@@ -61,7 +69,7 @@ export const useGeneration = ({
       closeGenerationStream();
       setShowGenerationValidation(false);
       setWorkErrors((prev) => ({ ...prev, generation: "" }));
-      updateWorkById(workId, { status: "queued", progress: 0 });
+      updateWorkById(workId, { status: "queued", progress: 0, generationDetail: null });
       void patchWork(activeWork);
 
       try {
@@ -79,7 +87,7 @@ export const useGeneration = ({
         });
         const result = (await response.json()) as GenerationCreateResponse;
 
-        updateWorkById(workId, { status: result.status, progress: 0 });
+        updateWorkById(workId, { status: result.status, progress: 0, generationDetail: null });
 
         // Token passed in URL — EventSource does not support custom headers.
         const source = new EventSource(
@@ -117,6 +125,8 @@ export const useGeneration = ({
                 ...work,
                 status: payload.status,
                 progress: nextProgress,
+                generationDetail:
+                  payload.status === "completed" ? null : (payload.detail ?? work.generationDetail),
                 images: nextImages,
                 activeImageIndex: shouldAutoSelect ? nextImages.length - 1 : work.activeImageIndex,
                 viewingConfig: shouldAutoSelect ? generationConfig : work.viewingConfig,
@@ -130,9 +140,12 @@ export const useGeneration = ({
               generationSourceRef.current = null;
             }
             if (payload.status === "failed") {
+              if (import.meta.env.DEV && payload.error) {
+                console.error("Generation failed", payload.error);
+              }
               setWorkErrors((prev) => ({
                 ...prev,
-                generation: payload.error ?? "Generation failed",
+                generation: formatGenerationFailure(payload.error),
               }));
             }
           }
@@ -143,14 +156,22 @@ export const useGeneration = ({
           if (generationSourceRef.current === source) {
             generationSourceRef.current = null;
           }
-          updateWorkById(workId, { status: "failed", progress: 100 });
+          updateWorkById(workId, {
+            status: "failed",
+            progress: 100,
+            generationDetail: { stage: "failed", message: "Status stream disconnected" },
+          });
           setWorkErrors((prev) => ({
             ...prev,
             generation: "Generation status stream disconnected",
           }));
         };
       } catch (error) {
-        updateWorkById(workId, { status: "failed", progress: 100 });
+        updateWorkById(workId, {
+          status: "failed",
+          progress: 100,
+          generationDetail: { stage: "failed", message: "Could not start generation" },
+        });
         handleApiError("generation", error, "Could not start generation");
         onGenerationFailed?.();
       }
@@ -183,7 +204,7 @@ export const useGeneration = ({
 
   const confirmCancelGeneration = useCallback(() => {
     closeGenerationStream();
-    updateActiveWork({ status: "idle", progress: 0 });
+    updateActiveWork({ status: "idle", progress: 0, generationDetail: null });
     setShowCancelModal(false);
   }, [closeGenerationStream, updateActiveWork]);
 

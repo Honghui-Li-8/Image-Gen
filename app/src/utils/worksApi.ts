@@ -1,4 +1,4 @@
-import type { GeneratedImage, Work, WorkStatus } from "../types";
+import type { GeneratedImage, GenerationProgressDetail, Work, WorkStatus } from "../types";
 import { normalizeTags } from "./tags";
 
 export interface BackendWorkConfig {
@@ -47,6 +47,7 @@ export interface GenerationStatusEvent {
   progress?: number;
   imageUrl?: string | null;
   error?: string | null;
+  detail?: GenerationProgressDetail;
 }
 
 export const generationToImage = (generation: BackendGeneration): GeneratedImage | null => {
@@ -83,6 +84,7 @@ export const mapBackendWork = (backendWork: BackendWork): Work => {
     name: backendWork.name,
     status: activeGeneration?.status ?? "idle",
     progress: activeGeneration?.status === "completed" ? 100 : 0,
+    generationDetail: null,
     selectedModel: backendWork.config.selectedModel,
     selections: backendWork.config.selections,
     selectedPreset: backendWork.config.selectedPreset,
