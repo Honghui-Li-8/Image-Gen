@@ -163,7 +163,7 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(pony.positivePrompt).toContain("anime girl");
     expect(pony.positivePrompt).toContain("modest outfit");
     expect(pony.positivePrompt).toContain("non-revealing clothing");
-    expect(pony.positivePrompt).toContain("fully clothed outfit");
+    expect(pony.positivePrompt).toContain("fully clothed");
     expect(pony.positivePrompt).not.toContain("realistic human proportions");
     expect(pony.positivePrompt).toContain("source_anime");
     expect(pony.negativePrompt).toContain("pony");
@@ -269,14 +269,14 @@ describe("buildGenerationPromptInput — caption", () => {
       ...BASE_CONFIG,
       additionalPrompt: "  dynamic pose  ",
     });
-    expect(result.positivePrompt).toContain("full-body illustration");
-    expect(result.positivePrompt).toContain("both feet visible");
+    expect(result.positivePrompt).toContain("mature female character");
+    expect(result.positivePrompt).toContain("head to toe");
     expect(result.positivePrompt).toContain("dynamic pose");
   });
 
   it("uses the backend full-body caption when additionalPrompt is empty", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, additionalPrompt: "" });
-    expect(result.positivePrompt).toContain("full-body illustration");
+    expect(result.positivePrompt).toContain("mature female character");
     expect(result.positivePrompt).toContain("head to toe");
   });
 });

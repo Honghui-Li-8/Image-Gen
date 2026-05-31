@@ -8,6 +8,9 @@ export interface ModelPromptPreset {
   selectionNegativeTagOverrides?: Record<string, Record<string, string[]>>;
 }
 
+const COMMON_CAPTION = `A mature female character stands centered and fully visible from head to toe.
+The character has a warm and charming presence, with kind expressive eyes and a soft natural smile. She feels friendly, approachable, and naturally pretty, with a casual everyday charm that makes the scene feel gentle and inviting.
+`;
 const COMMON_QUALITY_TAGS = [
   "official art",
   "polished shading",
@@ -161,13 +164,16 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
     workflowFile: "workflow_illustrious_xl_v2.json",
     promptTemplate:
       'You are a professional anime illustrator and art director. Generate a polished high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n{\n"character_1": {\n"bbox": [\n0,\n0,\n1000,\n1000\n],\n"name": "$character_1$"\n},\n"image": {\n"quality_tags": "{quality_prompt}",\n"customization_tags": "\n{user_prompt}\n",\n"caption": "{caption}"\n}\n}',
-    caption:
-      "A finished anime-style full-body illustration of one woman standing naturally. The character is fully visible from head to toe, centered in frame, with both feet visible. The image is one complete polished color illustration with stable anatomy, detailed face and eyes, a clean silhouette, and natural readable hands and fingers.",
+    caption: COMMON_CAPTION,
     qualityTags: [
       "masterpiece",
       "best quality",
       "good quality",
       "very aesthetic",
+      "outdoors",
+      "scenery",
+      "day",
+      "depth of field",
       "highres",
       "absurdres",
       "finished color artwork",
@@ -251,8 +257,7 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
     workflowFile: "workflow_pony_v6.json",
     promptTemplate:
       "You are a professional anime illustrator and art director. Generate a high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<always_on_pony_quality_tags>\n{quality_prompt}\n</always_on_pony_quality_tags>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n</prompt>",
-    caption:
-      "A finished anime-style full-body character design of one woman standing naturally in a modest, fully clothed outfit. The character is centered in frame and fully visible from head to toe, with both feet visible, stable anatomy, a clean silhouette, detailed face and eyes, and natural readable hands.",
+    caption: COMMON_CAPTION + " She wears a blue Nike shoe.",
     qualityTags: [
       "score_9",
       "score_8_up",
@@ -262,6 +267,9 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       "rating_safe",
       "high quality",
       "anime girl",
+      "mature female",
+      "sexy",
+      "detailed background",
       "two arms",
       "two legs",
       ...COMMON_QUALITY_TAGS,

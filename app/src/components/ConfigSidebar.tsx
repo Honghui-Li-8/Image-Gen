@@ -352,7 +352,7 @@ export const ConfigSidebar = ({
             value={displayConfig?.additionalPrompt ?? activeWork?.additionalPrompt ?? ""}
             disabled={isEditingDisabled}
             onChange={(event) => updateActiveWork({ additionalPrompt: event.target.value })}
-            placeholder="standing on a neon-lit rooftop at night"
+            placeholder="Describe a scene or mood — a detailed prompt helps ground the background and expression."
           />
         </section>
       </div>
