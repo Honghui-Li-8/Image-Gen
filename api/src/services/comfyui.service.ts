@@ -43,7 +43,21 @@ export const WORKFLOW_NODE_IDS = {
   positivePrompt: "3",
   negativePrompt: "4",
   latentImage: "5",
+  outputScale: "11",
 } as const;
+
+const OUTPUT_TARGET_AREA = 1536 * 2304;
+
+export const computeOutputDimensions = (
+  baseWidth: number,
+  baseHeight: number
+): { width: number; height: number } => {
+  const scale = Math.sqrt(OUTPUT_TARGET_AREA / (baseWidth * baseHeight));
+  return {
+    width: Math.round((baseWidth * scale) / 64) * 64,
+    height: Math.round((baseHeight * scale) / 64) * 64,
+  };
+};
 
 const WORKFLOW_DIR =
   process.env.COMFYUI_WORKFLOW_DIR ??
@@ -148,6 +162,14 @@ export const patchComfyWorkflow = (workflow: Workflow, patch: ComfyWorkflowPatch
 
   patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.latentImage, "width", patch.baseWidth);
   patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.latentImage, "height", patch.baseHeight);
+
+  const { width: outputWidth, height: outputHeight } = computeOutputDimensions(
+    patch.baseWidth,
+    patch.baseHeight
+  );
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.outputScale, "width", outputWidth);
+  patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.outputScale, "height", outputHeight);
+
   patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.positivePrompt, "text", patch.positivePrompt);
   patchRequiredNodeInput(patched, WORKFLOW_NODE_IDS.negativePrompt, "text", patch.negativePrompt);
 

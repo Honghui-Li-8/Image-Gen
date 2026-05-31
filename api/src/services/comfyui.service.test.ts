@@ -4,6 +4,7 @@ import {
   buildComfyWsProxyPath,
   buildComfyWsProxyUrl,
   buildComfyImageFilename,
+  computeOutputDimensions,
   isWorkflowNode,
   patchComfyWorkflow,
   parseComfyWsMessage,
@@ -39,6 +40,11 @@ const makeWorkflow = (): Workflow => ({
     class_type: "KSampler",
     inputs: { seed: 100, steps: 32, cfg: 6, denoise: 1 },
     _meta: { title: "KSampler base" },
+  },
+  "11": {
+    class_type: "ImageScale",
+    inputs: { upscale_method: "lanczos", width: 1536, height: 2304, crop: "disabled" },
+    _meta: { title: "ImageScale" },
   },
   "18": {
     class_type: "KSampler",
@@ -103,6 +109,41 @@ describe("patchComfyWorkflow — canvas and prompt nodes", () => {
       inputs: Record<string, unknown>;
     };
     expect(node4.inputs.text).toBe("cropped, bad anatomy");
+  });
+
+  it("patches node 11 output dimensions proportional to base dimensions", () => {
+    const result = patchComfyWorkflow(makeWorkflow(), PATCH);
+    const node11 = result[WORKFLOW_NODE_IDS.outputScale] as { inputs: Record<string, unknown> };
+    expect(node11.inputs.width).toBe(1536);
+    expect(node11.inputs.height).toBe(2304);
+  });
+});
+
+describe("computeOutputDimensions", () => {
+  it("preserves 2:3 ratio and hits ~3.5MP target for portrait-2-3 preset", () => {
+    const { width, height } = computeOutputDimensions(832, 1216);
+    expect(width).toBe(1536);
+    expect(height).toBe(2304);
+  });
+
+  it("scales 3:4 preset to matching ratio", () => {
+    const { width, height } = computeOutputDimensions(896, 1152);
+    expect(width / height).toBeCloseTo(896 / 1152, 1);
+    expect(width * height).toBeGreaterThan(3_000_000);
+  });
+
+  it("scales 9:16 preset to matching ratio", () => {
+    const { width, height } = computeOutputDimensions(768, 1344);
+    expect(width / height).toBeCloseTo(768 / 1344, 1);
+    expect(width * height).toBeGreaterThan(3_000_000);
+  });
+
+  it("output dimensions are multiples of 64", () => {
+    for (const [w, h] of [[832, 1216], [896, 1152], [768, 1344]] as [number, number][]) {
+      const { width, height } = computeOutputDimensions(w, h);
+      expect(width % 64).toBe(0);
+      expect(height % 64).toBe(0);
+    }
   });
 });
 
