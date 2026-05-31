@@ -54,8 +54,11 @@ deploy_api() {
     exit 1
   fi
 
+  echo "==> Building shared..."
+  NODE_ENV=development pnpm --filter image-gen-shared build
+
   echo "==> Building API..."
-  pnpm --filter image-gen-api build
+  NODE_ENV=development pnpm --filter image-gen-api build
 
   echo "==> Bundling dependencies (pnpm deploy)..."
   local deploy_dir="/tmp/image-gen-api-deploy"
