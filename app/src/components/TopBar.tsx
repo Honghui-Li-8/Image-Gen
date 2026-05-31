@@ -84,8 +84,8 @@ export const TopBar = ({
   theme,
 }: TopBarProps) => {
   const [batchMenuOpen, setBatchMenuOpen] = useState(false);
-  const [batchMode, setBatchMode] = useState<BatchGenerationMode>("seed");
-  const [batchSize, setBatchSize] = useState(3);
+  const [batchMode, setBatchMode] = useState<BatchGenerationMode>("config");
+  const [batchSize, setBatchSize] = useState(5);
   const generationDetailLabel = getGenerationDetailLabel(activeWork);
   const isQueueFull = isGenerating && singleQueueCount >= singleQueueMax;
   const isGenerationDisabled =
@@ -173,9 +173,9 @@ export const TopBar = ({
                   value={batchMode}
                   onChange={(event) => setBatchMode(event.target.value as BatchGenerationMode)}
                 >
-                  <option value="model">Per model</option>
-                  <option value="seed">Random seed</option>
                   <option value="config">Random config selections</option>
+                  <option value="seed">Random seed</option>
+                  <option value="model">Per model</option>
                 </select>
               </label>
               {batchMode !== "model" && (
