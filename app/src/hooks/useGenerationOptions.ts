@@ -19,7 +19,8 @@ export const useGenerationOptions = (
       return (await response.json()) as GenerationOptions;
     },
     staleTime: Infinity,
-    retry: 2,
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && error.status === 401) && failureCount < 2,
     enabled: Boolean(token),
   });
 

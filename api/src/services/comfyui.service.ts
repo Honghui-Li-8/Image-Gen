@@ -31,7 +31,8 @@ export const WORKFLOW_NODE_IDS = {
   latentImage: "5",
 } as const;
 
-const WORKFLOW_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../../../workflow");
+const WORKFLOW_DIR = process.env.COMFYUI_WORKFLOW_DIR
+  ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../../workflow");
 
 export const getBaseUrl = (): string => {
   const url = process.env.PROXY_URL ?? "http://localhost:3001";
