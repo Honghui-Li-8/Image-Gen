@@ -134,6 +134,106 @@ afterEach(async () => {
   tokenStore.clear();
 });
 
+describe("POST /works/:workId/generations/preflight", () => {
+  it("allows a valid batch when no generation is active", async () => {
+    const workId = await seedWork(aliceId);
+
+    const res = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 3, mode: "seed" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      canSchedule: true,
+      maxBatchSize: 5,
+      reason: null,
+    });
+  });
+
+  it("rejects invalid batch sizes", async () => {
+    const workId = await seedWork(aliceId);
+
+    const tooSmall = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 0, mode: "seed" });
+    const tooLarge = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 6, mode: "seed" });
+    const fractional = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 2.5, mode: "seed" });
+
+    expect(tooSmall.status).toBe(400);
+    expect(tooLarge.status).toBe(400);
+    expect(fractional.status).toBe(400);
+  });
+
+  it("rejects invalid modes", async () => {
+    const workId = await seedWork(aliceId);
+
+    const res = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 2, mode: "unknown" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects another user's work", async () => {
+    const workId = await seedWork(aliceId);
+
+    const res = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${BOB_TOKEN}`)
+      .send({ batchSize: 2, mode: "config" });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("reports user queue limit without scheduling", async () => {
+    const workId = await seedWork(aliceId);
+    await seedGeneration(workId, aliceId, "queued");
+
+    const res = await request(app)
+      .post(`/works/${workId}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 2, mode: "seed" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      canSchedule: false,
+      maxBatchSize: 5,
+      reason: "You already have an active generation, wait for it to finish",
+    });
+  });
+
+  it("reports global queue limit without scheduling", async () => {
+    vi.stubEnv("COMFYUI_MAX_ACTIVE_JOBS", "10");
+    vi.stubEnv("COMFYUI_MAX_GLOBAL_ACTIVE_JOBS", "2");
+
+    const aliceWork = await seedWork(aliceId);
+    const bobWork = await seedWork(bobId);
+    await seedGeneration(aliceWork, aliceId, "queued");
+    await seedGeneration(bobWork, bobId, "running");
+
+    const res = await request(app)
+      .post(`/works/${aliceWork}/generations/preflight`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`)
+      .send({ batchSize: 2, mode: "model" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      canSchedule: false,
+      maxBatchSize: 5,
+      reason: "GPU busy, try again shortly",
+    });
+  });
+});
+
 describe("POST /works/:workId/generations", () => {
   it("rejects missing auth", async () => {
     const workId = await seedWork(aliceId);
