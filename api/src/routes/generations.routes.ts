@@ -100,6 +100,7 @@ const parseBatchPreflightRequest = (value: unknown): BatchPreflightRequest | nul
 
   const body = value as Record<string, unknown>;
   if (
+    typeof body.batchSize !== "number" ||
     !Number.isInteger(body.batchSize) ||
     body.batchSize < 1 ||
     body.batchSize > BATCH_PREFLIGHT_MAX_SIZE

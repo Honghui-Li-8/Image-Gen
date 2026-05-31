@@ -167,7 +167,7 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(pony.positivePrompt).toContain("non-revealing clothing");
     expect(pony.positivePrompt).toContain("fully clothed outfit");
     expect(pony.positivePrompt).not.toContain("realistic human proportions");
-    expect(pony.positivePrompt).not.toContain("source_anime");
+    expect(pony.positivePrompt).toContain("source_anime");
     expect(pony.negativePrompt).toContain("pony");
     expect(pony.negativePrompt).toContain("bikini");
     expect(pony.negativePrompt).toContain("revealing clothes");

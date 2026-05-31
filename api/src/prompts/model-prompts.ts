@@ -341,6 +341,9 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       hipSize: {
         medium: ["average hips", "proportional hips"],
       },
+      clothingStyle: {
+        "sci-fi": ["covered outfit"],
+      },
     },
     selectionNegativeTagOverrides: PONY_FORM_SELECTION_NEGATIVE_OVERRIDES,
   },

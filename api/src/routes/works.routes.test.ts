@@ -256,7 +256,7 @@ describe("POST /works — create mode", () => {
       .set("Authorization", `Bearer ${aliceToken}`)
       .send({});
     expect(res.body.config.selections).toEqual({});
-    expect(res.body.config.selectedModel).toBe("illustrious-xl");
+    expect(res.body.config.selectedModel).toBe("animagine-xl-v3");
   });
 });
 
