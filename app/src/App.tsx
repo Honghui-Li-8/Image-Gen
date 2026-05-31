@@ -41,14 +41,16 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   );
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
-  const serverStatus = worksState.isGenerating || worksState.batchState.active ? "working" : health.status;
+  const serverStatus =
+    worksState.isGenerating || worksState.batchState.active ? "working" : health.status;
   const isViewingBatchWork = worksState.batchState.workId === worksState.activeWork?.id;
   const activeBatchItems = isViewingBatchWork ? worksState.batchState.items : [];
-  const skippedModelMessage = isViewingBatchWork && worksState.batchState.skippedModels.length
-    ? `Skipped incompatible model${worksState.batchState.skippedModels.length === 1 ? "" : "s"}: ${worksState.batchState.skippedModels
-        .map((model) => `${model.modelLabel} (${model.incompatibleFields.join(", ")})`)
-        .join("; ")}`
-    : null;
+  const skippedModelMessage =
+    isViewingBatchWork && worksState.batchState.skippedModels.length
+      ? `Skipped incompatible model${worksState.batchState.skippedModels.length === 1 ? "" : "s"}: ${worksState.batchState.skippedModels
+          .map((model) => `${model.modelLabel} (${model.incompatibleFields.join(", ")})`)
+          .join("; ")}`
+      : null;
 
   return (
     <main className="creator-shell">
