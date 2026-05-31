@@ -99,6 +99,29 @@ Some seeds are simply poor fits for a model and prompt combination. If prompt
 changes stop improving the output, change the seed instead of continuing to add
 more regulation tags.
 
+## MVP Scope and Tradeoffs
+
+This project is intentionally scoped for a private single-server demo. The
+choices below reduce setup time, hosting cost, and integration overhead. They
+are deliberate MVP tradeoffs, not production claims.
+
+| Area | Current choice | Intended scope |
+|---|---|---|
+| Auth | Preset users gate access to the app | Simple demo protection, not full user onboarding |
+| Session storage | API sessions are stored in memory; frontend auth is stored in `localStorage` | Simple demo auth; not durable across restarts |
+| SSE auth transport | `EventSource` status streams carry the real session token in the URL | Practical browser tradeoff for demo use |
+| Database | SQLite | Fast single-instance MVP database |
+| Scalability | Built for one API process and one GPU-serving path | Does not target horizontal scale or distributed workers |
+| Image delivery | Proxy serves ComfyUI output directly with temporary signed file URLs | CDN/object storage is the stronger production choice and was intentionally deferred to reduce MVP cost and integration overhead |
+| Proxy packaging | `proxy` lives outside the main workspace | Treated as an adjacent service during MVP; tooling cleanup remains |
+| Logging hardening | Tokenized request paths may appear in logs | Acceptable for a private demo; should be redacted before production |
+
+Notes:
+- Image delivery URLs use a separate temporary file token, not the login
+  session token.
+- A stronger production auth model would use invitation-based account creation
+  and likely OAuth, with persistent backend sessions and cookie-based auth.
+
 ## Versions
 
 - Node.js project target: `22.22.3`
