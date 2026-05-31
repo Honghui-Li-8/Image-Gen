@@ -300,6 +300,7 @@ describe("GET /generations/:generationId/status", () => {
         generationId,
         status: "running",
         progress: 50,
+        detail: { stage: "sampling", step: 12, totalSteps: 28, message: "Sampling 12/28" },
       });
       generationEmitter.emit(GENERATION_UPDATE_EVENT, {
         generationId,
@@ -315,7 +316,34 @@ describe("GET /generations/:generationId/status", () => {
     expect(res.text).toContain('"status":"queued"');
     expect(res.text).toContain('"status":"running"');
     expect(res.text).toContain('"progress":50');
+    expect(res.text).toContain('"detail":{"stage":"sampling"');
+    expect(res.text).toContain('"message":"Sampling 12/28"');
     expect(res.text).toContain('"status":"completed"');
+  });
+
+  it("streams concise failed generation errors", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "queued");
+
+    const stream = request(app).get(`/generations/${generationId}/status?token=${ALICE_TOKEN}`);
+    const response = stream.then((res) => res);
+
+    setTimeout(() => {
+      generationEmitter.emit(GENERATION_UPDATE_EVENT, {
+        generationId,
+        status: "failed",
+        progress: 100,
+        error: "CUDA out of memory",
+        detail: { stage: "failed", message: "CUDA out of memory" },
+      });
+    }, 10);
+
+    const res = await response;
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('"status":"failed"');
+    expect(res.text).toContain('"error":"CUDA out of memory"');
+    expect(res.text).toContain('"detail":{"stage":"failed"');
   });
 });
 
