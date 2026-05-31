@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildComfyWsHeaders,
+  buildComfyWsProxyPath,
+  buildComfyWsProxyUrl,
   buildComfyImageFilename,
   isWorkflowNode,
   patchComfyWorkflow,
+  parseComfyWsMessage,
   submitComfyWorkflow,
   stripWorkflowMetadata,
   WORKFLOW_NODE_IDS,
@@ -169,5 +173,103 @@ describe("submitComfyWorkflow", () => {
         }),
       })
     );
+  });
+
+  it("includes client_id when provided", async () => {
+    vi.stubEnv("PROXY_URL", "http://proxy.test");
+    vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ prompt_id: "prompt-1" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await submitComfyWorkflow(makeWorkflow(), { clientId: "client-1" });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(init.body)).toEqual({
+      prompt: stripWorkflowMetadata(makeWorkflow()),
+      client_id: "client-1",
+    });
+  });
+});
+
+describe("ComfyUI websocket helpers", () => {
+  it("builds the signed websocket proxy path and URL", () => {
+    vi.stubEnv("PROXY_URL", "http://proxy.test/");
+    vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
+
+    expect(buildComfyWsProxyPath("client 1")).toBe("/comfy/ws?clientId=client%201");
+    expect(buildComfyWsProxyUrl("client 1")).toBe("http://proxy.test/comfy/ws?clientId=client%201");
+    expect(buildComfyWsHeaders("client 1")).toEqual(
+      expect.objectContaining({
+        "X-Proxy-Signature": expect.any(String),
+        "X-Proxy-Timestamp": expect.any(String),
+      })
+    );
+  });
+});
+
+describe("parseComfyWsMessage", () => {
+  it("normalizes progress messages", () => {
+    expect(
+      parseComfyWsMessage(
+        JSON.stringify({
+          type: "progress",
+          data: { prompt_id: "prompt-1", node: "7", value: 12, max: 28 },
+        })
+      )
+    ).toEqual({
+      type: "progress",
+      promptId: "prompt-1",
+      nodeId: "7",
+      value: 12,
+      max: 28,
+    });
+  });
+
+  it("normalizes success and executing messages", () => {
+    expect(
+      parseComfyWsMessage(JSON.stringify({ type: "execution_success", data: { prompt_id: "p" } }))
+    ).toEqual({ type: "execution_success", promptId: "p" });
+
+    expect(
+      parseComfyWsMessage(JSON.stringify({ type: "executing", data: { prompt_id: "p", node: null } }))
+    ).toEqual({ type: "executing", promptId: "p", nodeId: null });
+  });
+
+  it("normalizes error and interruption messages", () => {
+    expect(
+      parseComfyWsMessage(
+        JSON.stringify({
+          type: "execution_error",
+          data: { prompt_id: "p", node_id: "7", exception_message: "CUDA out of memory" },
+        })
+      )
+    ).toEqual({
+      type: "execution_error",
+      promptId: "p",
+      nodeId: "7",
+      message: "CUDA out of memory",
+    });
+
+    expect(
+      parseComfyWsMessage(
+        JSON.stringify({
+          type: "execution_interrupted",
+          data: { prompt_id: "p" },
+        })
+      )
+    ).toEqual({
+      type: "execution_interrupted",
+      promptId: "p",
+      message: "ComfyUI execution interrupted",
+    });
+  });
+
+  it("ignores binary, malformed, and unknown messages", () => {
+    expect(parseComfyWsMessage(Buffer.from("{}"), true)).toBeNull();
+    expect(parseComfyWsMessage("{not json")).toBeNull();
+    expect(parseComfyWsMessage(JSON.stringify({ type: "unknown", data: {} }))).toBeNull();
   });
 });
