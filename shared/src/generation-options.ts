@@ -45,7 +45,7 @@ export const baseCategories: Category[] = [
       { value: "slender", label: "Slender", tags: ["slim"] },
       { value: "athletic", label: "Athletic", tags: ["toned"] },
       { value: "average", label: "Average", tags: [] },
-      { value: "plump", label: "Plump", tags: ["chubby"] },
+      { value: "plump", label: "Plump", tags: ["soft body", "slightly plump"] },
     ],
   },
   {

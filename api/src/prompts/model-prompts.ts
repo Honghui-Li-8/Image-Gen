@@ -103,7 +103,7 @@ const SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES = {
     slender: ["chubby", "overweight", "thick body"],
     athletic: ["chubby", "overweight"],
     average: ["very skinny", "chubby", "overweight", "muscular body"],
-    plump: ["skinny", "slim", "thin body"],
+    plump: ["skinny", "thin body", "obese", "huge belly"],
   },
   breastSize: {
     subtle: ["medium breasts", "large breasts", "huge breasts", "busty"],
@@ -159,11 +159,35 @@ const PONY_FORM_SELECTION_NEGATIVE_OVERRIDES = {
   },
 };
 
+const ANIMAGINE_QUALITY_TAG_OMITS = new Set([
+  "detailed hands",
+  "detailed feet",
+]);
+
+const ANIMAGINE_NEGATIVE_TAG_OMITS = new Set([
+  "malformed hands",
+  "bad fingers",
+  "extra fingers",
+  "missing fingers",
+  "fused fingers",
+  "extra digits",
+  "fewer digits",
+  "cropped feet",
+  "feet out of frame",
+  "hands out of frame",
+  "cowboy shot",
+  "medium shot",
+  "face focus",
+  "lower body only",
+  "legs focus",
+  "legs shot",
+]);
+
 export const modelPromptPresets: Record<string, ModelPromptPreset> = {
   "illustrious-xl": {
     workflowFile: "workflow_illustrious_xl_v2.json",
     promptTemplate:
-      'You are a professional anime illustrator and art director. Generate a polished high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n{\n"character_1": {\n"bbox": [\n0,\n0,\n1000,\n1000\n],\n"name": "$character_1$"\n},\n"image": {\n"quality_tags": "{quality_prompt}",\n"customization_tags": "\n{user_prompt}\n",\n"caption": "{caption}"\n}\n}',
+      "You are a professional anime illustrator and art director. Generate a polished high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<character_1_settings>\n<bbox>0, 0, 1000, 1000</bbox>\n<name>$character_1$</name>\n</character_1_settings>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n\n<quality_suffix>\n{quality_prompt}\n</quality_suffix>\n</prompt>",
     caption: COMMON_CAPTION,
     qualityTags: [
       "masterpiece",
@@ -256,7 +280,7 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
   "pony-v6": {
     workflowFile: "workflow_pony_v6.json",
     promptTemplate:
-      "You are a professional anime illustrator and art director. Generate a high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<always_on_pony_quality_tags>\n{quality_prompt}\n</always_on_pony_quality_tags>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n</prompt>",
+      "You are a professional anime illustrator and art director. Generate a high-quality anime image with the highest degree of image-text alignment based on XML-format textual prompts. <Prompt Start>\n<prompt>\n<quality_suffix>\n{quality_prompt}\n</quality_suffix>\n\n{user_prompt}\n\n<caption_tags>\n{caption}\n</caption_tags>\n</prompt>",
     caption: COMMON_CAPTION + " She wears a blue Nike shoe.",
     qualityTags: [
       "score_9",
@@ -365,16 +389,13 @@ export const modelPromptPresets: Record<string, ModelPromptPreset> = {
       // "great score",
       "highres",
       "absurdres",
-      ...COMMON_QUALITY_TAGS,
-      "correct finger anatomy",
-      "five fingers on each hand",
-      "natural thumbs",
+      ...COMMON_QUALITY_TAGS.filter((tag) => !ANIMAGINE_QUALITY_TAG_OMITS.has(tag)),
     ],
     negativeTags: [
       "low quality",
       "bad score",
       // "average score",
-      ...COMMON_NEGATIVE_TAGS.filter((tag) => tag !== "feet out of frame"),
+      ...COMMON_NEGATIVE_TAGS.filter((tag) => !ANIMAGINE_NEGATIVE_TAG_OMITS.has(tag)),
     ],
     selectionNegativeTagOverrides: SIMPLE_FORM_SELECTION_NEGATIVE_OVERRIDES,
   },

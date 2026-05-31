@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildGenerationPromptInput, buildXml } from "./prompt-builder.service.js";
 import type { GenerationRequestConfig } from "./prompt-builder.service.js";
 
+const extractQualitySuffix = (prompt: string): string =>
+  prompt.match(/<quality_suffix>\n([\s\S]*?)\n<\/quality_suffix>/)?.[1] ?? "";
+
 const BASE_CONFIG: GenerationRequestConfig = {
   modelId: "illustrious-xl",
   selections: {
@@ -138,7 +141,7 @@ describe("buildGenerationPromptInput — quality tags", () => {
       ...BASE_CONFIG,
       additionalTags: ["highres", "cinematic lighting"],
     });
-    const qualityLine = result.positivePrompt.match(/"quality_tags": "([^"]+)"/)?.[1] ?? "";
+    const qualityLine = extractQualitySuffix(result.positivePrompt);
     const tags = qualityLine.split(", ");
     expect(tags.filter((t) => t === "highres").length).toBe(1);
   });
@@ -153,6 +156,27 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(result.positivePrompt).toContain("You are a professional anime illustrator");
     expect(result.negativePrompt).toContain("cropped");
     expect(result.negativePrompt).toContain("upper body only");
+  });
+
+  it("renders Illustrious with XML wrappers while preserving character settings", () => {
+    const result = buildGenerationPromptInput(BASE_CONFIG);
+
+    expect(result.positivePrompt).toContain("<prompt>");
+    expect(result.positivePrompt).toContain("<character_1_settings>");
+    expect(result.positivePrompt).toContain("<bbox>0, 0, 1000, 1000</bbox>");
+    expect(result.positivePrompt).toContain("<name>$character_1$</name>");
+    expect(result.positivePrompt).toContain("<caption_tags>");
+    expect(result.positivePrompt).toContain("<quality_suffix>");
+    expect(result.positivePrompt).not.toContain('"quality_tags"');
+    expect(result.positivePrompt).not.toContain('"customization_tags"');
+  });
+
+  it("uses quality_suffix for Pony quality tags", () => {
+    const result = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6" });
+
+    expect(result.positivePrompt).toContain("<quality_suffix>");
+    expect(result.positivePrompt).toContain("score_9");
+    expect(result.positivePrompt).not.toContain("<always_on_pony_quality_tags>");
   });
 
   it("returns model-specific quality and negative prompt values", () => {
