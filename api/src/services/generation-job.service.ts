@@ -433,6 +433,16 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
 
     const clientId = randomUUID();
     const workflowNodes = buildWorkflowProgressNodes(patched);
+    logger.info("generation.comfy.websocket.prepared", {
+      clientId,
+      generationId,
+      workflowNodeCount: workflowNodes.length,
+      workflowNodes: workflowNodes.map((node) => ({
+        id: node.id,
+        label: node.label,
+        weight: node.weight,
+      })),
+    });
     let promptId: string | null = null;
     let progress = 15;
     let websocketDisconnected = false;
@@ -454,16 +464,53 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     };
 
     const handleComfyEvent = (event: ComfyWsEvent) => {
-      if (!promptId || !isMatchingPromptEvent(event, promptId)) return;
+      logger.info("generation.comfy.ws.event", {
+        eventPromptId: event.promptId,
+        eventType: event.type,
+        generationId,
+        nodeId: "nodeId" in event ? event.nodeId : undefined,
+        promptId,
+      });
+
+      if (!promptId) {
+        logger.debug("generation.comfy.ws.event_ignored", {
+          eventPromptId: event.promptId,
+          eventType: event.type,
+          generationId,
+          reason: "prompt_id_not_ready",
+        });
+        return;
+      }
+
+      if (!isMatchingPromptEvent(event, promptId)) {
+        logger.debug("generation.comfy.ws.event_ignored", {
+          eventPromptId: event.promptId,
+          eventType: event.type,
+          generationId,
+          promptId,
+          reason: "prompt_id_mismatch",
+        });
+        return;
+      }
 
       if (event.type === "progress") {
         const node = getWorkflowNode(workflowNodes, event.nodeId);
+        const previousProgress = progress;
         progress = computeWorkflowProgress({
           nodes: workflowNodes,
           nodeId: event.nodeId,
           value: event.value,
           max: event.max,
           previous: progress,
+        });
+        logger.info("generation.comfy.ws.progress_mapped", {
+          generationId,
+          nodeId: event.nodeId,
+          nodeLabel: node?.label,
+          previousProgress,
+          progress,
+          step: event.value,
+          totalSteps: event.max,
         });
         emitGenerationUpdate({
           generationId,
@@ -483,6 +530,10 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
 
       if (event.type === "executing") {
         if (event.nodeId === null) {
+          logger.info("generation.comfy.ws.finalizing", {
+            generationId,
+            progress: Math.max(progress, 95),
+          });
           emitGenerationUpdate({
             generationId,
             status: "running",
@@ -493,10 +544,18 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
         }
 
         const node = getWorkflowNode(workflowNodes, event.nodeId);
+        const previousProgress = progress;
         progress = computeWorkflowProgress({
           nodes: workflowNodes,
           nodeId: event.nodeId,
           previous: progress,
+        });
+        logger.info("generation.comfy.ws.executing_mapped", {
+          generationId,
+          nodeId: event.nodeId,
+          nodeLabel: node?.label,
+          previousProgress,
+          progress,
         });
         emitGenerationUpdate({
           generationId,
@@ -513,11 +572,22 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (event.type === "execution_success") {
+        logger.info("generation.comfy.ws.execution_success", {
+          generationId,
+          promptId,
+        });
         resolveOnce({ type: "success" });
         return;
       }
 
       if (event.type === "execution_error" || event.type === "execution_interrupted") {
+        logger.warn("generation.comfy.ws.execution_failed", {
+          eventType: event.type,
+          generationId,
+          message: event.message,
+          nodeId: event.type === "execution_error" ? event.nodeId : undefined,
+          promptId,
+        });
         resolveOnce({
           type: "failed",
           message: event.message,
@@ -533,6 +603,10 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
     const connectWebSocket = () => {
       websocketDisconnected = false;
       try {
+        logger.info("generation.comfy.websocket.connecting", {
+          clientId,
+          generationId,
+        });
         websocket = connectComfyWebSocket(clientId);
       } catch (error) {
         websocketDisconnected = true;
@@ -543,12 +617,40 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
         return;
       }
 
+      websocket.on("open", () => {
+        logger.info("generation.comfy.websocket.open", {
+          clientId,
+          generationId,
+          promptId,
+        });
+      });
       websocket.on("message", (data, isBinary) => {
+        logger.debug("generation.comfy.websocket.message", {
+          clientId,
+          generationId,
+          isBinary,
+          promptId,
+        });
         const event = parseComfyWsMessage(data, isBinary);
-        if (event) handleComfyEvent(event);
+        if (event) {
+          handleComfyEvent(event);
+          return;
+        }
+        logger.debug("generation.comfy.websocket.message_ignored", {
+          clientId,
+          generationId,
+          isBinary,
+          promptId,
+        });
       });
       websocket.on("close", () => {
         websocketDisconnected = !terminalResolved;
+        logger.warn("generation.comfy.websocket.closed", {
+          clientId,
+          generationId,
+          promptId,
+          willReconnect: websocketDisconnected,
+        });
       });
       websocket.on("error", (error) => {
         websocketDisconnected = true;
@@ -612,6 +714,11 @@ export const runComfyGeneration = async (generationId: string): Promise<void> =>
       }
 
       if (websocketDisconnected && !terminalResolved) {
+        logger.info("generation.comfy.websocket.reconnecting", {
+          clientId,
+          generationId,
+          promptId,
+        });
         closeWebSocket();
         resetTerminalPromise();
         connectWebSocket();
