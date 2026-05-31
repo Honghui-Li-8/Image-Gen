@@ -91,6 +91,7 @@ export interface BatchGenerationItem {
 
 export interface BatchGenerationState {
   active: boolean;
+  workId: string | null;
   mode: BatchGenerationMode | null;
   items: BatchGenerationItem[];
   currentIndex: number;

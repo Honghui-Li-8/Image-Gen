@@ -10,6 +10,7 @@ const OPTIONS: GenerationOptions = {
 
 const BATCH_STATE: BatchGenerationState = {
   active: false,
+  workId: null,
   mode: null,
   items: [],
   currentIndex: 0,
@@ -59,6 +60,27 @@ const renderTopBar = (activeWork: Work) =>
     />
   );
 
+const renderTopBarWithBatch = (activeWork: Work, batchState: BatchGenerationState) =>
+  render(
+    <TopBar
+      activeWork={activeWork}
+      batchState={batchState}
+      comfyReachable
+      isGenerating={false}
+      isLoadingWorks={false}
+      isSaving={false}
+      onBatchGeneration={vi.fn()}
+      onCancelGeneration={vi.fn()}
+      onGenerationAction={vi.fn()}
+      onThemeToggle={vi.fn()}
+      options={OPTIONS}
+      serverStatus="working"
+      singleQueueCount={0}
+      singleQueueMax={5}
+      theme="dark"
+    />
+  );
+
 describe("TopBar generation detail", () => {
   it("renders sampling progress detail", () => {
     renderTopBar(
@@ -83,5 +105,20 @@ describe("TopBar generation detail", () => {
     );
 
     expect(screen.getByText("Generation failed: CUDA out of memory while alloc...")).toBeDefined();
+  });
+
+  it("uses global batch progress while viewing another work", () => {
+    renderTopBarWithBatch(makeWork({ id: "other-work", progress: 100, status: "completed" }), {
+      ...BATCH_STATE,
+      active: true,
+      workId: "work-1",
+      currentIndex: 1,
+      total: 3,
+      progress: 40,
+    });
+
+    expect(screen.getByText("batch running")).toBeDefined();
+    expect(screen.getByText("40%")).toBeDefined();
+    expect(screen.getByText("Generating 2/3")).toBeDefined();
   });
 });

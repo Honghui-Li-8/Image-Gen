@@ -55,6 +55,7 @@ export interface UseGenerationState {
 
 const emptyBatchState = (): BatchGenerationState => ({
   active: false,
+  workId: null,
   mode: null,
   items: [],
   currentIndex: 0,
@@ -334,6 +335,7 @@ export const useGeneration = ({
       if (items.length === 0) {
         setBatchState({
           active: false,
+          workId,
           mode,
           items,
           currentIndex: 0,
@@ -367,6 +369,7 @@ export const useGeneration = ({
 
           setBatchState({
             active: true,
+            workId,
             mode,
             items,
             currentIndex: 0,

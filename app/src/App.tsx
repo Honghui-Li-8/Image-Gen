@@ -41,8 +41,10 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   );
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
-  const serverStatus = worksState.isGenerating ? "working" : health.status;
-  const skippedModelMessage = worksState.batchState.skippedModels.length
+  const serverStatus = worksState.isGenerating || worksState.batchState.active ? "working" : health.status;
+  const isViewingBatchWork = worksState.batchState.workId === worksState.activeWork?.id;
+  const activeBatchItems = isViewingBatchWork ? worksState.batchState.items : [];
+  const skippedModelMessage = isViewingBatchWork && worksState.batchState.skippedModels.length
     ? `Skipped incompatible model${worksState.batchState.skippedModels.length === 1 ? "" : "s"}: ${worksState.batchState.skippedModels
         .map((model) => `${model.modelLabel} (${model.incompatibleFields.join(", ")})`)
         .join("; ")}`
@@ -92,7 +94,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
         <GalleryPanel
           activeImage={worksState.activeImage}
           activeWork={worksState.activeWork}
-          batchItems={worksState.batchState.items}
+          batchItems={activeBatchItems}
           onDeleteImage={worksState.deleteImage}
           onMoveImage={worksState.moveImage}
           onSelectDraft={worksState.selectDraft}

@@ -96,6 +96,8 @@ export const TopBar = ({
     batchState.active ||
     isQueueFull;
   const isBatchDisabled = isGenerationDisabled || isGenerating || batchState.active;
+  const displayedProgress = batchState.active ? batchState.progress : activeWork?.progress || 0;
+  const displayedStatus = batchState.active ? "batch running" : activeWork?.status || "loading";
   const batchProgressLabel = batchState.active
     ? `Generating ${Math.min(batchState.currentIndex + 1, batchState.total)}/${batchState.total}`
     : null;
@@ -115,12 +117,12 @@ export const TopBar = ({
       <div className="work-status">
         <div className="work-status-copy">
           <span>Work status</span>
-          <strong>{activeWork?.status || "loading"}</strong>
+          <strong>{displayedStatus}</strong>
         </div>
         <div className="progress-track" aria-label="Work progress">
-          <div className="progress-fill" style={{ width: `${activeWork?.progress || 0}%` }} />
+          <div className="progress-fill" style={{ width: `${displayedProgress}%` }} />
         </div>
-        <span className="progress-value">{activeWork?.progress || 0}%</span>
+        <span className="progress-value">{displayedProgress}%</span>
         {generationDetailLabel && (
           <span className="generation-detail-label" title={generationDetailLabel}>
             {generationDetailLabel}
