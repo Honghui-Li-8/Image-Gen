@@ -6,6 +6,7 @@ import {
   buildComfyImageFilename,
   computeOutputDimensions,
   isWorkflowNode,
+  interruptComfyGeneration,
   patchComfyWorkflow,
   parseComfyWsMessage,
   submitComfyWorkflow,
@@ -139,7 +140,11 @@ describe("computeOutputDimensions", () => {
   });
 
   it("output dimensions are multiples of 64", () => {
-    for (const [w, h] of [[832, 1216], [896, 1152], [768, 1344]] as [number, number][]) {
+    for (const [w, h] of [
+      [832, 1216],
+      [896, 1152],
+      [768, 1344],
+    ] as [number, number][]) {
       const { width, height } = computeOutputDimensions(w, h);
       expect(width % 64).toBe(0);
       expect(height % 64).toBe(0);
@@ -181,7 +186,7 @@ describe("stripWorkflowMetadata", () => {
 
   it("retains all workflow nodes", () => {
     const stripped = stripWorkflowMetadata(makeWorkflow());
-    expect(Object.keys(stripped).sort()).toEqual(["18", "3", "4", "5", "7"]);
+    expect(Object.keys(stripped).sort()).toEqual(["11", "18", "3", "4", "5", "7"]);
   });
 });
 
@@ -232,6 +237,31 @@ describe("submitComfyWorkflow", () => {
       prompt: stripWorkflowMetadata(makeWorkflow()),
       client_id: "client-1",
     });
+  });
+});
+
+describe("interruptComfyGeneration", () => {
+  it("posts interrupt through the proxy with HMAC headers", async () => {
+    vi.stubEnv("PROXY_URL", "http://proxy.test");
+    vi.stubEnv("PROXY_AUTH_SECRET", "test-secret");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => "",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await interruptComfyGeneration();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://proxy.test/comfy/interrupt",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "X-Proxy-Signature": expect.any(String),
+          "X-Proxy-Timestamp": expect.any(String),
+        }),
+      })
+    );
   });
 });
 

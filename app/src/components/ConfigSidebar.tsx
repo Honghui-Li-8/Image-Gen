@@ -2,6 +2,7 @@ import { memo, useMemo } from "react";
 import { ConfigGroup } from "./ConfigGroup";
 import { SeedControl } from "./SeedControl";
 import { TagInput } from "./TagInput";
+import { randomizeCategorySelections } from "../utils/batchGeneration";
 import type {
   GenerationCategory,
   ModelConfig,
@@ -17,6 +18,7 @@ interface ConfigSidebarProps {
   commitTag: () => void;
   customTags: string[];
   isDirty: boolean;
+  isGenerationLocked: boolean;
   isSaving: boolean;
   missingFieldIds: string[];
   models: Record<string, ModelConfig>;
@@ -66,23 +68,6 @@ export const distributeGroups = (
   cols[1].sort((a, b) => a.idx - b.idx);
 
   return [cols[0].map((i) => i.entry), cols[1].map((i) => i.entry)];
-};
-
-const pickRandom = <T,>(items: T[]): T | undefined => {
-  return items[Math.floor(Math.random() * items.length)];
-};
-
-const randomizeCategorySelections = (model: ModelConfig) => {
-  return model.categories.reduce(
-    (nextSelections, category) => {
-      const option = pickRandom(category.options);
-      if (option) {
-        nextSelections[category.id] = option.value;
-      }
-      return nextSelections;
-    },
-    {} as Record<string, string>
-  );
 };
 
 interface CategoryColumnsProps {
@@ -169,6 +154,7 @@ export const ConfigSidebar = ({
   commitTag,
   customTags,
   isDirty,
+  isGenerationLocked,
   isSaving,
   missingFieldIds,
   models,
@@ -183,6 +169,7 @@ export const ConfigSidebar = ({
   const modelEntries = Object.values(models);
   const missingFields = useMemo(() => new Set(missingFieldIds), [missingFieldIds]);
   const isViewing = activeWork?.viewingConfig !== null && activeWork?.viewingConfig !== undefined;
+  const isEditingDisabled = isViewing || isGenerationLocked;
   const displayConfig: WorkConfig | null = activeWork?.viewingConfig ?? null;
 
   const selectedPreset = displayConfig?.selectedPreset ?? activeWork?.selectedPreset ?? "";
@@ -199,7 +186,7 @@ export const ConfigSidebar = ({
             <select
               className="model-select"
               value={(displayConfig?.selectedModel ?? activeWork?.selectedModel) || ""}
-              disabled={isViewing}
+              disabled={isEditingDisabled}
               onChange={(event) => {
                 const newModel = models[event.target.value];
                 if (!newModel) return;
@@ -236,7 +223,7 @@ export const ConfigSidebar = ({
                 className="config-random-button"
                 aria-label="Randomize configuration"
                 type="button"
-                disabled={!activeWork || !activeModel}
+                disabled={!activeWork || !activeModel || isGenerationLocked}
                 onClick={() => {
                   if (!activeModel) return;
                   const selections = randomizeCategorySelections(activeModel);
@@ -255,7 +242,7 @@ export const ConfigSidebar = ({
               <button
                 className="config-save-button"
                 type="button"
-                disabled={!isDirty || isSaving || !activeWork}
+                disabled={!isDirty || isSaving || !activeWork || isGenerationLocked}
                 onClick={onSaveWork}
               >
                 {isSaving ? "Saving" : "Save"}
@@ -279,7 +266,7 @@ export const ConfigSidebar = ({
           <>
             <CategoryColumns
               categories={activeModel.categories}
-              isViewing={isViewing}
+              isViewing={isEditingDisabled}
               showGenerationValidation={showGenerationValidation}
               missingFields={missingFields}
               activeSelections={activeWork?.selections}
@@ -293,14 +280,14 @@ export const ConfigSidebar = ({
               className="tag-group tag-editor--options"
               title={`Additional Tags [ ${(displayConfig?.additionalTags ?? customTags).length} ]`}
             >
-              {isViewing ? (
+              {isEditingDisabled ? (
                 <div className="tag-list--readonly">
-                  {(displayConfig?.additionalTags ?? []).map((tag) => (
+                  {(displayConfig?.additionalTags ?? customTags).map((tag) => (
                     <span key={tag} className="tag-chip">
                       {tag}
                     </span>
                   ))}
-                  {!displayConfig?.additionalTags?.length && (
+                  {!(displayConfig?.additionalTags ?? customTags).length && (
                     <span className="tag-empty">No additional tags</span>
                   )}
                 </div>
@@ -326,7 +313,7 @@ export const ConfigSidebar = ({
               <select
                 className={presetValue ? "" : "select-placeholder"}
                 value={presetValue}
-                disabled={isViewing}
+                disabled={isEditingDisabled}
                 onChange={(event) => updateActiveWork({ selectedPreset: event.target.value })}
               >
                 <option value="">Select output size</option>
@@ -353,7 +340,7 @@ export const ConfigSidebar = ({
           <SeedControl
             seed={displayConfig?.seed ?? activeWork?.seed}
             onChange={(seed) => updateActiveWork({ seed })}
-            disabled={isViewing}
+            disabled={isEditingDisabled}
           />
         </label>
 
@@ -363,7 +350,7 @@ export const ConfigSidebar = ({
           </div>
           <textarea
             value={displayConfig?.additionalPrompt ?? activeWork?.additionalPrompt ?? ""}
-            disabled={isViewing}
+            disabled={isEditingDisabled}
             onChange={(event) => updateActiveWork({ additionalPrompt: event.target.value })}
             placeholder="standing on a neon-lit rooftop at night"
           />

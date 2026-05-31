@@ -8,6 +8,7 @@ import { generations, works } from "../db/schema.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
   GENERATION_UPDATE_EVENT,
+  cancelGeneration,
   countAllInFlightGenerations,
   countInFlightGenerations,
   createQueuedGeneration,
@@ -83,6 +84,93 @@ const parseGenerationConfig = (value: unknown): GenerationRequestConfig | null =
     additionalPrompt: body.additionalPrompt,
   };
 };
+
+const BATCH_PREFLIGHT_MAX_SIZE = 5;
+const BATCH_PREFLIGHT_MODES = new Set(["model", "seed", "config"]);
+
+interface BatchPreflightRequest {
+  batchSize: number;
+  mode?: "model" | "seed" | "config";
+}
+
+const parseBatchPreflightRequest = (value: unknown): BatchPreflightRequest | null => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const body = value as Record<string, unknown>;
+  if (
+    typeof body.batchSize !== "number" ||
+    !Number.isInteger(body.batchSize) ||
+    body.batchSize < 1 ||
+    body.batchSize > BATCH_PREFLIGHT_MAX_SIZE
+  ) {
+    return null;
+  }
+
+  if (
+    body.mode !== undefined &&
+    (typeof body.mode !== "string" || !BATCH_PREFLIGHT_MODES.has(body.mode))
+  ) {
+    return null;
+  }
+
+  return {
+    batchSize: body.batchSize,
+    mode: body.mode as BatchPreflightRequest["mode"],
+  };
+};
+
+const sendBatchPreflightResult = (
+  res: Response,
+  canSchedule: boolean,
+  reason: string | null
+): void => {
+  res.json({
+    canSchedule,
+    maxBatchSize: BATCH_PREFLIGHT_MAX_SIZE,
+    reason,
+  });
+};
+
+generationsRouter.post(
+  "/works/:workId/generations/preflight",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const requestedWorkId = req.params.workId as string;
+    const request = parseBatchPreflightRequest(req.body);
+
+    if (!request) {
+      res.status(400).json({ error: "Invalid batch preflight request" });
+      return;
+    }
+
+    const [work] = await db.select().from(works).where(eq(works.id, requestedWorkId));
+
+    if (!work || work.userId !== req.userId) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const userInFlightCount = await countInFlightGenerations(req.userId);
+    if (userInFlightCount >= getMaxInFlightPerUser()) {
+      sendBatchPreflightResult(
+        res,
+        false,
+        "You already have an active generation, wait for it to finish"
+      );
+      return;
+    }
+
+    const globalInFlightCount = await countAllInFlightGenerations();
+    if (globalInFlightCount >= getMaxInFlightGlobal()) {
+      sendBatchPreflightResult(res, false, "GPU busy, try again shortly");
+      return;
+    }
+
+    sendBatchPreflightResult(res, true, null);
+  }
+);
 
 generationsRouter.post(
   "/works/:workId/generations",
@@ -178,6 +266,22 @@ generationsRouter.post(
       generationId: generation.id,
       status: generation.status,
     });
+  }
+);
+
+generationsRouter.post(
+  "/generations/:generationId/cancel",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const generationId = req.params.generationId as string;
+    const result = await cancelGeneration(generationId, req.userId);
+
+    if (!result) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    res.json(result);
   }
 );
 

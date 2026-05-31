@@ -1,16 +1,29 @@
+import { useState } from "react";
 import { getHealthLabel } from "../utils/health";
-import type { GenerationOptions, ServerStatus, Theme, Work } from "../types";
+import type {
+  BatchGenerationMode,
+  BatchGenerationState,
+  GenerationOptions,
+  ServerStatus,
+  Theme,
+  Work,
+} from "../types";
 
 interface TopBarProps {
   activeWork: Work | undefined;
+  batchState: BatchGenerationState;
   comfyReachable: boolean | null;
   isGenerating: boolean;
   isLoadingWorks: boolean;
   isSaving: boolean;
+  onBatchGeneration: (mode: BatchGenerationMode, batchSize?: number) => void;
+  onCancelGeneration: () => void;
   onGenerationAction: () => void;
   onThemeToggle: () => void;
   options: GenerationOptions | null;
   serverStatus: ServerStatus;
+  singleQueueCount: number;
+  singleQueueMax: number;
   theme: Theme;
 }
 
@@ -47,19 +60,50 @@ const getGenerationDetailLabel = (work: Work | undefined): string | null => {
   return detail.message ?? null;
 };
 
+const BATCH_HINTS: Record<BatchGenerationMode, string> = {
+  model: "* Runs one generation per compatible model.\n* Same input.",
+  seed: "* Randomizes only the seed for each item.\n* Same model and rest input.",
+  config: "* Randomizes only config selections.\n* Same model and rest input.",
+};
+
 export const TopBar = ({
   activeWork,
+  batchState,
   comfyReachable,
   isGenerating,
   isLoadingWorks,
   isSaving,
+  onBatchGeneration,
+  onCancelGeneration,
   onGenerationAction,
   onThemeToggle,
   options,
   serverStatus,
+  singleQueueCount,
+  singleQueueMax,
   theme,
 }: TopBarProps) => {
+  const [batchMenuOpen, setBatchMenuOpen] = useState(false);
+  const [batchMode, setBatchMode] = useState<BatchGenerationMode>("seed");
+  const [batchSize, setBatchSize] = useState(3);
   const generationDetailLabel = getGenerationDetailLabel(activeWork);
+  const isQueueFull = isGenerating && singleQueueCount >= singleQueueMax;
+  const isGenerationDisabled =
+    isLoadingWorks ||
+    isSaving ||
+    !options ||
+    comfyReachable === false ||
+    batchState.active ||
+    isQueueFull;
+  const isBatchDisabled = isGenerationDisabled || isGenerating || batchState.active;
+  const batchProgressLabel = batchState.active
+    ? `Generating ${Math.min(batchState.currentIndex + 1, batchState.total)}/${batchState.total}`
+    : null;
+
+  const startBatch = () => {
+    onBatchGeneration(batchMode, batchMode === "model" ? undefined : batchSize);
+    setBatchMenuOpen(false);
+  };
 
   return (
     <header className="top-status-bar">
@@ -82,19 +126,88 @@ export const TopBar = ({
             {generationDetailLabel}
           </span>
         )}
+        {batchProgressLabel && (
+          <span className="generation-detail-label" title={batchProgressLabel}>
+            {batchProgressLabel}
+          </span>
+        )}
         {comfyReachable === false && <span className="gpu-offline-label">GPU offline</span>}
-        <button
-          className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
-          type="button"
-          disabled={isLoadingWorks || isSaving || !options || comfyReachable === false}
-          title={comfyReachable === false ? "ComfyUI is not reachable" : undefined}
-          onClick={onGenerationAction}
-        >
-          {isGenerating ? "Cancel" : "Generate"}
-        </button>
       </div>
 
       <div className="top-actions">
+        <div className="generate-control">
+          <button
+            className="generate-button"
+            type="button"
+            disabled={isGenerationDisabled}
+            title={
+              comfyReachable === false
+                ? "ComfyUI is not reachable"
+                : isQueueFull
+                  ? "Generation queue is full"
+                  : undefined
+            }
+            onClick={onGenerationAction}
+          >
+            {isGenerating ? "Queue" : "Generate"}
+          </button>
+          <button
+            aria-label="Open batch generation options"
+            className="generate-menu-button"
+            type="button"
+            disabled={isBatchDisabled}
+            onClick={() => setBatchMenuOpen((open) => !open)}
+          >
+            ▾
+          </button>
+          {batchMenuOpen && (
+            <div className="generate-menu">
+              <div className="generate-menu-heading">
+                <strong>Batch-gen</strong>
+              </div>
+              <label>
+                <span>Batch-gen mode</span>
+                <select
+                  value={batchMode}
+                  onChange={(event) => setBatchMode(event.target.value as BatchGenerationMode)}
+                >
+                  <option value="model">Per model</option>
+                  <option value="seed">Random seed</option>
+                  <option value="config">Random config selections</option>
+                </select>
+              </label>
+              {batchMode !== "model" && (
+                <label>
+                  <span>Batch size</span>
+                  <select
+                    value={batchSize}
+                    onChange={(event) => setBatchSize(Number(event.target.value))}
+                  >
+                    {[1, 2, 3, 4, 5].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <p className="generate-menu-hint">{BATCH_HINTS[batchMode]}</p>
+              <button className="generate-menu-start" type="button" onClick={startBatch}>
+                Start batch
+              </button>
+            </div>
+          )}
+        </div>
+        {singleQueueCount > 0 && (
+          <span className="queue-count">
+            Queued {singleQueueCount}/{singleQueueMax}
+          </span>
+        )}
+        {(isGenerating || batchState.active) && (
+          <button className="cancel-inline-button" type="button" onClick={onCancelGeneration}>
+            Cancel
+          </button>
+        )}
         <button className="theme-toggle" type="button" onClick={onThemeToggle}>
           {theme === "dark" ? "Light" : "Dark"}
         </button>

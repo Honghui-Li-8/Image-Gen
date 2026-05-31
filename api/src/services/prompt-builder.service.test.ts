@@ -78,11 +78,18 @@ describe("buildGenerationPromptInput — model and preset validation", () => {
 
   it("computes baseWidth and baseHeight from model basePixels and preset ratio", () => {
     // illustrious-xl basePixels=1024×1536=1,572,864; portrait-2-3 ratio=2:3 → 1024×1536
-    const illustrious = buildGenerationPromptInput({ ...BASE_CONFIG, selectedPreset: "portrait-2-3" });
+    const illustrious = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      selectedPreset: "portrait-2-3",
+    });
     expect(illustrious.baseWidth).toBe(1024);
     expect(illustrious.baseHeight).toBe(1536);
     // pony-v6 basePixels=832×1216=1,011,712; same ratio → 832×1216
-    const pony = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6", selectedPreset: "portrait-2-3" });
+    const pony = buildGenerationPromptInput({
+      ...BASE_CONFIG,
+      modelId: "pony-v6",
+      selectedPreset: "portrait-2-3",
+    });
     expect(pony.baseWidth).toBe(832);
     expect(pony.baseHeight).toBe(1216);
   });
@@ -160,7 +167,7 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     expect(pony.positivePrompt).toContain("non-revealing clothing");
     expect(pony.positivePrompt).toContain("fully clothed outfit");
     expect(pony.positivePrompt).not.toContain("realistic human proportions");
-    expect(pony.positivePrompt).not.toContain("source_anime");
+    expect(pony.positivePrompt).toContain("source_anime");
     expect(pony.negativePrompt).toContain("pony");
     expect(pony.negativePrompt).toContain("bikini");
     expect(pony.negativePrompt).toContain("revealing clothes");
@@ -179,7 +186,7 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
     });
 
     expect(pony.positivePrompt).toContain("bodysuit");
-    expect(pony.positivePrompt).toContain("jacket");
+    expect(pony.positivePrompt).toContain("long coat");
     expect(pony.positivePrompt).toContain("covered outfit");
   });
 

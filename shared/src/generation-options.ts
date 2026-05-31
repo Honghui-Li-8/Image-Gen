@@ -128,7 +128,15 @@ export const baseCategories: Category[] = [
         value: "jk-uniform",
         label: "JK Uniform",
         tags: ["seifuku", "sailor collar", "pleated skirt", "knee-highs", "loafers", "hair ribbon"],
-        negativeTags: ["micro skirt", "suggestive", "pantyshot", "revealing clothes", "mask", "face mask", "covered face"],
+        negativeTags: [
+          "micro skirt",
+          "suggestive",
+          "pantyshot",
+          "revealing clothes",
+          "mask",
+          "face mask",
+          "covered face",
+        ],
       },
       {
         value: "cyberpunk",
@@ -139,8 +147,16 @@ export const baseCategories: Category[] = [
       {
         value: "fantasy-armor",
         label: "Fantasy Armor",
-        tags: ["armor", "full armor", "pauldrons"],
-        negativeTags: ["helmet", "closed helmet", "full helmet", "face mask", "covered face", "gauntlets", "armored gloves"],
+        tags: ["armor", "breastplate", "pauldrons", "greaves"],
+        negativeTags: [
+          "helmet",
+          "closed helmet",
+          "full helmet",
+          "face mask",
+          "covered face",
+          "gauntlets",
+          "armored gloves",
+        ],
       },
       {
         value: "casual",
@@ -150,7 +166,7 @@ export const baseCategories: Category[] = [
       {
         value: "sci-fi",
         label: "Sci-Fi",
-        tags: ["science fiction", "futuristic outfit", "bodysuit", "jacket", "open jacket"],
+        tags: ["science fiction", "futuristic outfit", "bodysuit", "long coat"],
         negativeTags: ["mask", "face mask", "covered face", "visor", "gas mask", "space suit"],
       },
     ],
@@ -232,8 +248,17 @@ const BASE_ADDITIONAL_TAG_GROUPS: Record<string, string[]> = {
 const BASE_ADDITIONAL_TAGS = Object.values(BASE_ADDITIONAL_TAG_GROUPS).flat();
 
 export const generationOptions: GenerationOptions = {
-  defaultModelId: "illustrious-xl",
+  defaultModelId: "animagine-xl-v3",
   models: {
+    "animagine-xl-v3": {
+      id: "animagine-xl-v3",
+      label: "Animagine XL v3",
+      tags: ["anime style", "animagine"],
+      categories: baseCategories,
+      additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
+      outputPresets: BASE_OUTPUT_PRESETS,
+      basePixels: 1024 * 1536,
+    },
     "illustrious-xl": {
       id: "illustrious-xl",
       label: "Amanatsu Illustrious v2",
@@ -251,15 +276,6 @@ export const generationOptions: GenerationOptions = {
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS,
       basePixels: 832 * 1216,
-    },
-    "animagine-xl-v3": {
-      id: "animagine-xl-v3",
-      label: "Animagine XL v3",
-      tags: ["anime style", "animagine"],
-      categories: baseCategories,
-      additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
-      outputPresets: BASE_OUTPUT_PRESETS,
-      basePixels: 1024 * 1536,
     },
   },
 };

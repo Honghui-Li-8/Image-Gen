@@ -1,11 +1,21 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TopBar } from "./TopBar";
-import type { GenerationOptions, Work } from "../types";
+import type { BatchGenerationState, GenerationOptions, Work } from "../types";
 
 const OPTIONS: GenerationOptions = {
   defaultModelId: "model-a",
   models: {},
+};
+
+const BATCH_STATE: BatchGenerationState = {
+  active: false,
+  mode: null,
+  items: [],
+  currentIndex: 0,
+  total: 0,
+  progress: 0,
+  skippedModels: [],
 };
 
 const makeWork = (patch: Partial<Work> = {}): Work => ({
@@ -32,14 +42,19 @@ const renderTopBar = (activeWork: Work) =>
   render(
     <TopBar
       activeWork={activeWork}
+      batchState={BATCH_STATE}
       comfyReachable
       isGenerating
       isLoadingWorks={false}
       isSaving={false}
+      onBatchGeneration={vi.fn()}
+      onCancelGeneration={vi.fn()}
       onGenerationAction={vi.fn()}
       onThemeToggle={vi.fn()}
       options={OPTIONS}
       serverStatus="healthy"
+      singleQueueCount={0}
+      singleQueueMax={5}
       theme="dark"
     />
   );
