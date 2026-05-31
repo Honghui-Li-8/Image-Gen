@@ -66,7 +66,7 @@ export const imageHandler: RequestHandler = async (req, res) => {
     CONTENT_TYPES[path.extname(filename).toLowerCase()] ?? "application/octet-stream"
   );
   res.setHeader("Content-Length", file.size);
-  res.setHeader("Cache-Control", "private, max-age=86400");
+  res.setHeader("Cache-Control", "private, max-age=7200");
   createReadStream(absPath)
     .on("error", () => {
       if (!res.headersSent) res.status(500).end();

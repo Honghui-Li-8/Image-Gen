@@ -39,11 +39,14 @@ export const signImageUrl = (
   proxyUrl: string,
   secret: string,
   filename: string,
-  expSecs = 86_400,
+  expSecs = 6 * 3600,
   nowMs = Date.now()
 ): string => {
   const baseUrl = proxyUrl.endsWith("/") ? proxyUrl.slice(0, -1) : proxyUrl;
-  const exp = String(Math.floor(nowMs / 1000) + expSecs);
+  // Quantize to the nearest hour so the URL is stable within a 1-hour window,
+  // allowing browser cache hits across page refreshes.
+  const BUCKET_SECS = 2 * 3600;
+  const exp = String(Math.floor(nowMs / 1000 / BUCKET_SECS) * BUCKET_SECS + expSecs);
   const token = signPayload(secret, canonicalImagePayload(filename, exp));
   const params = new URLSearchParams({ token, exp });
 
