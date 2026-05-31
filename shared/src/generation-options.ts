@@ -166,7 +166,7 @@ export const baseCategories: Category[] = [
       {
         value: "sci-fi",
         label: "Sci-Fi",
-        tags: ["science fiction", "futuristic outfit", "bodysuit", "jacket", "open jacket"],
+        tags: ["science fiction", "futuristic outfit", "bodysuit", "long coat"],
         negativeTags: ["mask", "face mask", "covered face", "visor", "gas mask", "space suit"],
       },
     ],
