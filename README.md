@@ -31,6 +31,31 @@ Install dependencies from the repo root:
 pnpm install
 ```
 
+## Environment
+
+For local development, create:
+
+- `api/.env` from `api/.env.example`
+- `proxy/.env` from `proxy/.env.example` only if you are testing the proxy and
+  ComfyUI integration
+
+Minimum API variables for local startup:
+
+- `PROXY_AUTH_SECRET`
+- `SEED_USER_1_NAME`
+- `SEED_USER_1_PASSWORD`
+
+Optional app variable:
+
+- `VITE_API_URL` if the frontend should target a non-default API URL
+
+Default local ports:
+
+- App: `5173`
+- API: `3000`
+- Proxy: `3001`
+- ComfyUI: `8188`
+
 ## Run
 
 Start the app and API together:
@@ -51,6 +76,9 @@ Start the API:
 pnpm --filter image-gen-api dev
 ```
 
+`pnpm dev` is intended for local app and API development. Full generation flows
+require ComfyUI and, in this project setup, the proxy service.
+
 By default:
 
 - React app: `http://localhost:5173`
@@ -59,6 +87,23 @@ By default:
 - Generation options: `http://localhost:3000/generation-options`
 
 The React app reads the API base URL from `VITE_API_URL`. If it is not set, it defaults to `http://localhost:3000`.
+
+## Review Scope
+
+This repository is fully readable and reviewable without private infrastructure.
+
+Expected local scope:
+
+- Inspect and develop the app and API locally
+- Review the proxy and generation integration code paths
+
+Not expected for external reviewers:
+
+- Reproducing the full GPU-backed generation stack
+- Recreating the private proxy and tunnel environment
+
+The proxy and generation path were built for a specific demo environment, not
+as a turnkey public setup.
 
 ## Tests and Checks
 
