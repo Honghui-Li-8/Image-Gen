@@ -58,10 +58,13 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
         isLoadingWorks={worksState.isLoadingWorks}
         isSaving={worksState.isSaving}
         onBatchGeneration={worksState.startBatchGeneration}
+        onCancelGeneration={() => worksState.setShowCancelModal(true)}
         onGenerationAction={worksState.handleGenerationAction}
         onThemeToggle={toggleTheme}
         options={options}
         serverStatus={serverStatus}
+        singleQueueCount={worksState.singleQueueCount}
+        singleQueueMax={worksState.singleQueueMax}
         theme={theme}
       />
 
@@ -102,7 +105,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           commitTag={worksState.commitTag}
           customTags={worksState.customTags}
           isDirty={worksState.isDirty}
-          isGenerationLocked={worksState.isGenerating || worksState.batchState.active}
+          isGenerationLocked={worksState.batchState.active}
           isSaving={worksState.isSaving}
           missingFieldIds={worksState.missingFieldIds}
           models={options?.models ?? {}}

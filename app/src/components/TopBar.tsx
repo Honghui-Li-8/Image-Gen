@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { getHealthLabel } from "../utils/health";
-import type { BatchGenerationMode, BatchGenerationState, GenerationOptions, ServerStatus, Theme, Work } from "../types";
+import type {
+  BatchGenerationMode,
+  BatchGenerationState,
+  GenerationOptions,
+  ServerStatus,
+  Theme,
+  Work,
+} from "../types";
 
 interface TopBarProps {
   activeWork: Work | undefined;
@@ -10,10 +17,13 @@ interface TopBarProps {
   isLoadingWorks: boolean;
   isSaving: boolean;
   onBatchGeneration: (mode: BatchGenerationMode, batchSize?: number) => void;
+  onCancelGeneration: () => void;
   onGenerationAction: () => void;
   onThemeToggle: () => void;
   options: GenerationOptions | null;
   serverStatus: ServerStatus;
+  singleQueueCount: number;
+  singleQueueMax: number;
   theme: Theme;
 }
 
@@ -58,17 +68,22 @@ export const TopBar = ({
   isLoadingWorks,
   isSaving,
   onBatchGeneration,
+  onCancelGeneration,
   onGenerationAction,
   onThemeToggle,
   options,
   serverStatus,
+  singleQueueCount,
+  singleQueueMax,
   theme,
 }: TopBarProps) => {
   const [batchMenuOpen, setBatchMenuOpen] = useState(false);
   const [batchMode, setBatchMode] = useState<BatchGenerationMode>("seed");
   const [batchSize, setBatchSize] = useState(3);
   const generationDetailLabel = getGenerationDetailLabel(activeWork);
-  const isGenerationDisabled = isLoadingWorks || isSaving || !options || comfyReachable === false;
+  const isQueueFull = isGenerating && singleQueueCount >= singleQueueMax;
+  const isGenerationDisabled =
+    isLoadingWorks || isSaving || !options || comfyReachable === false || batchState.active || isQueueFull;
   const isBatchDisabled = isGenerationDisabled || isGenerating || batchState.active;
   const batchProgressLabel = batchState.active
     ? `Generating ${Math.min(batchState.currentIndex + 1, batchState.total)}/${batchState.total}`
@@ -106,15 +121,24 @@ export const TopBar = ({
           </span>
         )}
         {comfyReachable === false && <span className="gpu-offline-label">GPU offline</span>}
+      </div>
+
+      <div className="top-actions">
         <div className="generate-control">
           <button
-            className={`generate-button ${isGenerating || batchState.active ? "generate-button--cancel" : ""}`}
+            className="generate-button"
             type="button"
             disabled={isGenerationDisabled}
-            title={comfyReachable === false ? "ComfyUI is not reachable" : undefined}
+            title={
+              comfyReachable === false
+                ? "ComfyUI is not reachable"
+                : isQueueFull
+                  ? "Generation queue is full"
+                  : undefined
+            }
             onClick={onGenerationAction}
           >
-            {isGenerating || batchState.active ? "Cancel" : "Generate"}
+            {isGenerating ? "Queue" : "Generate"}
           </button>
           <button
             aria-label="Open batch generation options"
@@ -159,9 +183,16 @@ export const TopBar = ({
             </div>
           )}
         </div>
-      </div>
-
-      <div className="top-actions">
+        {singleQueueCount > 0 && (
+          <span className="queue-count">
+            Queued {singleQueueCount}/{singleQueueMax}
+          </span>
+        )}
+        {(isGenerating || batchState.active) && (
+          <button className="cancel-inline-button" type="button" onClick={onCancelGeneration}>
+            Cancel
+          </button>
+        )}
         <button className="theme-toggle" type="button" onClick={onThemeToggle}>
           {theme === "dark" ? "Light" : "Dark"}
         </button>

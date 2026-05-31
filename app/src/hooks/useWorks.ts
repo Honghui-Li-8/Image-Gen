@@ -49,6 +49,8 @@ interface UseWorksState {
   setShowCancelModal: (show: boolean) => void;
   showCancelModal: boolean;
   showGenerationValidation: boolean;
+  singleQueueCount: number;
+  singleQueueMax: number;
   updateActiveWork: (updater: WorkUpdater) => void;
   works: Work[];
   workErrors: Record<string, string>;
@@ -343,6 +345,8 @@ export const useWorks = (
     setShowCancelModal: generation.setShowCancelModal,
     showCancelModal: generation.showCancelModal,
     showGenerationValidation: generation.showGenerationValidation,
+    singleQueueCount: generation.singleQueueCount,
+    singleQueueMax: generation.singleQueueMax,
     updateActiveWork,
     works,
     workErrors,

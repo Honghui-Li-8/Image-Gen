@@ -43,6 +43,8 @@ interface UseGenerationParams {
 
 export interface UseGenerationState {
   batchState: BatchGenerationState;
+  singleQueueCount: number;
+  singleQueueMax: number;
   showCancelModal: boolean;
   setShowCancelModal: Dispatch<SetStateAction<boolean>>;
   showGenerationValidation: boolean;
@@ -79,6 +81,7 @@ const serializeGenerationRequest = (config: WorkConfig) => ({
 });
 
 const makeBatchItemId = (index: number): string => `batch_${Date.now()}_${index}`;
+const SINGLE_QUEUE_MAX = 5;
 
 const computeAggregateProgress = (items: BatchGenerationItem[]): number => {
   if (items.length === 0) return 0;
@@ -103,11 +106,18 @@ export const useGeneration = ({
   onGenerationFailed,
 }: UseGenerationParams): UseGenerationState => {
   const [batchState, setBatchState] = useState<BatchGenerationState>(() => emptyBatchState());
+  const [singleQueueCount, setSingleQueueCount] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showGenerationValidation, setShowGenerationValidation] = useState(false);
   const activeGenerationIdRef = useRef<string | null>(null);
   const batchCanceledRef = useRef(false);
   const generationSourceRef = useRef<EventSource | null>(null);
+  const singleQueueRef = useRef<WorkConfig[]>([]);
+
+  const setSingleQueue = useCallback((items: WorkConfig[]) => {
+    singleQueueRef.current = items;
+    setSingleQueueCount(items.length);
+  }, []);
 
   const closeGenerationStream = useCallback(() => {
     generationSourceRef.current?.close();
@@ -262,6 +272,11 @@ export const useGeneration = ({
 
       try {
         await runGenerationConfig(workId, generationConfig);
+        while (singleQueueRef.current.length > 0 && !batchCanceledRef.current) {
+          const [nextConfig, ...remaining] = singleQueueRef.current;
+          setSingleQueue(remaining);
+          await runGenerationConfig(workId, nextConfig);
+        }
       } catch (error) {
         activeGenerationIdRef.current = null;
         updateWorkById(workId, {
@@ -281,9 +296,18 @@ export const useGeneration = ({
     onGenerationFailed,
     patchWork,
     runGenerationConfig,
+    setSingleQueue,
     setWorkErrors,
     updateWorkById,
   ]);
+
+  const enqueueSingleGeneration = useCallback(() => {
+    if (!activeWork || !canGenerate || singleQueueRef.current.length >= SINGLE_QUEUE_MAX) {
+      if (!canGenerate) setShowGenerationValidation(true);
+      return;
+    }
+    setSingleQueue([...singleQueueRef.current, buildWorkConfig(activeWork)]);
+  }, [activeWork, canGenerate, setSingleQueue]);
 
   const startBatchGeneration = useCallback(
     (mode: BatchGenerationMode, batchSize = 1) => {
@@ -406,8 +430,11 @@ export const useGeneration = ({
   );
 
   const handleGenerationAction = useCallback(() => {
-    if (isGenerating || batchState.active) {
-      setShowCancelModal(true);
+    if (isGenerating) {
+      enqueueSingleGeneration();
+      return;
+    }
+    if (batchState.active) {
       return;
     }
     if (!canGenerate) {
@@ -415,11 +442,12 @@ export const useGeneration = ({
       return;
     }
     startGeneration();
-  }, [batchState.active, canGenerate, isGenerating, startGeneration]);
+  }, [batchState.active, canGenerate, enqueueSingleGeneration, isGenerating, startGeneration]);
 
   const confirmCancelGeneration = useCallback(() => {
     const generationId = activeGenerationIdRef.current;
     batchCanceledRef.current = true;
+    setSingleQueue([]);
     if (generationId) {
       void apiFetch(`${apiUrl}/generations/${generationId}/cancel`, {
         method: "POST",
@@ -451,6 +479,8 @@ export const useGeneration = ({
 
   return {
     batchState,
+    singleQueueCount,
+    singleQueueMax: SINGLE_QUEUE_MAX,
     showCancelModal,
     setShowCancelModal,
     showGenerationValidation,

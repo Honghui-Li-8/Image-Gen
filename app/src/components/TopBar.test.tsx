@@ -48,10 +48,13 @@ const renderTopBar = (activeWork: Work) =>
       isLoadingWorks={false}
       isSaving={false}
       onBatchGeneration={vi.fn()}
+      onCancelGeneration={vi.fn()}
       onGenerationAction={vi.fn()}
       onThemeToggle={vi.fn()}
       options={OPTIONS}
       serverStatus="healthy"
+      singleQueueCount={0}
+      singleQueueMax={5}
       theme="dark"
     />
   );
