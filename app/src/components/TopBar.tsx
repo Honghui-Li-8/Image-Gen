@@ -60,6 +60,12 @@ const getGenerationDetailLabel = (work: Work | undefined): string | null => {
   return detail.message ?? null;
 };
 
+const BATCH_HINTS: Record<BatchGenerationMode, string> = {
+  model: "Runs one generation per compatible model. Seed, selections, tags, size, and prompt stay the same.",
+  seed: "Randomizes only the seed for each item. Model, selections, tags, size, and prompt stay the same.",
+  config: "Randomizes only config selections. Model, seed, tags, size, and prompt stay the same.",
+};
+
 export const TopBar = ({
   activeWork,
   batchState,
@@ -151,17 +157,22 @@ export const TopBar = ({
           </button>
           {batchMenuOpen && (
             <div className="generate-menu">
+              <div className="generate-menu-heading">
+                <strong>Batch-gen</strong>
+                <span>Choose what changes across this run.</span>
+              </div>
               <label>
-                <span>Mode</span>
+                <span>Batch-gen mode</span>
                 <select
                   value={batchMode}
                   onChange={(event) => setBatchMode(event.target.value as BatchGenerationMode)}
                 >
-                  <option value="model">Model</option>
-                  <option value="seed">Seed</option>
-                  <option value="config">Config</option>
+                  <option value="model">Mode: model</option>
+                  <option value="seed">Mode: seed</option>
+                  <option value="config">Mode: config selections</option>
                 </select>
               </label>
+              <p className="generate-menu-hint">{BATCH_HINTS[batchMode]}</p>
               {batchMode !== "model" && (
                 <label>
                   <span>Batch size</span>
