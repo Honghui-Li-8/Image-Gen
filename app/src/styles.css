@@ -241,14 +241,25 @@ button:disabled {
 }
 
 .theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--control);
   color: var(--text);
-  font-size: 0.84rem;
-  font-weight: 800;
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .server-pill {
