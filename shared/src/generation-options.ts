@@ -27,6 +27,7 @@ export interface ModelConfig {
   categories: Category[];
   additionalTagSuggestions: string[];
   outputPresets: OutputPreset[];
+  basePixels: number;
 }
 
 export interface GenerationOptions {
@@ -240,6 +241,7 @@ export const generationOptions: GenerationOptions = {
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS,
+      basePixels: 1024 * 1536,
     },
     "pony-v6": {
       id: "pony-v6",
@@ -248,6 +250,7 @@ export const generationOptions: GenerationOptions = {
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS,
+      basePixels: 832 * 1216,
     },
     "animagine-xl-v3": {
       id: "animagine-xl-v3",
@@ -256,6 +259,7 @@ export const generationOptions: GenerationOptions = {
       categories: baseCategories,
       additionalTagSuggestions: BASE_ADDITIONAL_TAGS,
       outputPresets: BASE_OUTPUT_PRESETS,
+      basePixels: 1024 * 1536,
     },
   },
 };

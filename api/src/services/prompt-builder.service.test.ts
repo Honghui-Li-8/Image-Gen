@@ -76,10 +76,15 @@ describe("buildGenerationPromptInput — model and preset validation", () => {
     ).toBe("workflow_animagine_xl.json");
   });
 
-  it("resolves baseWidth and baseHeight from the preset", () => {
-    const result = buildGenerationPromptInput({ ...BASE_CONFIG, selectedPreset: "portrait-2-3" });
-    expect(result.baseWidth).toBe(832);
-    expect(result.baseHeight).toBe(1216);
+  it("computes baseWidth and baseHeight from model basePixels and preset ratio", () => {
+    // illustrious-xl basePixels=1024×1536=1,572,864; portrait-2-3 ratio=2:3 → 1024×1536
+    const illustrious = buildGenerationPromptInput({ ...BASE_CONFIG, selectedPreset: "portrait-2-3" });
+    expect(illustrious.baseWidth).toBe(1024);
+    expect(illustrious.baseHeight).toBe(1536);
+    // pony-v6 basePixels=832×1216=1,011,712; same ratio → 832×1216
+    const pony = buildGenerationPromptInput({ ...BASE_CONFIG, modelId: "pony-v6", selectedPreset: "portrait-2-3" });
+    expect(pony.baseWidth).toBe(832);
+    expect(pony.baseHeight).toBe(1216);
   });
 });
 

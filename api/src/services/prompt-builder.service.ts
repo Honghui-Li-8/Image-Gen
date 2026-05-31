@@ -101,6 +101,17 @@ const XML_SECTIONS: XmlSectionConfig[] = [
   },
 ];
 
+const snap64 = (x: number): number => Math.round(x / 64) * 64;
+
+const computeBaseGenDimensions = (
+  basePixels: number,
+  ratioW: number,
+  ratioH: number
+): { baseWidth: number; baseHeight: number } => ({
+  baseWidth: snap64(Math.sqrt(basePixels * ratioW / ratioH)),
+  baseHeight: snap64(Math.sqrt(basePixels * ratioH / ratioW)),
+});
+
 const parseSeed = (seedStr: string): number => {
   if (!seedStr) throw new Error("Seed is required");
   const seed = Number(seedStr);
@@ -276,8 +287,7 @@ export const buildGenerationPromptInput = (
   return {
     seed,
     workflowFile: promptPreset.workflowFile,
-    baseWidth: preset.width,
-    baseHeight: preset.height,
+    ...computeBaseGenDimensions(model.basePixels, preset.width, preset.height),
     positivePrompt: renderPositivePrompt({
       template: promptPreset.promptTemplate,
       qualityPrompt,
