@@ -89,6 +89,7 @@ const XML_SECTIONS: XmlSectionConfig[] = [
       "detailed legs",
       "detailed thighs",
       "correct anatomy",
+      "standing",
       "full body",
       "head to toe",
       "both feet visible",

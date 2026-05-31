@@ -208,6 +208,7 @@ const BASE_ADDITIONAL_TAG_GROUPS: Record<string, string[]> = {
     "depth of field",
     "blurry background",
   ],
+  Composition: ["detailed background", "lush scenery"],
   "Color Palette": ["pastel colors", "vivid colors", "warm color palette", "cool color palette"],
   Accessories: [
     "earrings",
