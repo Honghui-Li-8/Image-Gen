@@ -139,7 +139,7 @@ export const baseCategories: Category[] = [
       {
         value: "fantasy-armor",
         label: "Fantasy Armor",
-        tags: ["armor", "full armor", "pauldrons"],
+        tags: ["armor", "breastplate", "pauldrons", "greaves"],
         negativeTags: ["helmet", "closed helmet", "full helmet", "face mask", "covered face", "gauntlets", "armored gloves"],
       },
       {

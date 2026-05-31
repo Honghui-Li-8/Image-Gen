@@ -94,6 +94,8 @@ const XML_SECTIONS: XmlSectionConfig[] = [
       "head to toe",
       "both feet visible",
       "full-length shot",
+      "face visible",
+      "looking at viewer",
       "no extra limbs",
       "no distorted feet",
     ],
