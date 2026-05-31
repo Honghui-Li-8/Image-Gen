@@ -4,6 +4,7 @@ import { ConfirmModal } from "./components/ConfirmModal";
 import { GalleryPanel } from "./components/GalleryPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LoginGate } from "./components/LoginGate";
+import { Notification } from "./components/Notification";
 import { TopBar } from "./components/TopBar";
 import { WorksSidebar } from "./components/WorksSidebar";
 import { useApiHealth } from "./hooks/useApiHealth";
@@ -41,15 +42,22 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
 
   const serverStatus = worksState.isGenerating ? "working" : health.status;
+  const skippedModelMessage = worksState.batchState.skippedModels.length
+    ? `Skipped incompatible model${worksState.batchState.skippedModels.length === 1 ? "" : "s"}: ${worksState.batchState.skippedModels
+        .map((model) => `${model.modelLabel} (${model.incompatibleFields.join(", ")})`)
+        .join("; ")}`
+    : null;
 
   return (
     <main className="creator-shell">
       <TopBar
         activeWork={worksState.activeWork}
+        batchState={worksState.batchState}
         comfyReachable={comfyReachable}
         isGenerating={worksState.isGenerating}
         isLoadingWorks={worksState.isLoadingWorks}
         isSaving={worksState.isSaving}
+        onBatchGeneration={worksState.startBatchGeneration}
         onGenerationAction={worksState.handleGenerationAction}
         onThemeToggle={toggleTheme}
         options={options}
@@ -81,6 +89,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
         <GalleryPanel
           activeImage={worksState.activeImage}
           activeWork={worksState.activeWork}
+          batchItems={worksState.batchState.items}
           onDeleteImage={worksState.deleteImage}
           onMoveImage={worksState.moveImage}
           onSelectDraft={worksState.selectDraft}
@@ -93,6 +102,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           commitTag={worksState.commitTag}
           customTags={worksState.customTags}
           isDirty={worksState.isDirty}
+          isGenerationLocked={worksState.isGenerating || worksState.batchState.active}
           isSaving={worksState.isSaving}
           missingFieldIds={worksState.missingFieldIds}
           models={options?.models ?? {}}
@@ -112,6 +122,7 @@ const Dashboard = ({ onUnauthorized, session }: DashboardProps) => {
           onConfirm={worksState.confirmCancelGeneration}
         />
       ) : null}
+      <Notification message={skippedModelMessage} />
     </main>
   );
 };

@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { getHealthLabel } from "../utils/health";
-import type { GenerationOptions, ServerStatus, Theme, Work } from "../types";
+import type { BatchGenerationMode, BatchGenerationState, GenerationOptions, ServerStatus, Theme, Work } from "../types";
 
 interface TopBarProps {
   activeWork: Work | undefined;
+  batchState: BatchGenerationState;
   comfyReachable: boolean | null;
   isGenerating: boolean;
   isLoadingWorks: boolean;
   isSaving: boolean;
+  onBatchGeneration: (mode: BatchGenerationMode, batchSize?: number) => void;
   onGenerationAction: () => void;
   onThemeToggle: () => void;
   options: GenerationOptions | null;
@@ -49,17 +52,32 @@ const getGenerationDetailLabel = (work: Work | undefined): string | null => {
 
 export const TopBar = ({
   activeWork,
+  batchState,
   comfyReachable,
   isGenerating,
   isLoadingWorks,
   isSaving,
+  onBatchGeneration,
   onGenerationAction,
   onThemeToggle,
   options,
   serverStatus,
   theme,
 }: TopBarProps) => {
+  const [batchMenuOpen, setBatchMenuOpen] = useState(false);
+  const [batchMode, setBatchMode] = useState<BatchGenerationMode>("seed");
+  const [batchSize, setBatchSize] = useState(3);
   const generationDetailLabel = getGenerationDetailLabel(activeWork);
+  const isGenerationDisabled = isLoadingWorks || isSaving || !options || comfyReachable === false;
+  const isBatchDisabled = isGenerationDisabled || isGenerating || batchState.active;
+  const batchProgressLabel = batchState.active
+    ? `Generating ${Math.min(batchState.currentIndex + 1, batchState.total)}/${batchState.total}`
+    : null;
+
+  const startBatch = () => {
+    onBatchGeneration(batchMode, batchMode === "model" ? undefined : batchSize);
+    setBatchMenuOpen(false);
+  };
 
   return (
     <header className="top-status-bar">
@@ -82,16 +100,65 @@ export const TopBar = ({
             {generationDetailLabel}
           </span>
         )}
+        {batchProgressLabel && (
+          <span className="generation-detail-label" title={batchProgressLabel}>
+            {batchProgressLabel}
+          </span>
+        )}
         {comfyReachable === false && <span className="gpu-offline-label">GPU offline</span>}
-        <button
-          className={`generate-button ${isGenerating ? "generate-button--cancel" : ""}`}
-          type="button"
-          disabled={isLoadingWorks || isSaving || !options || comfyReachable === false}
-          title={comfyReachable === false ? "ComfyUI is not reachable" : undefined}
-          onClick={onGenerationAction}
-        >
-          {isGenerating ? "Cancel" : "Generate"}
-        </button>
+        <div className="generate-control">
+          <button
+            className={`generate-button ${isGenerating || batchState.active ? "generate-button--cancel" : ""}`}
+            type="button"
+            disabled={isGenerationDisabled}
+            title={comfyReachable === false ? "ComfyUI is not reachable" : undefined}
+            onClick={onGenerationAction}
+          >
+            {isGenerating || batchState.active ? "Cancel" : "Generate"}
+          </button>
+          <button
+            aria-label="Open batch generation options"
+            className="generate-menu-button"
+            type="button"
+            disabled={isBatchDisabled}
+            onClick={() => setBatchMenuOpen((open) => !open)}
+          >
+            ▾
+          </button>
+          {batchMenuOpen && (
+            <div className="generate-menu">
+              <label>
+                <span>Mode</span>
+                <select
+                  value={batchMode}
+                  onChange={(event) => setBatchMode(event.target.value as BatchGenerationMode)}
+                >
+                  <option value="model">Model</option>
+                  <option value="seed">Seed</option>
+                  <option value="config">Config</option>
+                </select>
+              </label>
+              {batchMode !== "model" && (
+                <label>
+                  <span>Batch size</span>
+                  <select
+                    value={batchSize}
+                    onChange={(event) => setBatchSize(Number(event.target.value))}
+                  >
+                    {[1, 2, 3, 4, 5].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button className="generate-menu-start" type="button" onClick={startBatch}>
+                Start batch
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="top-actions">

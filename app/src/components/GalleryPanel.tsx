@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { GeneratedImage, Work } from "../types";
+import type { CSSProperties } from "react";
+import type { BatchGenerationItem, GeneratedImage, Work } from "../types";
 
 interface GalleryPanelProps {
   activeImage: GeneratedImage | undefined;
   activeWork: Work | undefined;
+  batchItems: BatchGenerationItem[];
   onDeleteImage: (generationId: string) => void;
   onMoveImage: (offset: number) => void;
   onSelectDraft: () => void;
@@ -19,6 +21,7 @@ interface ContextMenu {
 export const GalleryPanel = ({
   activeImage,
   activeWork,
+  batchItems,
   onDeleteImage,
   onMoveImage,
   onSelectDraft,
@@ -122,6 +125,22 @@ export const GalleryPanel = ({
                   <img src={image.url} alt="" />
                 </button>
               ))}
+              {batchItems
+                .filter((item) => item.status !== "completed")
+                .map((item, index) => (
+                  <div
+                    className={`thumbnail thumbnail--batch thumbnail--batch-${item.status}`}
+                    key={item.id}
+                    title={item.error ?? `${item.status} ${item.progress}%`}
+                  >
+                    <div
+                      className="thumbnail-progress-ring"
+                      style={{ "--progress": `${item.progress}%` } as CSSProperties}
+                    >
+                      <span>{item.status === "pending" ? index + 1 : `${item.progress}%`}</span>
+                    </div>
+                  </div>
+                ))}
               <button
                 className={`thumbnail thumbnail--draft ${isViewingDraft ? "thumbnail--active" : ""}`}
                 type="button"
