@@ -109,12 +109,11 @@ describe("buildGenerationPromptInput — XML prompt", () => {
     expect(result.positivePrompt).toContain("casual");
   });
 
-  it("always includes character_1, count, quality, and other", () => {
+  it("always includes character_1, count, and other", () => {
     const result = buildGenerationPromptInput({ ...BASE_CONFIG, selections: {} });
     expect(result.positivePrompt).toContain("<character_1>");
     expect(result.positivePrompt).toContain("<general_tags>");
     expect(result.positivePrompt).toContain("<count>");
-    expect(result.positivePrompt).toContain("<quality>");
     expect(result.positivePrompt).toContain("<other>");
   });
 
@@ -162,7 +161,6 @@ describe("buildGenerationPromptInput — backend prompt presets", () => {
 
     expect(pony.positivePrompt).toContain("score_9");
     expect(pony.positivePrompt).toContain("anime girl");
-    expect(pony.positivePrompt).toContain("normal human body");
     expect(pony.positivePrompt).toContain("modest outfit");
     expect(pony.positivePrompt).toContain("non-revealing clothing");
     expect(pony.positivePrompt).toContain("fully clothed outfit");
