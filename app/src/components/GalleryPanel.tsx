@@ -112,22 +112,27 @@ export const GalleryPanel = ({
 
       <div className="preview-section">
         <div className="thumbnail-strip">
-          {images.length ? (
-            <>
-              {images.map((image, index) => (
-                <button
-                  className={`thumbnail ${!isViewingDraft && index === activeWork?.activeImageIndex ? "thumbnail--active" : ""}`}
-                  key={image.id || image.url}
-                  type="button"
-                  onClick={() => onSelectImage(index)}
-                  onContextMenu={(e) => image.id && handleThumbnailContextMenu(e, index, image.id)}
-                >
-                  <img src={image.url} alt="" />
-                </button>
-              ))}
-              {batchItems
-                .filter((item) => item.status !== "completed")
-                .map((item, index) => (
+          {(() => {
+            const activeBatchItems = batchItems.filter((item) => item.status !== "completed");
+            if (!images.length && !activeBatchItems.length) {
+              return <div className="thumbnail-empty">No previews yet</div>;
+            }
+            return (
+              <>
+                {images.map((image, index) => (
+                  <button
+                    className={`thumbnail ${!isViewingDraft && index === activeWork?.activeImageIndex ? "thumbnail--active" : ""}`}
+                    key={image.id || image.url}
+                    type="button"
+                    onClick={() => onSelectImage(index)}
+                    onContextMenu={(e) =>
+                      image.id && handleThumbnailContextMenu(e, index, image.id)
+                    }
+                  >
+                    <img src={image.url} alt="" />
+                  </button>
+                ))}
+                {activeBatchItems.map((item, index) => (
                   <div
                     className={`thumbnail thumbnail--batch thumbnail--batch-${item.status}`}
                     key={item.id}
@@ -141,18 +146,17 @@ export const GalleryPanel = ({
                     </div>
                   </div>
                 ))}
-              <button
-                className={`thumbnail thumbnail--draft ${isViewingDraft ? "thumbnail--active" : ""}`}
-                type="button"
-                onClick={onSelectDraft}
-                title="Current config (draft)"
-              >
-                ✦
-              </button>
-            </>
-          ) : (
-            <div className="thumbnail-empty">No previews yet</div>
-          )}
+                <button
+                  className={`thumbnail thumbnail--draft ${isViewingDraft ? "thumbnail--active" : ""}`}
+                  type="button"
+                  onClick={onSelectDraft}
+                  title="Current config (draft)"
+                >
+                  ✦
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
 
