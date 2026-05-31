@@ -14,9 +14,8 @@ const CONTENT_TYPES: Record<string, string> = {
 
 const isValidFilename = (filename: string): boolean => {
   if (!filename) return false;
-  if (filename.includes("/") || filename.includes("\\")) return false;
   const segments = filename.split(/[\\/]/);
-  return segments.every((segment) => segment !== "." && segment !== "..");
+  return segments.every((segment) => segment !== "" && segment !== "." && segment !== "..");
 };
 
 export const imageHandler: RequestHandler = async (req, res) => {
@@ -35,6 +34,7 @@ export const imageHandler: RequestHandler = async (req, res) => {
   }
 
   if (!verifyImageToken(getProxyAuthSecret(), filename, exp, token)) {
+    console.log(JSON.stringify({ type: "image_token_invalid", filename }));
     res.status(403).json({ error: "Invalid or expired image token" });
     return;
   }
@@ -51,10 +51,12 @@ export const imageHandler: RequestHandler = async (req, res) => {
   try {
     file = await stat(absPath);
     if (!file.isFile()) {
+      console.log(JSON.stringify({ type: "image_not_file", absPath }));
       res.status(404).json({ error: "Image file not found" });
       return;
     }
   } catch {
+    console.log(JSON.stringify({ type: "image_not_found", absPath }));
     res.status(404).json({ error: "Image file not found" });
     return;
   }

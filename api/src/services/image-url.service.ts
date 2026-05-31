@@ -14,8 +14,14 @@ const getProxySecret = (): string => {
   return secret;
 };
 
-export const buildSignedImageUrl = (filename: string): string =>
-  signImageUrl(getProxyUrl(), getProxySecret(), filename);
+const isLegacyComfyUrl = (imageUrl: string): boolean =>
+  imageUrl.startsWith("http://") || imageUrl.startsWith("https://");
+
+export const buildSignedImageUrl = (filename: string): string => {
+  const url = signImageUrl(getProxyUrl(), getProxySecret(), filename);
+  console.log(JSON.stringify({ type: "image_url_built", filename, proxyUrl: getProxyUrl(), signedUrl: url }));
+  return url;
+};
 
 export const serializeGenerationImageUrl = (
   status: GenerationStatus,
@@ -23,6 +29,10 @@ export const serializeGenerationImageUrl = (
 ): string | null => {
   if (status !== "completed" || !imageUrl) {
     return imageUrl;
+  }
+  if (isLegacyComfyUrl(imageUrl)) {
+    console.log(JSON.stringify({ type: "image_url_legacy", imageUrl }));
+    return null;
   }
   return buildSignedImageUrl(imageUrl);
 };

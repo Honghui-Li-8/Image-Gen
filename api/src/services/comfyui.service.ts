@@ -178,5 +178,5 @@ export const fetchComfyHistory = async (promptId: string): Promise<unknown> => {
 };
 
 export const buildComfyImageFilename = (ref: ComfyImageRef): string => {
-  return ref.filename;
+  return ref.subfolder ? `${ref.subfolder}/${ref.filename}` : ref.filename;
 };
