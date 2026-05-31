@@ -129,6 +129,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   await db.delete(users);
   generationEmitter.removeAllListeners(GENERATION_UPDATE_EVENT);
   tokenStore.clear();
@@ -341,6 +342,78 @@ describe("POST /works/:workId/generations", () => {
 
     expect(res.status).toBe(429);
     expect(res.body.error).toBe("GPU busy, try again shortly");
+  });
+});
+
+describe("POST /generations/:generationId/cancel", () => {
+  it("cancels an active generation and emits a terminal update", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "running");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => "" });
+    vi.stubGlobal("fetch", fetchMock);
+    const events: unknown[] = [];
+    generationEmitter.on(GENERATION_UPDATE_EVENT, (event) => events.push(event));
+
+    const res = await request(app)
+      .post(`/generations/${generationId}/cancel`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      generationId,
+      status: "failed",
+      error: "Generation canceled by user",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://proxy.test/comfy/interrupt",
+      expect.objectContaining({ method: "POST" })
+    );
+
+    const [generation] = await db
+      .select()
+      .from(generations)
+      .where(eq(generations.id, generationId));
+    expect(generation.status).toBe("failed");
+    expect(generation.error).toBe("Generation canceled by user");
+    expect(generation.completedAt).toBeInstanceOf(Date);
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        generationId,
+        status: "failed",
+        progress: 100,
+        error: "Generation canceled by user",
+      })
+    );
+  });
+
+  it("does not allow another user to cancel a generation", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "running");
+
+    const res = await request(app)
+      .post(`/generations/${generationId}/cancel`)
+      .set("Authorization", `Bearer ${BOB_TOKEN}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns terminal generations without interrupting ComfyUI", async () => {
+    const workId = await seedWork(aliceId);
+    const generationId = await seedGeneration(workId, aliceId, "completed");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await request(app)
+      .post(`/generations/${generationId}/cancel`)
+      .set("Authorization", `Bearer ${ALICE_TOKEN}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      generationId,
+      status: "completed",
+      error: null,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

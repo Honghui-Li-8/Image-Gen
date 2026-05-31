@@ -8,6 +8,7 @@ import { generations, works } from "../db/schema.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
   GENERATION_UPDATE_EVENT,
+  cancelGeneration,
   countAllInFlightGenerations,
   countInFlightGenerations,
   createQueuedGeneration,
@@ -264,6 +265,22 @@ generationsRouter.post(
       generationId: generation.id,
       status: generation.status,
     });
+  }
+);
+
+generationsRouter.post(
+  "/generations/:generationId/cancel",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const generationId = req.params.generationId as string;
+    const result = await cancelGeneration(generationId, req.userId);
+
+    if (!result) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    res.json(result);
   }
 );
 

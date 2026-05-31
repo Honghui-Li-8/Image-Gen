@@ -247,6 +247,19 @@ export const fetchComfyHistory = async (promptId: string): Promise<unknown> => {
   return response.json();
 };
 
+export const interruptComfyGeneration = async (): Promise<void> => {
+  const path = "/comfy/interrupt";
+  const response = await fetch(`${getBaseUrl()}${path}`, {
+    method: "POST",
+    headers: getHeaders("POST", path),
+    signal: getFetchSignal(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`ComfyUI /interrupt returned ${response.status}: ${await response.text()}`);
+  }
+};
+
 export const buildComfyImageFilename = (ref: ComfyImageRef): string => {
   return ref.subfolder ? `${ref.subfolder}/${ref.filename}` : ref.filename;
 };

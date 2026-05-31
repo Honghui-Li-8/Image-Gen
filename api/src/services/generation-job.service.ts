@@ -13,6 +13,7 @@ import {
   fetchComfyHistory,
   getComfyPollIntervalMs,
   getComfyTimeoutMs,
+  interruptComfyGeneration,
   loadComfyWorkflow,
   patchComfyWorkflow,
   parseComfyWsMessage,
@@ -29,6 +30,7 @@ const IN_FLIGHT_STATUSES: GenerationStatus[] = ["queued", "running"];
 const TERMINAL_STATUSES: GenerationStatus[] = ["completed", "failed"];
 const MAX_WS_DEBUG_PAYLOAD_CHARS = 2000;
 const COMFY_WORKFLOW_PROGRESS_MAX = 90;
+const USER_CANCELED_MESSAGE = "Generation canceled by user";
 
 export interface GenerationUpdateEvent {
   generationId: string;
@@ -46,6 +48,12 @@ export interface GenerationProgressDetail {
   step?: number;
   totalSteps?: number;
   message?: string;
+}
+
+export interface CancelGenerationResult {
+  generationId: string;
+  status: GenerationStatus;
+  error: string | null;
 }
 
 interface CreateQueuedGenerationInput {
@@ -160,6 +168,11 @@ export const emitGenerationUpdate = (event: GenerationUpdateEvent): void => {
   });
 };
 
+const getGeneration = async (generationId: string): Promise<Generation | null> => {
+  const [generation] = await db.select().from(generations).where(eq(generations.id, generationId));
+  return generation ?? null;
+};
+
 export const updateGenerationStatus = async ({
   generationId,
   status,
@@ -168,6 +181,14 @@ export const updateGenerationStatus = async ({
   error,
   detail,
 }: UpdateGenerationStatusInput): Promise<Generation> => {
+  const current = await getGeneration(generationId);
+  if (!current) {
+    throw new Error("Generation not found");
+  }
+  if (isTerminalGenerationStatus(current.status)) {
+    return current;
+  }
+
   const patch: Partial<typeof generations.$inferInsert> = {
     status,
     completedAt: isTerminalGenerationStatus(status) ? new Date() : null,
@@ -199,6 +220,49 @@ export const updateGenerationStatus = async ({
   });
 
   return generation;
+};
+
+export const cancelGeneration = async (
+  generationId: string,
+  userId: string
+): Promise<CancelGenerationResult | null> => {
+  const generation = await getGeneration(generationId);
+  if (!generation || generation.userId !== userId) {
+    return null;
+  }
+
+  if (isTerminalGenerationStatus(generation.status)) {
+    return {
+      generationId: generation.id,
+      status: generation.status,
+      error: generation.error,
+    };
+  }
+
+  try {
+    await interruptComfyGeneration();
+  } catch (error) {
+    logger.warn("generation.cancel.interrupt_failed", {
+      error: error instanceof Error ? error.message : "ComfyUI interrupt failed",
+      generationId,
+      userId,
+    });
+  }
+
+  const canceled = await updateGenerationStatus({
+    generationId,
+    status: "failed",
+    progress: 100,
+    error: USER_CANCELED_MESSAGE,
+    detail: { stage: "failed", message: USER_CANCELED_MESSAGE },
+  });
+  logger.info("generation.canceled", { generationId, userId });
+
+  return {
+    generationId: canceled.id,
+    status: canceled.status,
+    error: canceled.error,
+  };
 };
 
 export const runStubGeneration = async (generationId: string): Promise<void> => {
@@ -235,11 +299,6 @@ export const runStubGeneration = async (generationId: string): Promise<void> => 
       // The work may have been deleted while the stub worker was running.
     }
   }
-};
-
-const getGeneration = async (generationId: string): Promise<Generation | null> => {
-  const [generation] = await db.select().from(generations).where(eq(generations.id, generationId));
-  return generation ?? null;
 };
 
 const updateGenerationComfyFields = async ({
