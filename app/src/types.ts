@@ -71,6 +71,38 @@ export interface GeneratedImage {
   config?: WorkConfig;
 }
 
+export type BatchGenerationMode = "model" | "seed" | "config";
+export type BatchGenerationItemStatus =
+  | "pending"
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "canceled";
+
+export interface BatchGenerationItem {
+  id: string;
+  config: WorkConfig;
+  status: BatchGenerationItemStatus;
+  progress: number;
+  imageUrl?: string | null;
+  error?: string | null;
+}
+
+export interface BatchGenerationState {
+  active: boolean;
+  mode: BatchGenerationMode | null;
+  items: BatchGenerationItem[];
+  currentIndex: number;
+  total: number;
+  progress: number;
+  skippedModels: Array<{
+    modelId: string;
+    modelLabel: string;
+    incompatibleFields: string[];
+  }>;
+}
+
 export interface Work {
   id: string;
   name: string;

@@ -1,16 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { apiFetch } from "../utils/api";
+import { ApiError, apiFetch } from "../utils/api";
+import {
+  buildConfigSelectionBatchConfigs,
+  buildModelBatchConfigs,
+  buildSeedBatchConfigs,
+} from "../utils/batchGeneration";
 import { buildWorkConfig } from "../utils/worksApi";
-import type { GenerationCreateResponse, GenerationStatusEvent } from "../utils/worksApi";
-import type { Work, WorkUpdater } from "../types";
+import type {
+  GenerationCancelResponse,
+  GenerationCreateResponse,
+  GenerationPreflightResponse,
+  GenerationStatusEvent,
+} from "../utils/worksApi";
+import type {
+  BatchGenerationItem,
+  BatchGenerationMode,
+  BatchGenerationState,
+  GenerationOptions,
+  ModelConfig,
+  Work,
+  WorkConfig,
+  WorkUpdater,
+} from "../types";
 
 interface UseGenerationParams {
   apiUrl: string;
   token: string;
+  activeModel: ModelConfig | null;
   activeWork: Work | undefined;
   canGenerate: boolean;
   isGenerating: boolean;
+  options: GenerationOptions | null;
   setWorks: Dispatch<SetStateAction<Work[]>>;
   updateWorkById: (workId: string, patch: Partial<Work>) => void;
   updateActiveWork: (updater: WorkUpdater) => void;
@@ -21,12 +42,24 @@ interface UseGenerationParams {
 }
 
 export interface UseGenerationState {
+  batchState: BatchGenerationState;
   showCancelModal: boolean;
   setShowCancelModal: Dispatch<SetStateAction<boolean>>;
   showGenerationValidation: boolean;
   handleGenerationAction: () => void;
+  startBatchGeneration: (mode: BatchGenerationMode, batchSize?: number) => void;
   confirmCancelGeneration: () => void;
 }
+
+const emptyBatchState = (): BatchGenerationState => ({
+  active: false,
+  mode: null,
+  items: [],
+  currentIndex: 0,
+  total: 0,
+  progress: 0,
+  skippedModels: [],
+});
 
 const formatGenerationFailure = (error: string | null | undefined): string => {
   if (!error) return "Generation failed";
@@ -36,12 +69,31 @@ const formatGenerationFailure = (error: string | null | undefined): string => {
   return `Generation failed: ${snippet}`;
 };
 
+const serializeGenerationRequest = (config: WorkConfig) => ({
+  modelId: config.selectedModel,
+  selections: config.selections,
+  selectedPreset: config.selectedPreset,
+  seed: config.seed,
+  additionalTags: config.additionalTags,
+  additionalPrompt: config.additionalPrompt,
+});
+
+const makeBatchItemId = (index: number): string => `batch_${Date.now()}_${index}`;
+
+const computeAggregateProgress = (items: BatchGenerationItem[]): number => {
+  if (items.length === 0) return 0;
+  const total = items.reduce((sum, item) => sum + item.progress, 0);
+  return Math.round(total / items.length);
+};
+
 export const useGeneration = ({
   apiUrl,
   token,
+  activeModel,
   activeWork,
   canGenerate,
   isGenerating,
+  options,
   setWorks,
   updateWorkById,
   updateActiveWork,
@@ -50,8 +102,11 @@ export const useGeneration = ({
   handleApiError,
   onGenerationFailed,
 }: UseGenerationParams): UseGenerationState => {
+  const [batchState, setBatchState] = useState<BatchGenerationState>(() => emptyBatchState());
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showGenerationValidation, setShowGenerationValidation] = useState(false);
+  const activeGenerationIdRef = useRef<string | null>(null);
+  const batchCanceledRef = useRef(false);
   const generationSourceRef = useRef<EventSource | null>(null);
 
   const closeGenerationStream = useCallback(() => {
@@ -59,37 +114,38 @@ export const useGeneration = ({
     generationSourceRef.current = null;
   }, []);
 
-  const startGeneration = useCallback(() => {
-    if (!activeWork || !canGenerate) return;
+  const updateBatchItem = useCallback(
+    (itemId: string, patch: Partial<BatchGenerationItem>) => {
+      setBatchState((current) => {
+        const nextItems = current.items.map((item) =>
+          item.id === itemId ? { ...item, ...patch } : item
+        );
+        return {
+          ...current,
+          items: nextItems,
+          progress: computeAggregateProgress(nextItems),
+        };
+      });
+    },
+    []
+  );
 
-    const workId = activeWork.id;
-    const generationConfig = buildWorkConfig(activeWork);
+  const runGenerationConfig = useCallback(
+    async (workId: string, generationConfig: WorkConfig, itemId?: string): Promise<void> => {
+      const response = await apiFetch(`${apiUrl}/works/${workId}/generations`, {
+        method: "POST",
+        body: JSON.stringify(serializeGenerationRequest(generationConfig)),
+        token,
+      });
+      const result = (await response.json()) as GenerationCreateResponse;
+      activeGenerationIdRef.current = result.generationId;
 
-    void (async () => {
-      closeGenerationStream();
-      setShowGenerationValidation(false);
-      setWorkErrors((prev) => ({ ...prev, generation: "" }));
-      updateWorkById(workId, { status: "queued", progress: 0, generationDetail: null });
-      void patchWork(activeWork);
+      updateWorkById(workId, { status: result.status, progress: 0, generationDetail: null });
+      if (itemId) {
+        updateBatchItem(itemId, { status: result.status, progress: 0 });
+      }
 
-      try {
-        const response = await apiFetch(`${apiUrl}/works/${workId}/generations`, {
-          method: "POST",
-          body: JSON.stringify({
-            modelId: generationConfig.selectedModel,
-            selections: generationConfig.selections,
-            selectedPreset: generationConfig.selectedPreset,
-            seed: generationConfig.seed,
-            additionalTags: generationConfig.additionalTags,
-            additionalPrompt: generationConfig.additionalPrompt,
-          }),
-          token,
-        });
-        const result = (await response.json()) as GenerationCreateResponse;
-
-        updateWorkById(workId, { status: result.status, progress: 0, generationDetail: null });
-
-        // Token passed in URL — EventSource does not support custom headers.
+      await new Promise<void>((resolve) => {
         const source = new EventSource(
           `${apiUrl}/generations/${result.generationId}/status?token=${encodeURIComponent(token)}`
         );
@@ -100,6 +156,15 @@ export const useGeneration = ({
           const nextProgress =
             payload.progress ??
             (payload.status === "completed" || payload.status === "failed" ? 100 : 0);
+
+          if (itemId) {
+            updateBatchItem(itemId, {
+              status: payload.status,
+              progress: nextProgress,
+              imageUrl: payload.imageUrl,
+              error: payload.error,
+            });
+          }
 
           setWorks((currentWorks) =>
             currentWorks.map((work) => {
@@ -139,6 +204,7 @@ export const useGeneration = ({
             if (generationSourceRef.current === source) {
               generationSourceRef.current = null;
             }
+            activeGenerationIdRef.current = null;
             if (payload.status === "failed") {
               if (import.meta.env.DEV && payload.error) {
                 console.error("Generation failed", payload.error);
@@ -148,6 +214,7 @@ export const useGeneration = ({
                 generation: formatGenerationFailure(payload.error),
               }));
             }
+            resolve();
           }
         });
 
@@ -156,17 +223,47 @@ export const useGeneration = ({
           if (generationSourceRef.current === source) {
             generationSourceRef.current = null;
           }
+          activeGenerationIdRef.current = null;
           updateWorkById(workId, {
             status: "failed",
             progress: 100,
             generationDetail: { stage: "failed", message: "Status stream disconnected" },
           });
+          if (itemId) {
+            updateBatchItem(itemId, {
+              status: "failed",
+              progress: 100,
+              error: "Generation status stream disconnected",
+            });
+          }
           setWorkErrors((prev) => ({
             ...prev,
             generation: "Generation status stream disconnected",
           }));
+          resolve();
         };
+      });
+    },
+    [apiUrl, setWorks, setWorkErrors, token, updateBatchItem, updateWorkById]
+  );
+
+  const startGeneration = useCallback(() => {
+    if (!activeWork || !canGenerate) return;
+
+    const workId = activeWork.id;
+    const generationConfig = buildWorkConfig(activeWork);
+
+    void (async () => {
+      closeGenerationStream();
+      setShowGenerationValidation(false);
+      setWorkErrors((prev) => ({ ...prev, generation: "" }));
+      updateWorkById(workId, { status: "queued", progress: 0, generationDetail: null });
+      void patchWork(activeWork);
+
+      try {
+        await runGenerationConfig(workId, generationConfig);
       } catch (error) {
+        activeGenerationIdRef.current = null;
         updateWorkById(workId, {
           status: "failed",
           progress: 100,
@@ -178,20 +275,138 @@ export const useGeneration = ({
     })();
   }, [
     activeWork,
-    apiUrl,
     canGenerate,
     closeGenerationStream,
     handleApiError,
     onGenerationFailed,
     patchWork,
-    setWorks,
+    runGenerationConfig,
     setWorkErrors,
-    token,
     updateWorkById,
   ]);
 
+  const startBatchGeneration = useCallback(
+    (mode: BatchGenerationMode, batchSize = 1) => {
+      if (!activeWork || !activeModel || !canGenerate || !options) {
+        if (!canGenerate) setShowGenerationValidation(true);
+        return;
+      }
+
+      const workId = activeWork.id;
+      const baseConfig = buildWorkConfig(activeWork);
+      const modelPlan = mode === "model" ? buildModelBatchConfigs(baseConfig, options.models) : null;
+      const planItems =
+        mode === "model"
+          ? (modelPlan?.items ?? [])
+          : mode === "seed"
+            ? buildSeedBatchConfigs(baseConfig, batchSize)
+            : buildConfigSelectionBatchConfigs(baseConfig, activeModel, batchSize);
+      const items: BatchGenerationItem[] = planItems.map((item, index) => ({
+        id: makeBatchItemId(index),
+        config: item.config,
+        status: "pending",
+        progress: 0,
+      }));
+      const skippedModels = modelPlan?.skippedModels ?? [];
+
+      if (items.length === 0) {
+        setBatchState({
+          active: false,
+          mode,
+          items,
+          currentIndex: 0,
+          total: 0,
+          progress: 0,
+          skippedModels,
+        });
+        return;
+      }
+
+      void (async () => {
+        closeGenerationStream();
+        batchCanceledRef.current = false;
+        setShowGenerationValidation(false);
+        setWorkErrors((prev) => ({ ...prev, generation: "" }));
+
+        try {
+          const preflight = await apiFetch(`${apiUrl}/works/${workId}/generations/preflight`, {
+            method: "POST",
+            body: JSON.stringify({ batchSize: items.length, mode }),
+            token,
+          });
+          const preflightResult = (await preflight.json()) as GenerationPreflightResponse;
+          if (!preflightResult.canSchedule) {
+            setWorkErrors((prev) => ({
+              ...prev,
+              generation: preflightResult.reason ?? "Could not start batch",
+            }));
+            return;
+          }
+
+          setBatchState({
+            active: true,
+            mode,
+            items,
+            currentIndex: 0,
+            total: items.length,
+            progress: 0,
+            skippedModels,
+          });
+          updateWorkById(workId, { status: "queued", progress: 0, generationDetail: null });
+          void patchWork(activeWork);
+
+          for (const [index, item] of items.entries()) {
+            if (batchCanceledRef.current) break;
+            setBatchState((current) => ({ ...current, currentIndex: index }));
+            updateBatchItem(item.id, { status: "queued", progress: 0, error: null });
+            try {
+              await runGenerationConfig(workId, item.config, item.id);
+            } catch (error) {
+              updateBatchItem(item.id, {
+                status: "failed",
+                progress: 100,
+                error: error instanceof Error ? error.message : "Generation failed",
+              });
+              if (error instanceof ApiError && error.status === 429) {
+                setWorkErrors((prev) => ({
+                  ...prev,
+                  generation: "GPU busy, try again shortly",
+                }));
+                break;
+              }
+            }
+          }
+        } catch (error) {
+          handleApiError("generation", error, "Could not start batch");
+        } finally {
+          activeGenerationIdRef.current = null;
+          setBatchState((current) => ({
+            ...current,
+            active: false,
+            progress: computeAggregateProgress(current.items),
+          }));
+        }
+      })();
+    },
+    [
+      activeModel,
+      activeWork,
+      apiUrl,
+      canGenerate,
+      closeGenerationStream,
+      handleApiError,
+      options,
+      patchWork,
+      runGenerationConfig,
+      setWorkErrors,
+      token,
+      updateBatchItem,
+      updateWorkById,
+    ]
+  );
+
   const handleGenerationAction = useCallback(() => {
-    if (isGenerating) {
+    if (isGenerating || batchState.active) {
       setShowCancelModal(true);
       return;
     }
@@ -200,23 +415,47 @@ export const useGeneration = ({
       return;
     }
     startGeneration();
-  }, [canGenerate, isGenerating, startGeneration]);
+  }, [batchState.active, canGenerate, isGenerating, startGeneration]);
 
   const confirmCancelGeneration = useCallback(() => {
+    const generationId = activeGenerationIdRef.current;
+    batchCanceledRef.current = true;
+    if (generationId) {
+      void apiFetch(`${apiUrl}/generations/${generationId}/cancel`, {
+        method: "POST",
+        token,
+      })
+        .then((response) => response.json() as Promise<GenerationCancelResponse>)
+        .catch((error) => {
+          handleApiError("generation", error, "Could not cancel generation");
+        });
+    }
     closeGenerationStream();
+    activeGenerationIdRef.current = null;
+    setBatchState((current) => ({
+      ...current,
+      active: false,
+      items: current.items.map((item) =>
+        item.status === "pending" || item.status === "queued" || item.status === "running"
+          ? { ...item, status: "canceled", progress: 100, error: "Generation canceled by user" }
+          : item
+      ),
+    }));
     updateActiveWork({ status: "idle", progress: 0, generationDetail: null });
     setShowCancelModal(false);
-  }, [closeGenerationStream, updateActiveWork]);
+  }, [apiUrl, closeGenerationStream, handleApiError, token, updateActiveWork]);
 
   useEffect(() => {
     return () => closeGenerationStream();
   }, [closeGenerationStream]);
 
   return {
+    batchState,
     showCancelModal,
     setShowCancelModal,
     showGenerationValidation,
     handleGenerationAction,
+    startBatchGeneration,
     confirmCancelGeneration,
   };
 };

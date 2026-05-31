@@ -7,6 +7,8 @@ import { useWorksData } from "./useWorksData";
 import { useGeneration } from "./useGeneration";
 import type {
   GeneratedImage,
+  BatchGenerationMode,
+  BatchGenerationState,
   GenerationOptions,
   ModelConfig,
   OptionsStatus,
@@ -20,11 +22,13 @@ interface UseWorksState {
   activeWork: Work | undefined;
   activeWorkId: string;
   addWork: () => void;
+  batchState: BatchGenerationState;
   commitTag: () => void;
   confirmCancelGeneration: () => void;
   customTags: string[];
   deleteImage: (generationId: string) => void;
   handleGenerationAction: () => void;
+  startBatchGeneration: (mode: BatchGenerationMode, batchSize?: number) => void;
   isDirty: boolean;
   isGenerating: boolean;
   isLoadingWorks: boolean;
@@ -158,9 +162,11 @@ export const useWorks = (
   const generation = useGeneration({
     apiUrl,
     token,
+    activeModel,
     activeWork,
     canGenerate,
     isGenerating,
+    options,
     setWorks,
     updateWorkById,
     updateActiveWork,
@@ -310,6 +316,7 @@ export const useWorks = (
     activeWork,
     activeWorkId,
     addWork,
+    batchState: generation.batchState,
     commitTag,
     confirmCancelGeneration: generation.confirmCancelGeneration,
     customTags,
@@ -317,6 +324,7 @@ export const useWorks = (
     deleteWork,
     duplicateWork,
     handleGenerationAction: generation.handleGenerationAction,
+    startBatchGeneration: generation.startBatchGeneration,
     isDirty,
     isGenerating,
     isLoadingWorks,

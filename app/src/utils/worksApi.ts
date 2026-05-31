@@ -50,6 +50,18 @@ export interface GenerationStatusEvent {
   detail?: GenerationProgressDetail;
 }
 
+export interface GenerationPreflightResponse {
+  canSchedule: boolean;
+  maxBatchSize: number;
+  reason: string | null;
+}
+
+export interface GenerationCancelResponse {
+  generationId: string;
+  status: Exclude<WorkStatus, "idle">;
+  error: string | null;
+}
+
 export const generationToImage = (generation: BackendGeneration): GeneratedImage | null => {
   if (!generation.imageUrl) return null;
 
